@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <linearGradient id="hexGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f5ff" />
+      <stop offset="50%" stop-color="#8a2be2" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="glass">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.2" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="atop"/>
+    </filter>
+
+    <style>
+      <![CDATA[
+        .pulse {
+          animation: pulse 2.4s infinite ease-in-out;
+          transform-origin: 150px 150px;
+        }
+
+        @keyframes pulse {
+          0%   { transform: scale(1);   opacity: 1; }
+          50%  { transform: scale(1.08); opacity: 0.85; }
+          100% { transform: scale(1);   opacity: 1; }
+        }
+      ]]>
+    </style>
+  </defs>
+
+  <!-- Glowing pulsing hexagon -->
+  <g class="pulse" filter="url(#glow)">
+    <polygon points="150,40 240,95 240,205 150,260 60,205 60,95"
+             stroke="url(#hexGradient)"
+             stroke-width="8"
+             fill="rgba(255,255,255,0.05)"
+             filter="url(#glass)" />
+  </g>
+</svg>
