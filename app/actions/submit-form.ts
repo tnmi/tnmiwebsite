@@ -145,7 +145,7 @@ export async function submitForm(prevState: FormState | null, formData: FormData
     // --- Production Email Sending Logic (Using Resend) ---
     if (process.env.RESEND_API_KEY) {
       const resend = new Resend(process.env.RESEND_API_KEY)
-      const emailTo = "jason.deacon@truenorthmaterials.com"
+      const emailTo = "tobias@truenorthmaterials.com"
 
       // Attempt to get a company name or individual name for the subject line
       let subjectIdentifier = "N/A"
@@ -200,7 +200,7 @@ export async function submitForm(prevState: FormState | null, formData: FormData
 
       try {
         const { data, error } = await resend.emails.send({
-          from: "TrueNorth Platform <onboarding@resend.dev>", // Replace with verified domain
+          from: "TrueNorth Platform <tobias@truenorthmaterials.com>", // Replace with verified domain
           to: [emailTo],
           subject: emailSubject,
           html: emailBodyHtml,
