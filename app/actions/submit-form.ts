@@ -202,6 +202,7 @@ export async function submitForm(prevState: FormState | null, formData: FormData
         const { data, error } = await resend.emails.send({
           from: "TrueNorth Platform <tobias@truenorthmaterials.com>", // Replace with verified domain
           to: [emailTo],
+          cc: "peti@truenorthmaterials.com",
           subject: emailSubject,
           html: emailBodyHtml,
         })
