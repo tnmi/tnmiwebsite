@@ -54,7 +54,7 @@ export default function CanadaFocusSection() {
   }, [])
 
   return (
-    <section id="canada" ref={ref} className="relative z-10 min-h-screen overflow-hidden">
+    <section id="Government & Grants" ref={ref} className="relative z-10 min-h-screen overflow-hidden">
       <BackgroundVideo
         videoUrl="/Vid2.mp4"
         fallbackImageUrl="/placeholder.svg"
@@ -75,7 +75,7 @@ export default function CanadaFocusSection() {
             The Future of Materials Starts in Canada
           </h2>
           <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed font-light">
-            Discover how Canada’s mineral wealth and AI innovation converge to unlock cleaner, smarter industries.
+            We have experience working with IRAP, NSERC and more....
           </p>
         </motion.div>
 
@@ -87,7 +87,7 @@ export default function CanadaFocusSection() {
           className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 sm:p-12 shadow-xl text-center space-y-4"
         >
           <p className="text-slate-200 text-lg sm:text-xl leading-relaxed max-w-3xl mx-auto">
-            Canada’s $3.8B Critical Minerals Strategy positions it as a leader in the global green energy race. At TrueNorth, our AI Cores help unlock this potential with smarter extraction, cleaner processing, and faster innovation cycles.
+          We want to work with accelerators, innovation hubs and partners supporting commercialization of Canadian technologies. We can assist decision intelligence for partners and investors who ask "will it work?" or "are there better solutions?"
           </p>
         </motion.div>
 
@@ -150,7 +150,7 @@ export default function CanadaFocusSection() {
               asChild
             >
               <Link href="/canadian-partnerships">
-                Explore Canadian Partnerships
+                Explore Collaborative Funding Options
               </Link>
             </Button>
           </div>

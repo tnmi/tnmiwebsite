@@ -16,8 +16,7 @@ export default function CanadianPartnershipsPage() {
           <div className="text-5xl mb-4">🍁</div> {/* Canadian Maple Leaf Emoji */}
           <h1 className="text-4xl font-bold text-red-400 mb-3">Canadian Innovation Partnerships</h1>
           <p className="text-slate-300 text-lg">
-            Connect with TrueNorth AI to leverage Canada's Critical Minerals Strategy and build a world-leading
-            materials ecosystem.
+            Let's support Canada's goals together!.
           </p>
         </div>
         <CanadianPartnershipsForm />

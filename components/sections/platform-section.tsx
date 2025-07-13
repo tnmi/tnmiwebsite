@@ -10,7 +10,7 @@ export default function PlatformSection() {
 
   return (
     <section
-      id="platform"
+      id="platformexpanded"
       ref={ref}
       className="relative min-h-screen overflow-hidden bg-black/90 text-white font-sans"
     >

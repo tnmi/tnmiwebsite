@@ -27,8 +27,7 @@ export default function PartnershipsSection() {
         >
           <h2 className="text-4xl md:text-6xl font-bold text-white mb-6">Strategic Partnerships</h2>
           <p className="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
-            Building the ecosystem for sustainable materials innovation through strategic partnerships with startups,
-            industry leaders, and research institutions using our AI Core services.
+            Artificial Intelligence is here to the support commercialization of innovations by collaborating with Startups (TRL4+). We work with Enterprise clients to increase productivity and reduce emissions.
           </p>
         </motion.div>
 
@@ -40,36 +39,36 @@ export default function PartnershipsSection() {
         >
           {/* Startups */}
           <div className="glass-card p-8 rounded-3xl border border-white/10 backdrop-blur-2xl bg-white/5 shadow-2xl">
-            <h3 className="text-2xl font-bold mb-4">Startup Acceleration</h3>
+            <h3 className="text-2xl font-bold mb-4">Startup Partnership</h3>
             <ul className="space-y-4 text-slate-300 text-sm leading-relaxed">
-              <li>🔗 Get matched with leading industry partners through AI-driven R&D insights.</li>
+              <li>🔗 Reduce your R&D time by up to 90%</li>
               <li>📊 Strengthen your pitch with high-confidence data from our AI Cores.</li>
-              <li>💸 Unlock non-dilutive funding support with predictive documentation tools.</li>
-              <li>🚀 Enter the Startup Core Partnership Program.</li>
+              <li>💸 Material-use Discovery (find a buyer for your material!) </li>
+              <li>🚀 Is there a use for your material or material product you're missing?</li>
             </ul>
             <a
               href="/startup-partnership"
               className="inline-flex items-center justify-center gap-2 text-sm font-medium h-14 mt-6 px-8 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-lg transition-all shadow-lg"
             >
-              Startup Partnership Program
+              Startup Form
               <ArrowRight className="w-5 h-5 ml-2" />
             </a>
           </div>
 
           {/* Industry */}
           <div className="glass-card p-8 rounded-3xl border border-white/10 backdrop-blur-2xl bg-white/5 shadow-2xl">
-            <h3 className="text-2xl font-bold mb-4">Industry Scale-Up</h3>
+            <h3 className="text-2xl font-bold mb-4">Enterprise Partnership</h3>
             <ul className="space-y-4 text-slate-300 text-sm leading-relaxed">
-              <li>🧠 Forecast outcomes with AI-backed predictions before deployment.</li>
-              <li>🔬 Access 85% accurate predictions of material performance in real-world scenarios.</li>
-              <li>📈 Model economic and scaling feasibility using simulation-driven data.</li>
-              <li>🏗️ Join the Industry Core Partnership Program.</li>
+              <li>🧠 Make decisions with data-driven intelligence</li>
+              <li>🔬 Reduce your R&D time by up to 90%</li>
+              <li>📈 Increase productivity and reduce energy costs</li>
+              <li>🏗️ More companies adopt AI everyday, are you keeping up?</li>
             </ul>
             <a
               href="/industry-partnership"
               className="inline-flex items-center justify-center gap-2 text-sm font-medium h-14 mt-6 px-8 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-lg transition-all shadow-lg"
             >
-              Industry Partnership Program
+              Enterprise Form
               <ArrowRight className="w-5 h-5 ml-2" />
             </a>
           </div>

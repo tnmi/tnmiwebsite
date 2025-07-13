@@ -30,7 +30,7 @@ export default function ProblemSection() {
   ]
 
   return (
-    <section ref={ref} className="min-h-screen relative overflow-hidden bg-black text-white">
+    <section id="What is TRL?" ref={ref} className="min-h-screen relative overflow-hidden bg-black text-white">
       <BackgroundVideo
         videoUrl="/V5.mp4"
         fallbackImageUrl="/placeholder.svg"

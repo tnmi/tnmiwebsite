@@ -17,6 +17,7 @@ const organizationTypeOptions = [
   { value: "University", label: "University / Academic Institution" },
   { value: "Economic Development", label: "Economic Development Agency" },
   { value: "Industry Association", label: "Industry Association" },
+  { value: "For-Profit", label: "For-Profit" },
   { value: "Other", label: "Other" },
 ]
 
@@ -85,14 +86,6 @@ export default function CanadianPartnershipsForm() {
             placeholder="your.email@organization.ca"
             state={state}
           />
-          <FormField
-            id="phone"
-            name="phone"
-            label="Phone Number (Optional)"
-            placeholder="+1 (xxx) xxx-xxxx"
-            required={false}
-            state={state}
-          />
         </div>
       </div>
 
@@ -114,13 +107,6 @@ export default function CanadianPartnershipsForm() {
           placeholder="Describe the type of partnership you're interested in and what you hope to achieve. For example: joint funding applications, technology commercialization programs, regional innovation initiatives, policy development support, etc."
           state={state}
         />
-        <FormField
-          id="targetSectors"
-          name="targetSectors"
-          label="Target Sectors/Industries"
-          placeholder="e.g., Mining & minerals, Clean energy, Advanced manufacturing"
-          state={state}
-        />
         <div className="grid md:grid-cols-2 gap-6">
           <FormField
             id="fundingPrograms"
@@ -130,44 +116,7 @@ export default function CanadianPartnershipsForm() {
             required={false}
             state={state}
           />
-          <FormField
-            id="timeline"
-            name="timeline"
-            label="Proposed Timeline"
-            placeholder="e.g., Q2 2025 start, 2-year program"
-            state={state}
-          />
         </div>
-      </div>
-
-      {/* Canadian Innovation Context */}
-      <div className="space-y-6">
-        <h3 className="text-lg font-semibold text-emerald-400">Strategic Alignment</h3>
-        <FormField
-          id="strategicAlignment"
-          name="strategicAlignment"
-          type="textarea"
-          label="How does this align with Canadian innovation priorities?"
-          placeholder="Describe how this partnership supports Canadian priorities such as: critical minerals strategy, net-zero targets, regional economic development, Indigenous partnerships, or bridging the valley of death in materials innovation."
-          state={state}
-        />
-        <FormField
-          id="existingPartners"
-          name="existingPartners"
-          label="Existing Partners/Stakeholders (Optional)"
-          placeholder="e.g., Universities, industry partners, other government agencies"
-          required={false}
-          state={state}
-        />
-        <FormField
-          id="additionalInfo"
-          name="additionalInfo"
-          type="textarea"
-          label="Additional Information (Optional)"
-          placeholder="Any other relevant information about your organization or the proposed partnership"
-          required={false}
-          state={state}
-        />
       </div>
 
       {state?.message && (

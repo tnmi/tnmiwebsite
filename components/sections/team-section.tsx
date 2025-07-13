@@ -12,10 +12,10 @@ export default function TeamSection() {
 
   const teamMembers = [
     {
-      name: "Jason Deacon",
+      name: "Tobias, Ph.D.",
       role: "Co-Founder",
       image: "/images/jason.jpg",
-      linkedin: "https://www.linkedin.com/in/jason-deacon/",
+      linkedin: "https://www.linkedin.com/in/tobias-deacon/",
       bio: "Ph.D. in Materials Science (graphene technology) from the University of Cambridge with 7+ years experience in advanced materials research and commercialization.",
     },
     {
@@ -46,11 +46,8 @@ export default function TeamSection() {
           className="text-center"
         >
           <h2 className="text-5xl sm:text-6xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-emerald-300 leading-tight tracking-tight py-6 sm:py-10 md:py-14">
-            Meet the Architects of Intelligence
+            Our Team
           </h2>
-          <p className="text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
-            Guided by an AI-powered vision, our team blends science, design, and code into real-world breakthroughs.
-          </p>
         </motion.div>
 
         <div className="grid md:grid-cols-2 gap-16">

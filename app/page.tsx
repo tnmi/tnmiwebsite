@@ -48,7 +48,7 @@ export default function TrueNorthWebsite() {
             <span className="text-2xl font-bold text-emerald-400 tracking-tight">TrueNorth</span>
           </motion.div>
           <div className="hidden md:flex space-x-8 text-sm font-medium text-slate-300">
-            {["platform", "technology", "how-we-help", "canada", "partnerships", "team", "contact"].map((section, idx) => (
+            {["services", "platform", , "partnerships", "Government & Grants" , "team", "What is TRL?", "contact"].map((section, idx) => (
               <motion.a
                 key={idx}
                 whileHover={{ y: -2, color: "#10b981" }}
@@ -98,7 +98,7 @@ export default function TrueNorthWebsite() {
             transition={{ duration: 1, delay: 2 }}
             className="text-lg md:text-xl text-slate-300 font-light leading-relaxed max-w-2xl mx-auto mb-8"
           >
-            True North Material Innovations is an AI-driven intelligence company dedicated to making the Canadian critical minerals value chain more efficient, sustainable, and secure.
+            Connecting Canada's Advanced Manufacturing and Materials Value Chain for Data-Driven Decision Intelligence.
           </motion.p>
           <motion.div
   initial={{ opacity: 0, y: 20 }}
@@ -118,7 +118,7 @@ export default function TrueNorthWebsite() {
 
   {/* Secondary Outline Glass Button */}
   <Link
-    href="https://calendly.com/jasondeacon/30"
+    href="https://calendly.com/tobiastnmi/30min"
     target="_blank"
     rel="noopener noreferrer"
     passHref
@@ -150,17 +150,18 @@ export default function TrueNorthWebsite() {
       {/* <ProblemSection /> */}
       <ServicesSection />
       <Diagram />
+	  <TechnologySection />
       <IcebergVisualization />
       <PartnershipsSection />
       <CanadaFocusSection />
       <TeamSection />
       <PlatformSection />
-      <TechnologySection />
       <ProblemSection />
       <HowWeHelpSection />
 
       {/* Footer */}
       <motion.footer
+		id="contact"
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1, delay: 0.5 }}
@@ -172,10 +173,10 @@ export default function TrueNorthWebsite() {
             <h4 className="text-xl font-semibold text-emerald-400 mb-4">Contact Information</h4>
             <p className="text-sm text-slate-300 mb-2 font-medium">General Inquiries</p>
             <a
-              href="mailto:jason.deacon@truenorthmaterials.com"
+              href="mailto:tobias@truenorthmaterials.com"
               className="text-slate-200 hover:text-emerald-400 text-sm break-all"
             >
-              jason.deacon@truenorthmaterials.com
+              tobias@truenorthmaterials.com
             </a>
           </div>
 
@@ -192,7 +193,7 @@ export default function TrueNorthWebsite() {
                 <Linkedin className="w-5 h-5 text-emerald-400" />
               </a>
               <a
-                href="mailto:jason.deacon@truenorthmaterials.com"
+                href="mailto:tobias@truenorthmaterials.com"
                 className="bg-white/10 hover:bg-emerald-500/30 backdrop-blur-xl border border-white/10 p-2 rounded-full transition shadow text-white/90"
               >
                 <Mail className="w-5 h-5 text-emerald-400" />

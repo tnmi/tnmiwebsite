@@ -16,9 +16,9 @@ export default function IndustryPartnershipPage() {
           <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center">
             <Building className="w-8 h-8 text-blue-400" />
           </div>
-          <h1 className="text-4xl font-bold text-blue-400 mb-3">Industry Partnership Program</h1>
+          <h1 className="text-4xl font-bold text-blue-400 mb-3">Enterprise Collaboration Form</h1>
           <p className="text-slate-300 text-lg">
-            Collaborate with TrueNorth AI to unlock new material capabilities and drive innovation in your sector.
+            We're excited to bring your company to new futuristic heights!
           </p>
         </div>
         <IndustryPartnershipForm />

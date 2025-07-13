@@ -3,7 +3,9 @@ import { motion } from "framer-motion"
 
 export default function ServicesSection() {
   return (
-    <section className="relative min-h-screen bg-black text-white overflow-hidden font-satoshi px-6 py-24">
+    <section 
+	id="services"
+	className="relative min-h-screen bg-black text-white overflow-hidden font-satoshi px-6 py-24">
       <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-slate-900/70 to-emerald-950/70" />
       <div className="relative z-10 max-w-6xl mx-auto">
         <motion.div
@@ -17,7 +19,7 @@ export default function ServicesSection() {
           </h2>
           <p className="text-xl text-slate-300 max-w-3xl mx-auto mb-12 text-center">
             We’re an Agentic AI Factory for Smart Industry 4.0+ Leaders<br />
-            Providing pin-point Agentic AI solutions for the manufacturing industry
+            We condense billions of literature documents to create niche subject experts
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -25,9 +27,9 @@ export default function ServicesSection() {
               "Human in the Loop - Approved Information",
               "Embodied AI with integrated sensory systems for interactive manufacturing",
               "Human-AI hybrid intelligence for enhanced problem-solving in manufacturing",
-              "Manufacturing Metaverse for simulating and optimizing manufacturing processes",
+              "Dual-Use Scenarios for Defence and Civilian Applications",
               "Generative AI in learning policy, decision-making, and advanced control for manufacturing systems",
-              "Autonomous Materials Discovery powered multi-agent AI systems",
+              "Accelerated Materials & Materials-Use Discovery",
             ].map((item, i) => (
               <motion.div
                 key={item}

@@ -10,7 +10,6 @@ export default function HowWeHelpSection() {
 
   return (
     <section
-      id="how-we-help"
       ref={ref}
       className="relative min-h-screen overflow-hidden py-24 px-6 sm:px-8 lg:px-16 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white"
     >

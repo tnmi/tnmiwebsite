@@ -1,4 +1,4 @@
-// File: /Users/kejvi/Documents/GitHub/TNMI/app/layout.tsx
+// File: C:\Users\jason\OneDrive\Documents\TNMI\Website\tnmiwebsite-main\tnmiwebsite-main\app\layout.tsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

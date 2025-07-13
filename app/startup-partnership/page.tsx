@@ -16,9 +16,9 @@ export default function StartupPartnershipPage() {
           <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-purple-500/20 flex items-center justify-center">
             <Zap className="w-8 h-8 text-purple-400" />
           </div>
-          <h1 className="text-4xl font-bold text-purple-400 mb-3">Startup Partnership Program</h1>
+          <h1 className="text-4xl font-bold text-purple-400 mb-3">Startup Collaboration Form</h1>
           <p className="text-slate-300 text-lg">
-            Accelerate your materials innovation with TrueNorth AI. Let's build the future together.
+            We will commercialize your technology. We are part of your competitive edge!
           </p>
         </div>
         <StartupPartnershipForm />
