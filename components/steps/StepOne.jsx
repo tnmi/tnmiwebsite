@@ -1,12 +1,87 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import axios from 'axios';
+import * as pdfjsLib from "pdfjs-dist/build/pdf";
+import workerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
 
 // Complete StepOne component with hexagon animations
 
-export default function StepOne({ onComplete }) {
+export default function StepOne({ onComplete, setParentLoading, geminiData, parsedPdfText }) {
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [combinedPdfText, setCombinedPdfText] = useState("");
+
+  // Helper to parse PDF file and extract text using pdfjs-dist
+  const parsePdfFile = (file) => {
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const typedArray = new Uint8Array(event.target.result);
+      const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+
+      let allText = "";
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(" ");
+        allText += pageText + "\n";
+      }
+
+      setCombinedPdfText((prevText) => prevText + allText);
+      console.log("Parsed PDF Text:", allText);
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const callGeminiAPI = async () => {
+    setParentLoading(true);
+    setErrorMessage("");
+    setIsUploading(true);
+    try {
+      if (!combinedPdfText.trim()) {
+        console.warn("No PDF content to send.");
+        setIsUploading(false);
+        setParentLoading(false);
+        return;
+      }
+
+      const response = await axios.post("/api/gemini", {
+        query: "Digest the following tech sheet and extract all possible material properties mentioned in it. For each property, provide its name, its value as found in the document (only the numeric value without units), its metric (unit of measurement). Respond strictly in the following JSON format and nothing else:\n\n[{ \"name\": \"Property name\", \"value\": \"property value\", \"metric\": \"metric unit\" }]",
+        content: combinedPdfText,
+      });
+
+      const cleanText = response.data.text
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .replace(/\n/g, "")
+        .trim();
+
+      try {
+        const parsedJson = JSON.parse(cleanText);
+        console.log("Parsed Gemini Response as JSON:", parsedJson);
+        onComplete(parsedJson, combinedPdfText);
+        setParentLoading(false);
+        setIsUploading(false);
+      } catch (e) {
+        console.error("Failed to parse Gemini response as JSON:", e);
+        setErrorMessage("Something went wrong while processing the file. Please try again.");
+        setParentLoading(false);
+        setIsUploading(false);
+      }
+    } catch (error) {
+      console.error("Gemini API Error:", error);
+      if (error.response?.status === 429 || error.response?.status >= 500) {
+        setErrorMessage("Server is currently unavailable or too many requests. Please try again later.");
+      } else {
+        setErrorMessage("Something went wrong while processing the file. Please try again.");
+      }
+      setIsUploading(false);
+      setParentLoading(false);
+    }
+  };
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -21,26 +96,43 @@ export default function StepOne({ onComplete }) {
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
-    setIsUploading(true);
-    
+
     const droppedFiles = Array.from(e.dataTransfer.files);
+    const invalidFile = droppedFiles.find(file => file.type !== "application/pdf");
+
+    if (invalidFile) {
+      setErrorMessage("Only PDF files are supported.");
+      setFiles([]);
+      return;
+    }
+
+    setErrorMessage("");
     setFiles(droppedFiles);
-    
-    // Simulate upload process
+    droppedFiles.forEach(parsePdfFile);
+    setIsUploading(true);
+
     setTimeout(() => {
-      setIsUploading(false);
-      if (onComplete) onComplete();
-    }, 2000);
+        setIsUploading(false);
+      }, 2000);
   };
 
   const handleFileSelect = (e) => {
     const selectedFiles = Array.from(e.target.files);
+    const invalidFile = selectedFiles.find(file => file.type !== "application/pdf");
+
+    if (invalidFile) {
+      setErrorMessage("Only PDF files are supported.");
+      setFiles([]);
+      return;
+    }
+
+    setErrorMessage("");
     setFiles(selectedFiles);
+    selectedFiles.forEach(parsePdfFile);
     setIsUploading(true);
-    
+
     setTimeout(() => {
       setIsUploading(false);
-      if (onComplete) onComplete();
     }, 2000);
   };
 
@@ -134,6 +226,7 @@ export default function StepOne({ onComplete }) {
           <input
             type="file"
             multiple
+            accept="application/pdf"
             onChange={handleFileSelect}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
           />
@@ -280,16 +373,26 @@ export default function StepOne({ onComplete }) {
           )}
         </div>
 
-        {/* Progress indicator */}
+
         <div className="mt-8 text-center">
-          <div className="flex justify-center space-x-2">
-            <div className={`w-3 h-3 rounded-full transition-all duration-300 ${
-              files.length > 0 ? 'bg-cyan-400' : 'bg-gray-600'
-            }`}></div>
-            <div className="w-3 h-3 bg-gray-600 rounded-full"></div>
-            <div className="w-3 h-3 bg-gray-600 rounded-full"></div>
-          </div>
-          <p className="text-sm text-gray-400 mt-2">Step 1 of 3</p>
+          <button
+            onClick={async () => {
+              await callGeminiAPI();
+            }}
+            disabled={files.length === 0}
+            className={`px-6 py-3 rounded-xl shadow-lg ${
+              files.length === 0
+                ? "bg-gray-500 cursor-not-allowed"
+                : "bg-emerald-500 hover:bg-emerald-600 text-white"
+            }`}
+          >
+            Start Reviewing Files
+          </button>
+          {errorMessage && (
+            <div className="mt-4 text-center text-red-500 font-semibold">
+              {errorMessage}
+            </div>
+          )}
         </div>
       </div>
 

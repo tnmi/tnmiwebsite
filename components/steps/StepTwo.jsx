@@ -1,12 +1,63 @@
 "use client";
 import React, { useState } from "react";
+import axios from "axios";
 
-export default function StepTwo({ onComplete }) {
-  const [properties, setProperties] = useState([
-    { name: "Density", value: "2.7", target: "2.5", metric: "g/cm³" },
-    { name: "Tensile Strength", value: "300", target: "280", metric: "MPa" },
-    { name: "Elastic Modulus", value: "70", target: "72", metric:  "GPa"},
-  ]);
+export default function StepTwo({ geminiData,  setGeminiData, parsedPdfText, setParentLoading, onComplete }) {
+  const [properties, setProperties] = useState(geminiData);
+  const [errorMessage, setErrorMessage] = useState("");
+
+
+  const removeProperty = (indexToRemove) => {
+    setProperties(properties.filter((_, index) => index !== indexToRemove));
+    setGeminiData(properties.filter((_, index) => index !== indexToRemove));
+  };
+
+  const handleValueChange = (index, value) => {
+    setProperties(prev =>
+      prev.map((prop, i) =>
+        i === index ? { ...prop, value: value } : prop
+      )
+    );
+    setGeminiData(prev =>
+      prev.map((prop, i) =>
+        i === index ? { ...prop, value: value } : prop
+      )
+    );
+  };
+
+  const handleFindNewMarkets = async () => {
+    setParentLoading(true);
+    setErrorMessage("");
+    try {
+      const response = await axios.post("/api/gemini", {
+        query: "Given the following tech sheet and material properties I need you to return back a json file formatted STRICTLY in the following format { material_new_market: A brief one liner about this material along the lines of Review and explore biochar material metrics and market opportunities, new_markets: [ An array of new potential markets based on the properties of this material and the property goals set. Name Only the new market!! ] }",
+        content: parsedPdfText + geminiData,
+      });
+      console.log(parsedPdfText)
+      console.log(geminiData)
+      const cleanText = response.data.text
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .replace(/\n/g, "")
+        .trim();
+      console.log(cleanText)
+      try {
+        const parsedJson = JSON.parse(cleanText);
+        console.log("Parsed Gemini New Market Response as JSON:");
+        console.log(parsedJson);
+        onComplete(parsedJson);
+        setParentLoading(false);
+      } catch (e) {
+        console.error("Failed to parse Gemini new markets response as JSON:", e);
+        setErrorMessage("Something went wrong while fetching new markets. Please try again.");
+        setParentLoading(false);
+      }
+    } catch (error) {
+      console.error("Gemini process step two API error:", error);
+      setErrorMessage("Something went wrong while fetching new markets. Please try again.");
+      setParentLoading(false);
+    }
+  };
 
   return (
     <section className="relative z-10 py-36 px-6 max-w-7xl mx-auto text-white overflow-hidden">
@@ -18,58 +69,49 @@ export default function StepTwo({ onComplete }) {
           Review Properties
         </h1>
 
-        <div className="flex justify-center gap-4 text-center">
-          <div className="flex flex-col gap-4">
-            <div className="font-bold">Property</div>
+        <div className="w-full overflow-x-auto">
+          <div className="min-w-full">
+            <div className="flex font-bold text-center bg-white/5 rounded-lg overflow-hidden">
+              <div className="flex-1 py-2 px-4">Property</div>
+              <div className="flex-1 py-2 px-4">Value</div>
+              <div className="flex-1 py-2 px-4">Metric</div>
+            </div>
+
             {properties.map((prop, index) => (
-              <div key={index} className="py-2">{prop.name}</div>
-            ))}
-          </div>
-          <div className="flex flex-col gap-4">
-            <div className="font-bold">Value</div>
-            {properties.map((prop, index) => (
-              <input
-                key={index}
-                className="py-2 text-white bg-black bg-opacity-20 rounded px-2"
-                value={prop.value}
-                onChange={(e) => {
-                  const updated = [...properties];
-                  updated[index].value = e.target.value;
-                  setProperties(updated);
-                }}
-              />
-            ))}
-          </div>
-          <div className="flex flex-col gap-4">
-            <div className="font-bold">Target</div>
-            {properties.map((prop, index) => (
-              <input
-                key={index}
-                className="py-2 text-white bg-black bg-opacity-20 rounded px-2"
-                value={prop.target}
-                onChange={(e) => {
-                  const updated = [...properties];
-                  updated[index].target = e.target.value;
-                  setProperties(updated);
-                }}
-              />
-            ))}
-          </div>
-          <div className="flex flex-col gap-4">
-            <div className="font-bold">Metric</div>
-            {properties.map((prop, index) => (
-              <div key={index} className="py-2">{prop.metric}</div>
+              <div key={index} className="flex items-center bg-white/5 rounded-lg my-1 gap-1 overflow-hidden">
+                <div className="flex-1 py-2 px-4">{prop.name}</div>
+                <input
+                  className="flex-1 py-2 px-4 bg-white/10 backdrop-blur-sm border border-white/20 text-white rounded-lg placeholder-white/50"
+                  value={prop.value}
+                  onChange={e => handleValueChange(index, e.target.value)}
+                  placeholder="Enter value"
+                />
+                <div className="flex-1 py-2 px-4 flex justify-between items-center">
+                  <span>{prop.metric === "" ? "N/A" : prop.metric}</span>
+                  <button
+                    onClick={() => removeProperty(index)}
+                    className="ml-2 text-red-500 hover:text-red-700"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         </div>
 
         <div className="mt-12 text-center">
           <button
-            onClick={onComplete}
+            onClick={handleFindNewMarkets}
             className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl shadow-lg"
           >
-            Next Step
+            Find new markets
           </button>
+          {errorMessage && (
+            <div className="text-red-500 font-semibold mt-4">
+              {errorMessage}
+            </div>
+          )}
         </div>
       </div>
     </section>

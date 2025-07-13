@@ -7,14 +7,25 @@ import StepThree from '../../components/steps/StepThree';
 export default function DemoPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const setstepAndLoad = (nextStep) => {
+  const [geminiData, setGeminiData] = useState([]);
+  const [parsedPdfText, setParsedPdfText] = useState("");
+  const [cleanJsonText, setCleanJsonText] = useState({});
+  // useState({
+  //   material_new_market: "Review and explore Bella Biochar material metrics and market opportunities in construction and environmental remediation.",
+  //   new_markets: [
+  //     "Cement Additive",
+  //     "PFAS Remediation",
+  //     "Soil Amendment",
+  //     "Carbon Sequestration",
+  //     "Water Filtration",
+  //     "Adsorbent Material"
+  //   ]
+  // });
+  const setstepAndLoad = async (nextStep, skipDelay = false) => {
     setLoading(true);
-    setTimeout(() => {
-      setStep(nextStep);
-      setLoading(false);
-    }, 1500);
+    setStep(nextStep);
+    setLoading(false);
   };
-
 
   if (loading) {
     return (
@@ -38,9 +49,32 @@ export default function DemoPage() {
 
   return (
     <div style={{ padding: 24 }}>
-      {step === 1 && <StepOne onComplete={() => setstepAndLoad(2)} />}
-      {step === 2 && <StepTwo onComplete={() => setstepAndLoad(3)} />}
-      {step === 3 && <StepThree onComplete={() => setstepAndLoad(1)} />}
+      {step === 1 && (
+        <StepOne
+          onComplete={async (data, parsedTxt) => {
+            setGeminiData(data);
+            setParsedPdfText(parsedTxt);
+            await setstepAndLoad(2, true);
+          }}
+          geminiData={geminiData}
+          parsedPdfText={parsedPdfText}
+          setParentLoading={setLoading}
+        />
+      )}
+      {step === 2 && (
+        <StepTwo
+          geminiData={geminiData}
+          setGeminiData={setGeminiData}
+          parsedPdfText={parsedPdfText}
+          cleanJsonText={cleanJsonText}
+          setParentLoading={setLoading}
+          onComplete={(cleanText) => {
+            setCleanJsonText(cleanText);
+            setstepAndLoad(3);
+          }}
+        />
+      )}
+      {step === 3 && <StepThree cleanJsonText={cleanJsonText} parsedPdfText={parsedPdfText} geminiData={geminiData} onComplete={() => {setstepAndLoad(1)}} />}
     </div>
   );
 }

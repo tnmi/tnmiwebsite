@@ -11,10 +11,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/demo/page.js"
     ],
-    "/page": [
+    "/api/gemini/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/page.js"
+      "static/chunks/app/api/gemini/route.js"
     ]
   }
 }
