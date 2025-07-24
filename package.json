@@ -50,6 +50,7 @@
     "date-fns": "latest",
     "embla-carousel-react": "8.5.1",
     "expo": "~48.0.0",
+    "firebase": "^12.0.0",
     "framer-motion": "latest",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
@@ -70,7 +71,8 @@
     "tailwindcss-animate": "^1.0.7",
     "three": "latest",
     "typescript": "^4.9.4",
-    "zod": "latest"
+    "zod": "latest",
+    "zustand": "^5.0.6"
   },
   "devDependencies": {
     "@types/node": "^22",

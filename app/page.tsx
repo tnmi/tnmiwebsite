@@ -48,7 +48,15 @@ export default function TrueNorthWebsite() {
             <span className="text-2xl font-bold text-emerald-400 tracking-tight">TrueNorth</span>
           </motion.div>
           <div className="hidden md:flex space-x-8 text-sm font-medium text-slate-300">
-            {["platform", "technology", "how-we-help", "canada", "partnerships", "team", "contact"].map((section, idx) => (
+            {[
+              "platform",
+              "technology",
+              "how-we-help",
+              "canada",
+              "partnerships",
+              "team",
+              "contact",
+            ].map((section, idx) => (
               <motion.a
                 key={idx}
                 whileHover={{ y: -2, color: "#10b981" }}
@@ -58,6 +66,9 @@ export default function TrueNorthWebsite() {
                 {section.replace(/-/g, " ").replace(/^./, str => str.toUpperCase())}
               </motion.a>
             ))}
+            <Link href="/login">
+              <Button size="sm" className="ml-4 bg-emerald-400 text-black hover:bg-emerald-500">Login</Button>
+            </Link>
           </div>
         </div>
       </motion.nav>

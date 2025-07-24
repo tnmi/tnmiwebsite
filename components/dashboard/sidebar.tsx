@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Users, FileText, Settings, LifeBuoy } from "lucide-react"
+import { Home, Users, FileText, Settings, LifeBuoy, Box } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
 
@@ -10,6 +10,7 @@ const navigation = [
   { name: "Overview", href: "/dashboard", icon: Home },
   { name: "Partnership Matching", href: "/dashboard/partnership-matching", icon: Users },
   { name: "Compliance Reporting", href: "/dashboard/compliance-reporting", icon: FileText },
+  { name: "My Products", href: "/dashboard/my-products", icon: Box },
 ]
 
 const secondaryNavigation = [
@@ -23,9 +24,9 @@ export default function Sidebar() {
   return (
     <div className="flex flex-col w-64 bg-tn-dark-bg text-tn-text-light border-r border-gray-700">
       <div className="flex items-center h-16 px-4 border-b border-gray-700">
-        <Link href="/" className="flex items-center">
+        <Link href="/dashboard" className="flex items-center">
           <Image src="/logo.png" alt="TrueNorth Logo" width={32} height={32} className="invert mr-3" />
-          <h1 className="text-xl font-semibold text-tn-primary-green">TrueNorth AI</h1>
+          <h1 className="text-xl font-semibold text-tn-primary-green">NorthStar</h1>
         </Link>
       </div>
       <nav className="flex-1 px-2 py-4 space-y-1">

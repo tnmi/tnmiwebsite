@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, Search, UserCircle, ChevronDown } from "lucide-react"
+import { Bell, Search, UserCircle, ChevronDown, LogOut } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import {
@@ -12,52 +12,69 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
+import { useAuthStore } from "@/lib/store"
+import { useRouter } from "next/navigation"
+import { t, SupportedLang } from "@/lib/i18n"
+import { useDashboardLangStore } from "@/lib/store"
+import Link from "next/link"
 
 export default function Header() {
+  const user = useAuthStore((state) => state.user)
+  const logout = useAuthStore((state) => state.logout)
+  const router = useRouter()
+  const displayName = user?.displayName || user?.email || "User"
+
+  // Language state (Zustand)
+  const lang = useDashboardLangStore((state) => state.lang)
+  const setLang = useDashboardLangStore((state) => state.setLang)
+
+  const handleLogout = async () => {
+    await logout()
+    router.push("/login")
+  }
+
   return (
     <header className="flex items-center justify-between h-16 px-6 bg-white border-b border-gray-200">
-      <div className="flex items-center">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <Input type="search" placeholder="Search platform..." className="pl-10 w-64" />
-        </div>
-      </div>
+      {/* Remove the search platform input and icon */}
+      <div />
       <div className="flex items-center space-x-4">
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5 text-gray-500" />
-          <Badge variant="destructive" className="absolute -top-1 -right-1 px-1.5 py-0.5 text-xs">
-            3
-          </Badge>
-        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center space-x-2">
               <UserCircle className="h-6 w-6 text-gray-500" />
-              <span className="text-sm font-medium text-gray-700">Dr. Materials</span>
+              <span className="text-sm font-medium text-gray-700">{displayName}</span>
               <ChevronDown className="h-4 w-4 text-gray-400" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Billing</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/profile">Profile</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/billing">Billing</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/settings">Settings</Link>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Logout</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout} className="flex items-center text-pink-600">
+              <LogOut className="mr-2 h-4 w-4" /> {t('logout', lang)}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        {/* Language Switcher UI (functionality to be implemented) */}
+        {/* Language Switcher UI */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm">
-              EN
+              {lang === 'fr' ? 'FR' : 'EN'}
               <ChevronDown className="ml-1 h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>English (EN)</DropdownMenuItem>
-            <DropdownMenuItem>Français (FR)</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setLang('en')}>English (EN)</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setLang('fr')}>Français (FR)</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
