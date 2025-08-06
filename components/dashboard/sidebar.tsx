@@ -8,9 +8,6 @@ import Image from "next/image"
 
 const navigation = [
   { name: "Overview", href: "/dashboard", icon: Home },
-  { name: "Partnership Matching", href: "/dashboard/partnership-matching", icon: Users },
-  { name: "Compliance Reporting", href: "/dashboard/compliance-reporting", icon: FileText },
-  { name: "My Products", href: "/dashboard/my-products", icon: Box },
 ]
 
 const secondaryNavigation = [
