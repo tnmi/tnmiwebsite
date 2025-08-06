@@ -34,16 +34,14 @@ export default function DashboardLayout({
   }
 
   return (
-    <html lang="en">
-      <body className={`${inter.className} bg-tn-light-bg flex h-screen overflow-hidden`}>
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header />
-          <main className="flex-1 overflow-x-hidden overflow-y-auto bg-tn-light-bg p-6">{children}</main>
-        </div>
-        <ChatbotToggle />
-        <Toaster />
-      </body>
-    </html>
+    <div className={`${inter.className} bg-tn-light-bg flex h-screen overflow-hidden`}>
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-tn-light-bg p-6">{children}</main>
+      </div>
+      <ChatbotToggle />
+      <Toaster />
+    </div>
   )
 }

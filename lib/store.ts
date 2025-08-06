@@ -36,6 +36,15 @@ export const useAuthStore = createZustand<AuthState>((set) => {
       set({ loading: true, error: null })
       try {
         await signInWithEmailAndPassword(auth, email, password)
+        // TODO: Print JWT token when logging in to Firebase
+        const userCredential = await signInWithEmailAndPassword(auth, email, password)
+        const token = await userCredential.user.getIdToken()
+        // Send token to server to log in terminal
+        fetch('/api/log-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token })
+        }).catch(err => console.error('Failed to log token:', err))
         set({ loading: false, error: null })
       } catch (error: any) {
         let message = 'An error occurred. Please try again.'
