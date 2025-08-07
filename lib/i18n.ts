@@ -265,7 +265,7 @@ export const translations: Record<Language, Translations> = {
     valid: 'Valid',
 
     // Navigation
-    overview: 'Overview',
+    overview: 'My Products',
     dashboard: 'Dashboard',
     settings: 'Settings',
     profile: 'Profile',
@@ -489,7 +489,7 @@ export const translations: Record<Language, Translations> = {
     valid: 'Valide',
 
     // Navigation
-    overview: 'Aperçu',
+    overview: 'Mes Produits',
     dashboard: 'Tableau de bord',
     settings: 'Paramètres',
     profile: 'Profil',

@@ -1,14 +1,12 @@
 "use client"
 import React from "react"
-import { Inter } from "next/font/google"
 import Sidebar from "@/components/dashboard/sidebar"
 import Header from "@/components/dashboard/header"
 import ChatbotToggle from "@/components/dashboard/chatbot/chatbot-toggle"
 import { Toaster } from "@/components/ui/toaster"
 import { useAuthStore } from "@/lib/store"
 import { useRouter, usePathname } from "next/navigation"
-
-const inter = Inter({ subsets: ["latin"] })
+import { SidebarProvider } from "@/hooks/use-sidebar"
 
 export default function DashboardLayout({
   children,
@@ -34,14 +32,16 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className={`${inter.className} bg-tn-light-bg flex h-screen overflow-hidden`}>
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-tn-light-bg p-6">{children}</main>
+    <SidebarProvider>
+      <div className="font-satoshi bg-tn-light-bg flex h-screen overflow-hidden">
+        <Sidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header />
+          <main className="flex-1 overflow-x-hidden overflow-y-auto bg-tn-light-bg p-6">{children}</main>
+        </div>
+        <ChatbotToggle />
+        <Toaster />
       </div>
-      <ChatbotToggle />
-      <Toaster />
-    </div>
+    </SidebarProvider>
   )
 }

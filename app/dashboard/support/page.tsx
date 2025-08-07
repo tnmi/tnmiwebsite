@@ -33,24 +33,30 @@ export default function SupportPage() {
     setSubmitStatus('idle')
 
     try {
+      console.log('Submitting support form:', formData)
+      
       const response = await fetch('/api/support-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          to: 'tobias@truenorthmaterials.com'
-        }),
+        body: JSON.stringify(formData),
       })
 
+      console.log('Support form response status:', response.status)
+      
       if (response.ok) {
+        const result = await response.json()
+        console.log('Support form success:', result)
         setSubmitStatus('success')
         setFormData({ name: '', email: '', subject: '', message: '' })
       } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Support form error:', errorData)
         setSubmitStatus('error')
       }
     } catch (error) {
+      console.error('Support form exception:', error)
       setSubmitStatus('error')
     } finally {
       setIsSubmitting(false)
