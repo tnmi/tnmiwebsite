@@ -138,9 +138,7 @@ export async function submitForm(prevState: FormState | null, formData: FormData
       }
     }
 
-    console.log("Form Data validated successfully:")
-    console.log("Form Type:", formType)
-    console.log("Data:", validatedData.data)
+
 
     // --- Production Email Sending Logic (Using Resend) ---
     if (process.env.RESEND_API_KEY) {
@@ -210,13 +208,13 @@ export async function submitForm(prevState: FormState | null, formData: FormData
         if (error) {
           console.error("Error sending email with Resend:", error)
         } else {
-          console.log("Email sent successfully via Resend:", data)
+  
         }
       } catch (e) {
         console.error("Exception sending email:", e)
       }
     } else {
-      console.warn("RESEND_API_KEY not found. Skipping email sending.")
+
     }
 
     return {

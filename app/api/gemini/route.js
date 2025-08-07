@@ -1,8 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function POST(request) {
-  console.log("Gemini API route hit");
-  console.log("GEMINI_API_KEY value:", process.env.GEMINI_API_KEY ? "Loaded" : "Missing");
+
   try {
     const { query, content } = await request.json();
 

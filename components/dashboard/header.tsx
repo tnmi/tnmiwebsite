@@ -43,11 +43,8 @@ export default function Header() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>{t('profile')}</DropdownMenuLabel>
+            <DropdownMenuLabel>{t('account')}</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/dashboard/profile">{t('profile')}</Link>
-            </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link href="/dashboard/billing">{t('billing')}</Link>
             </DropdownMenuItem>

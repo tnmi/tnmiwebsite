@@ -31,7 +31,7 @@ export async function GET(request) {
     }
     
     const products = await response.json()
-    console.log('Products fetched successfully:', products.length, 'products')
+
     
     return new Response(JSON.stringify(products), {
       status: 200,

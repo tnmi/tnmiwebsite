@@ -5,10 +5,12 @@ import { Linkedin, Mail } from "lucide-react"
 import { useActionState } from "react"
 import { submitForm, type FormState as ContactFormState } from "@/app/actions/submit-form" // Adjust path if needed
 import { FormField, SubmitButton } from "@/components/ui/form-elements" // Adjust path if needed
+import { useLanguage } from "@/lib/i18n"
 
 const initialContactState: ContactFormState | null = null
 
 export default function ContactSection() {
+  const { t } = useLanguage()
   const ref = useRef<HTMLDivElement>(null)
   const isInView = useInView(ref, { once: true, margin: "-100px" })
   const [state, formAction, isPending] = useActionState(submitForm, initialContactState)
@@ -33,11 +35,10 @@ export default function ContactSection() {
           className="text-center mb-12 sm:mb-16"
         >
           <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-4 sm:mb-6 px-2 bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-emerald-400">
-            Get In Touch
+            {t('getInTouch')}
           </h2>
           <p className="text-lg sm:text-xl text-emerald-100 max-w-3xl mx-auto leading-relaxed px-4">
-            Ready to accelerate your materials innovation journey? Contact us to learn how our AI Core services can help
-            bridge the valley of death and bring sustainable innovations to market.
+            {t('contactDescription')}
           </p>
         </motion.div>
 
@@ -62,7 +63,7 @@ export default function ContactSection() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <h4 className="text-base sm:text-lg font-semibold text-white mb-1">
-                    General Inquiries
+                    {t('generalInquiries')}
                   </h4>
                   <a
                     href="mailto:jason.deacon@truenorthmaterials.com"
@@ -77,7 +78,7 @@ export default function ContactSection() {
             {/* Social Links */}
             <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-slate-700">
               <h4 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">
-                Connect With Us
+                {t('connectWithUs')}
               </h4>
               <div className="flex space-x-3 sm:space-x-4">
                 <a

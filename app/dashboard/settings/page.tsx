@@ -43,6 +43,8 @@ export default function SettingsPage() {
   const [isDeleting, setIsDeleting] = useState(false)
   const [exportStatus, setExportStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [deleteStatus, setDeleteStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
 
   // Load user data from Firebase on component mount
   useEffect(() => {
@@ -197,14 +199,10 @@ export default function SettingsPage() {
         passwordData.currentPassword
       )
       
-      console.log('Re-authenticating user...')
       await reauthenticateWithCredential(user, credential)
-      console.log('User re-authenticated successfully')
 
       // Update password using Firebase
-      console.log('Updating password...')
       await updatePassword(user, passwordData.newPassword)
-      console.log('Password updated successfully')
 
       // Clear password fields after successful update
       setPasswordData({
@@ -282,7 +280,24 @@ export default function SettingsPage() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
+        console.log('DEBUG - Response not OK:', {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries())
+        })
+        
+        let errorData
+        try {
+          errorData = await response.json()
+          console.log('DEBUG - Error data from API (JSON):', errorData)
+        } catch (jsonError) {
+          console.log('DEBUG - Failed to parse as JSON, trying text:', jsonError)
+          const textData = await response.text()
+          console.log('DEBUG - Raw text response:', textData)
+          throw new Error(`Failed to export data - Status: ${response.status}, Text: ${textData}`)
+        }
+        
+        console.log('DEBUG - Throwing error with message:', errorData.error || 'Failed to export data')
         throw new Error(errorData.error || 'Failed to export data')
       }
 
@@ -311,14 +326,17 @@ export default function SettingsPage() {
 
   const handleDeleteAllData = async () => {
     if (!user) return
+    setShowDeleteModal(true)
+  }
 
-    // Show confirmation dialog
-    const confirmed = window.confirm(t('deleteConfirmation'))
-    if (!confirmed) return
+  const handleConfirmDelete = async () => {
+    if (!user || deleteConfirmText !== 'DELETE') return
 
     setIsDeleting(true)
     setDeleteStatus('idle')
     setErrorMessage('')
+    setShowDeleteModal(false)
+    setDeleteConfirmText('')
 
     try {
       const token = await getIdToken(user)
@@ -340,9 +358,6 @@ export default function SettingsPage() {
       
       setDeleteStatus('success')
       setTimeout(() => setDeleteStatus('idle'), 3000)
-      
-      // Optionally redirect to login or show a message
-      alert(t('dataDeletedSuccessfully'))
     } catch (error: any) {
       console.error('Delete error:', error)
       setErrorMessage(error.message || t('deleteError'))
@@ -351,6 +366,11 @@ export default function SettingsPage() {
     } finally {
       setIsDeleting(false)
     }
+  }
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false)
+    setDeleteConfirmText('')
   }
 
   if (!user) {
@@ -597,22 +617,22 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="mt-6 flex flex-col gap-4">
             <Button 
               onClick={handleExportData}
               disabled={isExporting}
               variant="outline" 
-              className="border-gray-300 text-gray-700 font-medium tracking-wide flex items-center justify-center text-sm sm:text-base"
+              className="w-full h-auto py-3 px-4 border-gray-300 text-gray-700 font-medium tracking-wide flex items-center justify-center text-sm sm:text-base whitespace-nowrap overflow-hidden"
             >
               {isExporting ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {t('processing')}
+                  <Loader2 className="w-4 h-4 mr-2 flex-shrink-0 animate-spin" />
+                  <span className="truncate">{t('processing')}</span>
                 </>
               ) : (
                 <>
-                  <Download className="w-4 h-4 mr-2" />
-                  {t('exportData')}
+                  <Download className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span className="truncate">{t('exportData')}</span>
                 </>
               )}
             </Button>
@@ -620,17 +640,17 @@ export default function SettingsPage() {
               onClick={handleDeleteAllData}
               disabled={isDeleting}
               variant="outline" 
-              className="border-red-300 text-red-700 font-medium tracking-wide flex items-center justify-center text-sm sm:text-base"
+              className="w-full h-auto py-3 px-4 border-red-300 text-red-700 font-medium tracking-wide flex items-center justify-center text-sm sm:text-base whitespace-nowrap overflow-hidden"
             >
               {isDeleting ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {t('processing')}
+                  <Loader2 className="w-4 h-4 mr-2 flex-shrink-0 animate-spin" />
+                  <span className="truncate">{t('processing')}</span>
                 </>
               ) : (
                 <>
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  {t('deleteAllData')}
+                  <Trash2 className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span className="truncate">{t('deleteAllData')}</span>
                 </>
               )}
             </Button>
@@ -676,6 +696,98 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={handleCancelDelete}
+          />
+          
+          {/* Modal */}
+          <div className="relative bg-white/95 backdrop-blur-2xl border border-white/30 shadow-2xl rounded-2xl p-8 max-w-md w-full font-satoshi">
+            {/* Header */}
+            <div className="text-center mb-6">
+              <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <Trash2 className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 tracking-wide mb-2">
+                {t('deleteAllDataTitle')}
+              </h3>
+              <p className="text-gray-600 font-light tracking-wide leading-relaxed">
+                {t('deleteWarningMessage')}
+              </p>
+            </div>
+
+            {/* Warning Box */}
+            <div className="bg-red-50/80 border border-red-200 rounded-xl p-4 mb-6">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="w-5 h-5 text-red-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-red-800 font-medium tracking-wide">
+                    {t('irreversibleAction')}
+                  </p>
+                  <p className="text-red-700 text-sm font-light tracking-wide mt-1">
+                    {t('deleteWarningDetails')}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Confirmation Input */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2 tracking-wide">
+                {t('typeDeleteToConfirm')}
+              </label>
+              <Input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="DELETE"
+                className="w-full p-3 border border-gray-300 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500/50 transition-all duration-200 font-medium tracking-wider text-center text-gray-900 placeholder-gray-500"
+              />
+            </div>
+
+            {/* Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                onClick={handleCancelDelete}
+                variant="outline"
+                className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 font-medium tracking-wide"
+              >
+                {t('cancel')}
+              </Button>
+              <Button
+                onClick={handleConfirmDelete}
+                disabled={deleteConfirmText !== 'DELETE' || isDeleting}
+                className={`flex-1 font-medium tracking-wide transition-all duration-200 ${
+                  deleteConfirmText === 'DELETE' && !isDeleting
+                    ? 'bg-red-600 hover:bg-red-700 text-white'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    {t('processing')}
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    {t('deleteAllData')}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 } 

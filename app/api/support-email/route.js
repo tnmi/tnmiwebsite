@@ -61,7 +61,7 @@ export async function POST(request) {
             headers: { 'Content-Type': 'application/json' },
           })
         } else {
-          console.log("Support email sent successfully via Resend:", data)
+    
           return new Response(JSON.stringify({
             success: true,
             message: 'Email sent successfully'
@@ -78,7 +78,7 @@ export async function POST(request) {
         })
       }
     } else {
-      console.warn("RESEND_API_KEY not found. Cannot send support email.")
+
       return new Response(JSON.stringify({ error: 'Email service not configured' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },

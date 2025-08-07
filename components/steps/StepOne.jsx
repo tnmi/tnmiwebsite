@@ -31,7 +31,7 @@ export default function StepOne({ onComplete, setParentLoading, geminiData, pars
       }
 
       setCombinedPdfText((prevText) => prevText + allText);
-      console.log("Parsed PDF Text:", allText);
+
     };
     reader.readAsArrayBuffer(file);
   };
@@ -42,7 +42,7 @@ export default function StepOne({ onComplete, setParentLoading, geminiData, pars
     setIsUploading(true);
     try {
       if (!combinedPdfText.trim()) {
-        console.warn("No PDF content to send.");
+
         setIsUploading(false);
         setParentLoading(false);
         return;
@@ -61,7 +61,7 @@ export default function StepOne({ onComplete, setParentLoading, geminiData, pars
 
       try {
         const parsedJson = JSON.parse(cleanText);
-        console.log("Parsed Gemini Response as JSON:", parsedJson);
+        
         onComplete(parsedJson, combinedPdfText);
         setParentLoading(false);
         setIsUploading(false);

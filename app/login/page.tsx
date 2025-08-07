@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Globe, Eye, EyeOff, Mail, Lock, User, ArrowRight } from 'lucide-react'
+import { Globe, Eye, EyeOff, User, ArrowRight } from 'lucide-react'
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, updateProfile } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
 import { useAuthStore } from '@/lib/store'
@@ -184,32 +184,28 @@ export default function LoginPage() {
 
             <div>
               <label className="block mb-2 font-medium text-white/90 tracking-wide">{t('email')}</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-5 h-5 pointer-events-none" />
-                <Input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder={t('email')}
-                  className="w-full pl-14 p-3 border border-emerald-400 bg-slate-900 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 placeholder-white/50"
-                  required
-                />
-              </div>
+              <Input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder={`📧 ${t('email')}`}
+                className="w-full p-3 border border-emerald-400 bg-slate-900 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 placeholder-white/50"
+                required
+              />
             </div>
 
             {!isResetMode && (
               <div>
                 <label className="block mb-2 font-medium text-white/90 tracking-wide">{t('password')}</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-5 h-5 pointer-events-none" />
                   <Input
                     type={showPassword ? "text" : "password"}
                     name="password"
                     value={formData.password}
                     onChange={handleInputChange}
-                    placeholder={t('password')}
-                    className="w-full pl-14 pr-12 p-3 border border-emerald-400 bg-slate-900 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 placeholder-white/50"
+                    placeholder={`🔒 ${t('password')}`}
+                    className="w-full pr-12 p-3 border border-emerald-400 bg-slate-900 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 placeholder-white/50"
                     required
                   />
                   <button
@@ -227,14 +223,13 @@ export default function LoginPage() {
               <div>
                 <label className="block mb-2 font-medium text-white/90 tracking-wide">{t('confirmPassword')}</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-5 h-5 pointer-events-none" />
                   <Input
                     type={showConfirmPassword ? "text" : "password"}
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
-                    placeholder={t('confirmPassword')}
-                    className="w-full pl-14 pr-12 p-3 border border-emerald-400 bg-slate-900 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 placeholder-white/50"
+                    placeholder={`🔒 ${t('confirmPassword')}`}
+                    className="w-full pr-12 p-3 border border-emerald-400 bg-slate-900 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 placeholder-white/50"
                     required
                   />
                   <button

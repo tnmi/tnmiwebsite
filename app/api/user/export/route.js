@@ -1,24 +1,10 @@
-import { auth } from '@/lib/firebase'
-import { getIdToken } from 'firebase/auth'
-
 export async function GET(request) {
   try {
     // Get the authorization header
     const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
-
-    const token = authHeader.split('Bearer ')[1]
     
-    // Verify the token with Firebase
-    try {
-      await auth.verifyIdToken(token)
-    } catch (error) {
-      return new Response(JSON.stringify({ error: 'Invalid token' }), {
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Authorization header required' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
       })
@@ -28,25 +14,55 @@ export async function GET(request) {
     const response = await fetch('https://upload-file-194429268019.northamerica-northeast2.run.app/user/export', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+        'Authorization': authHeader
+      }
     })
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      console.error('Export API error:', errorData)
+      console.log('DEBUG - External API response not OK:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      })
+      
+      let errorData
+      try {
+        errorData = await response.json()
+        console.log('DEBUG - External API error data (JSON):', errorData)
+      } catch (jsonError) {
+        console.log('DEBUG - External API response not JSON, trying text:', jsonError)
+        const textData = await response.text()
+        console.log('DEBUG - External API raw text response:', textData)
+        errorData = { error: textData }
+      }
+      
+      console.log('DEBUG - Returning error response:', {
+        error: 'Failed to export user data',
+        details: errorData.error || 'Unknown error',
+        originalStatus: response.status,
+        originalData: errorData
+      })
+      
       return new Response(JSON.stringify({ 
         error: 'Failed to export user data',
-        details: errorData.error || 'Unknown error'
+        details: errorData.error || 'Unknown error',
+        originalStatus: response.status,
+        originalData: errorData
       }), {
         status: response.status,
         headers: { 'Content-Type': 'application/json' },
       })
     }
 
+    console.log('DEBUG - External API success response:', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers.entries())
+    })
+    
     // Get the zip file as a blob
     const zipBlob = await response.blob()
+    console.log('DEBUG - Blob created successfully, size:', zipBlob.size, 'bytes')
     
     // Return the zip file with proper headers
     return new Response(zipBlob, {

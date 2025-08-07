@@ -1,7 +1,7 @@
 export async function POST(request) {
   try {
     const { token } = await request.json()
-    console.log('JWT Token:', token)
+  
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },

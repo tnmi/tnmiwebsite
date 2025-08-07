@@ -72,7 +72,7 @@ export const useAuthStore = createZustand<AuthState>((set) => {
 
 const getInitialLang = () => {
   if (typeof window !== 'undefined') {
-    return (localStorage.getItem('dashboardLang') as 'en' | 'fr') || 'en'
+    return (localStorage.getItem('language') as 'en' | 'fr') || 'en'
   }
   return 'en'
 }
@@ -81,7 +81,7 @@ export const useDashboardLangStore = createZustand<{ lang: 'en' | 'fr'; setLang:
   lang: getInitialLang(),
   setLang: (lang) => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('dashboardLang', lang)
+      localStorage.setItem('language', lang)
     }
     set({ lang })
   },

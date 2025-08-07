@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useDashboardLangStore } from './store'
 
 export type Language = 'en' | 'fr'
 
@@ -44,6 +45,7 @@ export interface Translations {
   dashboard: string
   settings: string
   profile: string
+  account: string
   support: string
   billing: string
   logout: string
@@ -117,8 +119,23 @@ export interface Translations {
   productUpdated: string
   productDeleted: string
   trlLevel: string
+  attachedFiles: string
+  noFilesAttached: string
+  deleteFile: string
+  confirmDeleteFile: string
+  fileDeleted: string
+  deleteFileFailed: string
+  originalFileName: string
+  uploadedAt: string
   techSheet: string
   techSheetUrl: string
+  addFile: string
+  uploadProduct: string
+  manageProductFiles: string
+  noDescription: string
+  techSheetAvailable: string
+  viewTechSheet: string
+  deleting: string
 
   // Settings
   personalInformation: string
@@ -146,14 +163,24 @@ export interface Translations {
   deleteConfirmation: string
   dataDeletedSuccessfully: string
   deleteError: string
+  deleteAllDataTitle: string
+  deleteWarningMessage: string
+  irreversibleAction: string
+  deleteWarningDetails: string
+  typeDeleteToConfirm: string
 
   // Support
   supportTitle: string
+  supportDescription: string
   contactUs: string
   sendMessage: string
   message: string
   subject: string
   name: string
+  yourName: string
+  yourEmail: string
+  supportSubjectPlaceholder: string
+  supportMessagePlaceholder: string
   phone: string
   company: string
   messageSent: string
@@ -164,6 +191,23 @@ export interface Translations {
   technicalSupport: string
   accountBilling: string
   partnershipInquiries: string
+
+  // Contact Section
+  getInTouch: string
+  contactDescription: string
+  contactInfo: string
+  ourMission: string
+  missionDescription: string
+  readyToStart: string
+  scheduleCall: string
+  generalInquiries: string
+  connectWithUs: string
+
+  // Dashboard Navigation
+  quickAccess: string
+  mainWebsite: string
+  aiCoreDevelopment: string
+  aiCoreDescription: string
 
   // Form validation
   fieldRequired: string
@@ -225,6 +269,7 @@ export const translations: Record<Language, Translations> = {
     dashboard: 'Dashboard',
     settings: 'Settings',
     profile: 'Profile',
+    account: 'Account',
     support: 'Support',
     billing: 'Billing',
     logout: 'Logout',
@@ -298,8 +343,23 @@ export const translations: Record<Language, Translations> = {
     productUpdated: 'Product updated successfully',
     productDeleted: 'Product deleted successfully',
     trlLevel: 'TRL Level',
+    attachedFiles: 'Attached Files',
+    noFilesAttached: 'No files attached',
+    deleteFile: 'Delete File',
+    confirmDeleteFile: 'Are you sure you want to delete this file?',
+    fileDeleted: 'File deleted successfully',
+    deleteFileFailed: 'Failed to delete file',
+    originalFileName: 'Original Name',
+    uploadedAt: 'Uploaded At',
     techSheet: 'Tech Sheet',
     techSheetUrl: 'Tech Sheet URL',
+    addFile: 'Add Files',
+    uploadProduct: 'Upload Product',
+    manageProductFiles: 'Upload and manage your product files',
+    noDescription: 'No description available',
+    techSheetAvailable: 'Tech Sheet Available',
+    viewTechSheet: 'View Tech Sheet PDF',
+    deleting: 'Deleting...',
 
     // Settings
     personalInformation: 'Personal Information',
@@ -326,21 +386,43 @@ export const translations: Record<Language, Translations> = {
 
     // Support
     supportTitle: 'Support',
+    supportDescription: 'Need help? Contact our support team and we\'ll get back to you as soon as possible.',
     contactUs: 'Contact Us',
-    sendMessage: 'Send us a message',
+    sendMessage: 'Send Message',
     message: 'Message',
     subject: 'Subject',
     name: 'Name',
+    yourName: 'Your name',
+    yourEmail: 'your.email@example.com',
+    supportSubjectPlaceholder: 'What can we help you with?',
+    supportMessagePlaceholder: 'Please describe your issue or question in detail...',
     phone: 'Phone',
     company: 'Company',
-    messageSent: 'Message sent successfully!',
-    messageError: 'Failed to send message',
+    messageSent: 'Thank you! Your message has been sent successfully. We\'ll get back to you soon.',
+    messageError: 'Sorry, there was an error sending your message. Please try again or contact us directly.',
     responseTime: 'We typically respond within 24 hours during business days.',
     commonTopics: 'Common Support Topics',
     productInformation: 'Product information and specifications',
     technicalSupport: 'Technical support and troubleshooting',
     accountBilling: 'Account and billing questions',
     partnershipInquiries: 'Partnership and collaboration inquiries',
+
+    // Contact Section
+    getInTouch: 'Get In Touch',
+    contactDescription: 'Ready to accelerate your materials innovation journey? Contact us to learn how our AI Core services can help bridge the valley of death and bring sustainable innovations to market.',
+    contactInfo: 'Contact Information',
+    ourMission: 'Our Mission',
+    missionDescription: 'We bridge the gap between cutting-edge research and market-ready solutions.',
+    readyToStart: 'Ready to Start?',
+    scheduleCall: 'Schedule a Call',
+    generalInquiries: 'General Inquiries',
+    connectWithUs: 'Connect With Us',
+
+    // Dashboard Navigation
+    quickAccess: 'Quick Access',
+    mainWebsite: 'Main Website',
+    aiCoreDevelopment: 'AI Core Development',
+    aiCoreDescription: 'We partner with you to build custom AI Cores tailored to your industry needs.',
 
     // Form validation
     fieldRequired: 'This field is required',
@@ -363,6 +445,11 @@ export const translations: Record<Language, Translations> = {
     deleteConfirmation: 'Are you sure you want to delete all your data? This action cannot be undone.',
     dataDeletedSuccessfully: 'All your data has been deleted successfully.',
     deleteError: 'Failed to delete data. Please try again.',
+    deleteAllDataTitle: 'Delete All Your Data',
+    deleteWarningMessage: 'This action will permanently remove all your account data, including products, files, and personal information.',
+    irreversibleAction: 'This action is IRREVERSIBLE',
+    deleteWarningDetails: 'Once deleted, your data cannot be recovered. Please make sure you have exported any important information before proceeding.',
+    typeDeleteToConfirm: 'Type "DELETE" to confirm this action:',
   },
   fr: {
     // Common
@@ -406,6 +493,7 @@ export const translations: Record<Language, Translations> = {
     dashboard: 'Tableau de bord',
     settings: 'Paramètres',
     profile: 'Profil',
+    account: 'Compte',
     support: 'Support',
     billing: 'Facturation',
     logout: 'Déconnexion',
@@ -479,8 +567,23 @@ export const translations: Record<Language, Translations> = {
     productUpdated: 'Produit mis à jour avec succès',
     productDeleted: 'Produit supprimé avec succès',
     trlLevel: 'Niveau TRL',
+    attachedFiles: 'Fichiers joints',
+    noFilesAttached: 'Aucun fichier joint',
+    deleteFile: 'Supprimer le fichier',
+    confirmDeleteFile: 'Êtes-vous sûr de vouloir supprimer ce fichier ?',
+    fileDeleted: 'Fichier supprimé avec succès',
+    deleteFileFailed: 'Échec de la suppression du fichier',
+    originalFileName: 'Nom original',
+    uploadedAt: 'Téléversé le',
     techSheet: 'Fiche technique',
     techSheetUrl: 'URL de la fiche technique',
+    addFile: 'Ajouter des fichiers',
+    uploadProduct: 'Téléverser un produit',
+    manageProductFiles: 'Téléversez et gérez vos fichiers de produits',
+    noDescription: 'Aucune description disponible',
+    techSheetAvailable: 'Fiche technique disponible',
+    viewTechSheet: 'Voir la fiche technique PDF',
+    deleting: 'Suppression...',
 
     // Settings
     personalInformation: 'Informations personnelles',
@@ -507,21 +610,43 @@ export const translations: Record<Language, Translations> = {
 
     // Support
     supportTitle: 'Support',
+    supportDescription: 'Besoin d\'aide ? Contactez notre équipe de support et nous vous répondrons dès que possible.',
     contactUs: 'Nous contacter',
-    sendMessage: 'Envoyez-nous un message',
+    sendMessage: 'Envoyer le message',
     message: 'Message',
     subject: 'Sujet',
     name: 'Nom',
+    yourName: 'Votre nom',
+    yourEmail: 'votre.email@exemple.com',
+    supportSubjectPlaceholder: 'Comment pouvons-nous vous aider ?',
+    supportMessagePlaceholder: 'Veuillez décrire votre problème ou question en détail...',
     phone: 'Téléphone',
     company: 'Entreprise',
-    messageSent: 'Message envoyé avec succès !',
-    messageError: 'Échec de l\'envoi du message',
+    messageSent: 'Merci ! Votre message a été envoyé avec succès. Nous vous répondrons bientôt.',
+    messageError: 'Désolé, il y a eu une erreur lors de l\'envoi de votre message. Veuillez réessayer ou nous contacter directement.',
     responseTime: 'Nous répondons généralement dans les 24 heures pendant les jours ouvrables.',
     commonTopics: 'Sujets de support courants',
     productInformation: 'Informations et spécifications des produits',
     technicalSupport: 'Support technique et dépannage',
     accountBilling: 'Questions sur le compte et la facturation',
     partnershipInquiries: 'Demandes de partenariat et de collaboration',
+
+    // Contact Section
+    getInTouch: 'Entrer en contact',
+    contactDescription: 'Prêt à accélérer votre parcours d\'innovation matérielle ? Contactez-nous pour apprendre comment nos services de cœur IA peuvent aider à combler la vallée de la mort et amener des innovations durables sur le marché.',
+    contactInfo: 'Informations de contact',
+    ourMission: 'Notre mission',
+    missionDescription: 'Nous comblons l\'écart entre la recherche de pointe et les solutions prêtes pour le marché.',
+    readyToStart: 'Prêt à commencer ?',
+    scheduleCall: 'Planifier un appel',
+    generalInquiries: 'Demandes générales',
+    connectWithUs: 'Connectez-vous avec nous',
+
+    // Dashboard Navigation
+    quickAccess: 'Accès rapide',
+    mainWebsite: 'Site web principal',
+    aiCoreDevelopment: 'Développement de cœur IA',
+    aiCoreDescription: 'Nous nous associons avec vous pour construire des cœurs IA personnalisés adaptés aux besoins de votre industrie.',
 
     // Form validation
     fieldRequired: 'Ce champ est requis',
@@ -544,29 +669,21 @@ export const translations: Record<Language, Translations> = {
     deleteConfirmation: 'Êtes-vous sûr de vouloir supprimer toutes vos données ? Cette action ne peut pas être annulée.',
     dataDeletedSuccessfully: 'Toutes vos données ont été supprimées avec succès.',
     deleteError: 'Échec de la suppression des données. Veuillez réessayer.',
+    deleteAllDataTitle: 'Supprimer toutes vos données',
+    deleteWarningMessage: 'Cette action supprimera définitivement toutes les données de votre compte, y compris les produits, fichiers et informations personnelles.',
+    irreversibleAction: 'Cette action est IRRÉVERSIBLE',
+    deleteWarningDetails: 'Une fois supprimées, vos données ne peuvent pas être récupérées. Assurez-vous d\'avoir exporté toute information importante avant de continuer.',
+    typeDeleteToConfirm: 'Tapez "DELETE" pour confirmer cette action :',
   }
 }
 
 export const useLanguage = () => {
-  const [language, setLanguage] = useState<Language>('en')
+  const language = useDashboardLangStore((state) => state.lang)
+  const setLanguage = useDashboardLangStore((state) => state.setLang)
 
   const t = (key: keyof Translations): string => {
     return translations[language][key] || key
   }
 
-  const changeLanguage = (newLanguage: Language) => {
-    setLanguage(newLanguage)
-    // Store in localStorage for persistence
-    localStorage.setItem('language', newLanguage)
-  }
-
-  // Load language from localStorage on mount
-  useEffect(() => {
-    const savedLanguage = localStorage.getItem('language') as Language
-    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'fr')) {
-      setLanguage(savedLanguage)
-    }
-  }, [])
-
-  return { language, setLanguage: changeLanguage, t }
+  return { language, setLanguage, t }
 } 

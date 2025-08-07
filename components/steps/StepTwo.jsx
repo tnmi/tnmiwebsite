@@ -33,18 +33,13 @@ export default function StepTwo({ geminiData,  setGeminiData, parsedPdfText, set
         query: "Given the following tech sheet and material properties I need you to return back a json file formatted STRICTLY in the following format { material_new_market: A brief one liner about this material along the lines of Review and explore biochar material metrics and market opportunities, new_markets: [ An array of new potential markets based on the properties of this material and the property goals set. Name Only the new market!! ] }",
         content: parsedPdfText + geminiData,
       });
-      console.log(parsedPdfText)
-      console.log(geminiData)
       const cleanText = response.data.text
         .replace(/```json/g, "")
         .replace(/```/g, "")
         .replace(/\n/g, "")
         .trim();
-      console.log(cleanText)
       try {
         const parsedJson = JSON.parse(cleanText);
-        console.log("Parsed Gemini New Market Response as JSON:");
-        console.log(parsedJson);
         onComplete(parsedJson);
         setParentLoading(false);
       } catch (e) {

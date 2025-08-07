@@ -48,8 +48,7 @@ export default function StepThree({ cleanJsonText, parsedPdfText, geminiData, on
           .replace(/```/g, "")
           .replace(/\n/g, "")
           .trim();
-        console.log("WEbistes")
-        console.log(cleanText)
+        
         const parsedJson = JSON.parse(cleanText);
         setMarketCompanies(prev => ({ ...prev, ...parsedJson }));
       } catch (error) {
@@ -84,7 +83,7 @@ Only return a valid JSON object, nothing else.`,
           .replace(/```/g, "")
           .replace(/\n/g, "")
           .trim();
-        console.log(cleanText);
+
 
         const parsedJson = JSON.parse(cleanText);
         setMarketAnalysis(prev => ({ ...prev, ...parsedJson.markets }));

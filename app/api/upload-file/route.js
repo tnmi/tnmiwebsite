@@ -54,7 +54,7 @@ export async function POST(request) {
     }
     
     const result = await response.json()
-    console.log('Upload successful:', result)
+
     
     return new Response(JSON.stringify(result), {
       status: 200,
