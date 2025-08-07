@@ -1,12 +1,14 @@
 "use client"
-import { useRef } from "react"
-import { motion, useScroll, useTransform } from "framer-motion"
-import { Linkedin, Mail, ChevronDown } from "lucide-react"
+import { useRef, useState, useEffect } from "react"
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
+import { Linkedin, Mail, ChevronDown, Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import BackgroundVideo from "@/components/background-video"
 import Link from "next/link"
 import Image from "next/image"
 import dynamic from "next/dynamic"
+import { useAuthStore } from "@/lib/store"
+import { useRouter } from "next/navigation"
 
 const SectionLoading = () => (
   <div className="min-h-screen bg-black flex items-center justify-center">
@@ -32,6 +34,59 @@ export default function TrueNorthWebsite() {
   const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start start", "end end"] })
   const heroOpacity = useTransform(scrollYProgress, [0, 0.3], [1, 0])
   const heroScale = useTransform(scrollYProgress, [0, 0.3], [1, 0.8])
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const router = useRouter()
+
+  const navigationItems = [
+    "platform",
+    "technology", 
+    "how-we-help",
+    "canada",
+    "partnerships",
+    "team",
+    "contact",
+  ]
+
+  const handleMobileMenuClick = (href: string) => {
+    setIsMobileMenuOpen(false)
+    // Small delay to allow menu to close before scrolling
+    setTimeout(() => {
+      document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' })
+    }, 100)
+  }
+
+  const handleLoginClick = () => {
+    if (isAuthenticated) {
+      router.push('/dashboard')
+    } else {
+      router.push('/login')
+    }
+  }
+
+  // Close mobile menu on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (isMobileMenuOpen) {
+        setIsMobileMenuOpen(false)
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [isMobileMenuOpen])
+
+  // Close mobile menu on escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isMobileMenuOpen) {
+        setIsMobileMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [isMobileMenuOpen])
 
   return (
     <div ref={containerRef} className="relative font-['Satoshi',sans-serif] bg-[#0f172a]">
@@ -42,21 +97,15 @@ export default function TrueNorthWebsite() {
         transition={{ duration: 1, delay: 0.5 }}
         className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/10 shadow-md"
       >
-        <div className="flex justify-between items-center max-w-7xl mx-auto px-6 py-4">
+        <div className="flex justify-between items-center max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <motion.div whileHover={{ scale: 1.05 }} className="flex items-center space-x-3">
             <Image src="/logo.png" alt="TrueNorth Logo" width={32} height={32} className="invert" />
-            <span className="text-2xl font-bold text-emerald-400 tracking-tight">TrueNorth</span>
+            <span className="text-xl sm:text-2xl font-bold text-emerald-400 tracking-tight">TrueNorth</span>
           </motion.div>
+          
+          {/* Desktop Navigation */}
           <div className="hidden md:flex space-x-8 text-sm font-medium text-slate-300">
-            {[
-              "platform",
-              "technology",
-              "how-we-help",
-              "canada",
-              "partnerships",
-              "team",
-              "contact",
-            ].map((section, idx) => (
+            {navigationItems.map((section, idx) => (
               <motion.a
                 key={idx}
                 whileHover={{ y: -2, color: "#10b981" }}
@@ -66,11 +115,67 @@ export default function TrueNorthWebsite() {
                 {section.replace(/-/g, " ").replace(/^./, str => str.toUpperCase())}
               </motion.a>
             ))}
-            <Link href="/login">
-              <Button size="sm" className="ml-4 bg-emerald-400 text-black hover:bg-emerald-500">Login</Button>
-            </Link>
+            <Button 
+              size="sm" 
+              className="ml-4 bg-emerald-400 text-black hover:bg-emerald-500"
+              onClick={handleLoginClick}
+            >
+              {isAuthenticated ? 'Dashboard' : 'Login'}
+            </Button>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden">
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="text-slate-300 hover:text-emerald-400 transition-colors"
+              aria-label="Toggle mobile menu"
+            >
+              {isMobileMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Navigation Menu */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="md:hidden bg-black/95 backdrop-blur-xl border-t border-white/10"
+            >
+              <div className="px-4 py-6 space-y-4">
+                {navigationItems.map((section, idx) => (
+                  <motion.button
+                    key={idx}
+                    whileHover={{ x: 10, color: "#10b981" }}
+                    onClick={() => handleMobileMenuClick(`#${section}`)}
+                    className="block w-full text-left text-slate-300 hover:text-emerald-400 transition-colors py-2 text-lg font-medium"
+                  >
+                    {section.replace(/-/g, " ").replace(/^./, str => str.toUpperCase())}
+                  </motion.button>
+                ))}
+                <div className="pt-4 border-t border-white/10">
+                  <Button 
+                    className="w-full bg-emerald-400 text-black hover:bg-emerald-500 font-medium"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false)
+                      handleLoginClick()
+                    }}
+                  >
+                    {isAuthenticated ? 'Dashboard' : 'Login'}
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.nav>
 
       {/* Hero Section */}

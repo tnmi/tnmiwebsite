@@ -321,43 +321,43 @@ export default function MyProductsPage() {
   }
 
   return (
-    <div className="space-y-6 font-satoshi">
+    <div className="space-y-4 sm:space-y-6 font-satoshi px-4 sm:px-6">
       <Card className="bg-gradient-to-r from-tn-primary-blue/20 via-tn-deep-blue/20 to-tn-dark-bg/20 text-white backdrop-blur-xl border border-white/20 shadow-2xl">
-        <CardHeader>
-          <CardTitle className="text-3xl font-light tracking-wide">My Products</CardTitle>
-          <CardDescription className="text-white/80 font-light tracking-wide">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-2xl sm:text-3xl font-light tracking-wide">My Products</CardTitle>
+          <CardDescription className="text-white/80 font-light tracking-wide text-sm sm:text-base">
             Upload and manage your product files
           </CardDescription>
         </CardHeader>
       </Card>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
         {/* + Card */}
         <Card className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-500 cursor-pointer group shadow-xl hover:shadow-2xl">
-          <CardContent className="flex flex-col items-center justify-center h-48 p-6" onClick={openAddModal}>
-            <Plus className="w-12 h-12 text-tn-primary-green/90 mb-3 group-hover:text-tn-primary-green group-hover:scale-110 transition-all duration-300" />
-            <span className="text-gray-800 font-light tracking-wide text-center drop-shadow-sm">Upload Product</span>
+          <CardContent className="flex flex-col items-center justify-center h-40 sm:h-48 p-4 sm:p-6" onClick={openAddModal}>
+            <Plus className="w-10 sm:w-12 h-10 sm:h-12 text-tn-primary-green/90 mb-2 sm:mb-3 group-hover:text-tn-primary-green group-hover:scale-110 transition-all duration-300" />
+            <span className="text-gray-800 font-light tracking-wide text-center drop-shadow-sm text-sm sm:text-base">Upload Product</span>
           </CardContent>
         </Card>
         
         {/* Product Cards */}
         {Array.isArray(products) && products.map((prod, idx) => (
           <Card key={idx} className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-500 cursor-pointer group shadow-xl hover:shadow-2xl" onClick={() => openProductModal(prod)}>
-            <CardContent className="p-6 h-48 flex flex-col">
+            <CardContent className="p-4 sm:p-6 h-40 sm:h-48 flex flex-col">
               <div className="flex-1">
-                <h3 className="font-medium text-lg mb-3 text-gray-800 truncate tracking-wide drop-shadow-sm" title={prod.name || prod.product_name}>
+                <h3 className="font-medium text-base sm:text-lg mb-2 sm:mb-3 text-gray-800 truncate tracking-wide drop-shadow-sm" title={prod.name || prod.product_name}>
                   {prod.name || prod.product_name || 'Unnamed Product'}
                 </h3>
-                <p className="text-sm text-gray-700 mb-2 font-light tracking-wide drop-shadow-sm">
+                <p className="text-xs sm:text-sm text-gray-700 mb-1 sm:mb-2 font-light tracking-wide drop-shadow-sm">
                   {prod.trlLevel && `TRL Level: ${prod.trlLevel}`}
                 </p>
-                <p className="text-xs text-gray-600 line-clamp-3 font-light tracking-wide leading-relaxed drop-shadow-sm">
+                <p className="text-xs text-gray-600 line-clamp-2 sm:line-clamp-3 font-light tracking-wide leading-relaxed drop-shadow-sm">
                   {prod.description || 'No description available'}
                 </p>
               </div>
               {prod.techSheetUrl && (
-                <div className="flex items-center mt-3 text-xs text-gray-700">
-                  <FileText className="w-4 h-4 mr-2" />
+                <div className="flex items-center mt-2 sm:mt-3 text-xs text-gray-700">
+                  <FileText className="w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2" />
                   <span className="font-light tracking-wide drop-shadow-sm">Tech Sheet Available</span>
                 </div>
               )}
@@ -368,24 +368,24 @@ export default function MyProductsPage() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-[999999] flex items-center justify-center">
-          <Card className="w-full max-w-md mx-4 bg-white/95 backdrop-blur-2xl border border-white/30 shadow-2xl font-satoshi relative z-[999999]">
-            <CardHeader className="relative">
-              <button onClick={closeModal} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl transition-colors duration-200">
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4">
+          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-2xl border border-white/30 shadow-2xl font-satoshi relative z-[999999]">
+            <CardHeader className="relative p-4 sm:p-6">
+              <button onClick={closeModal} className="absolute top-3 sm:top-4 right-3 sm:right-4 text-gray-500 hover:text-gray-700 text-xl transition-colors duration-200">
                 &times;
               </button>
               {modalProduct ? (
                 <div>
-                  <CardTitle className="text-xl mb-2 font-medium text-gray-800 tracking-wide">{modalProduct.name || modalProduct.product_name || 'Unnamed Product'}</CardTitle>
-                  <CardDescription className="text-gray-600 font-light tracking-wide">
+                  <CardTitle className="text-lg sm:text-xl mb-2 font-medium text-gray-800 tracking-wide pr-8">{modalProduct.name || modalProduct.product_name || 'Unnamed Product'}</CardTitle>
+                  <CardDescription className="text-gray-600 font-light tracking-wide text-sm sm:text-base">
                     {modalProduct.trlLevel && `TRL Level: ${modalProduct.trlLevel}`}
                   </CardDescription>
                 </div>
               ) : (
-                <CardTitle className="text-xl font-medium text-gray-800 tracking-wide">Upload File</CardTitle>
+                <CardTitle className="text-lg sm:text-xl font-medium text-gray-800 tracking-wide pr-8">Upload File</CardTitle>
               )}
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6">
               {modalProduct ? (
                 <div className="space-y-4">
                   <div className="text-gray-700 font-light tracking-wide leading-relaxed">
@@ -400,14 +400,14 @@ export default function MyProductsPage() {
                     </div>
                   )}
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="border-gray-300 text-white font-light tracking-wide transition-all duration-200" onClick={() => {
+                    <Button variant="outline" size="sm" className="border-gray-300 text-white font-light tracking-wide transition-all duration-200 text-xs sm:text-sm" onClick={() => {
                       setEditMode(true)
                       setName(modalProduct.name || modalProduct.product_name || '')
                       setTrlLevel(modalProduct.trlLevel || '')
                       setDescription(modalProduct.description || '')
                       setTechSheetFile(undefined)
                     }}>
-                      <Pencil className="w-4 h-4 mr-1 text-white" />
+                      <Pencil className="w-3 sm:w-4 h-3 sm:h-4 mr-1 text-white" />
                       Edit
                     </Button>
                   </div>
@@ -455,15 +455,15 @@ export default function MyProductsPage() {
                           rows={3}
                         />
                       </div>
-                      <div className="flex gap-2">
-                        <Button type="submit" className="flex-1 bg-tn-primary-blue hover:bg-tn-primary-blue/90 text-white font-medium tracking-wide transition-all duration-200" disabled={editing}>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Button type="submit" className="flex-1 bg-tn-primary-blue hover:bg-tn-primary-blue/90 text-white font-medium tracking-wide transition-all duration-200 text-xs sm:text-sm" disabled={editing}>
                           {editing ? 'Saving...' : 'Save Changes'}
                         </Button>
-                        <Button type="button" variant="outline" className="flex-1 border-gray-300 text-white font-medium tracking-wide transition-all duration-200" onClick={() => setEditMode(false)}>
-                          <X className="w-4 h-4 mr-1 text-white" />
+                        <Button type="button" variant="outline" className="flex-1 border-gray-300 text-white font-medium tracking-wide transition-all duration-200 text-xs sm:text-sm" onClick={() => setEditMode(false)}>
+                          <X className="w-3 sm:w-4 h-3 sm:h-4 mr-1 text-white" />
                           Cancel
                         </Button>
-                        <Button type="button" variant="destructive" className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium tracking-wide transition-all duration-200" onClick={handleDeleteProduct} disabled={deleting}>
+                        <Button type="button" variant="destructive" className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium tracking-wide transition-all duration-200 text-xs sm:text-sm" onClick={handleDeleteProduct} disabled={deleting}>
                           {deleting ? 'Deleting...' : 'Delete'}
                         </Button>
                       </div>
@@ -519,7 +519,7 @@ export default function MyProductsPage() {
                       </div>
                     )}
                   </div>
-                  <Button type="submit" className="w-full bg-tn-primary-blue hover:bg-tn-primary-blue/90 text-white font-medium tracking-wide transition-all duration-200" disabled={adding}>
+                  <Button type="submit" className="w-full bg-tn-primary-blue hover:bg-tn-primary-blue/90 text-white font-medium tracking-wide transition-all duration-200 text-sm sm:text-base" disabled={adding}>
                     {adding ? 'Uploading...' : 'Upload File'}
                   </Button>
                 </form>

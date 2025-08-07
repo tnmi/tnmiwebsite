@@ -14,19 +14,15 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { useAuthStore } from "@/lib/store"
 import { useRouter } from "next/navigation"
-import { t, SupportedLang } from "@/lib/i18n"
-import { useDashboardLangStore } from "@/lib/store"
+import { useLanguage } from "@/lib/i18n"
 import Link from "next/link"
 
 export default function Header() {
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
   const router = useRouter()
+  const { language, setLanguage, t } = useLanguage()
   const displayName = user?.displayName || user?.email || "User"
-
-  // Language state (Zustand)
-  const lang = useDashboardLangStore((state) => state.lang)
-  const setLang = useDashboardLangStore((state) => state.setLang)
 
   const handleLogout = async () => {
     await logout()
@@ -47,20 +43,20 @@ export default function Header() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuLabel>{t('profile')}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/dashboard/profile">Profile</Link>
+              <Link href="/dashboard/profile">{t('profile')}</Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href="/dashboard/billing">Billing</Link>
+              <Link href="/dashboard/billing">{t('billing')}</Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href="/dashboard/settings">Settings</Link>
+              <Link href="/dashboard/settings">{t('settings')}</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="flex items-center text-pink-600">
-              <LogOut className="mr-2 h-4 w-4" /> {t('logout', lang)}
+              <LogOut className="mr-2 h-4 w-4" /> {t('logout')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -68,13 +64,13 @@ export default function Header() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm">
-              {lang === 'fr' ? 'FR' : 'EN'}
+              {language === 'fr' ? 'FR' : 'EN'}
               <ChevronDown className="ml-1 h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setLang('en')}>English (EN)</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setLang('fr')}>Français (FR)</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setLanguage('en')}>English (EN)</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setLanguage('fr')}>Français (FR)</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
