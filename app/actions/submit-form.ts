@@ -99,148 +99,69 @@ export async function submitForm(
 ): Promise<FormState> {
   const formType = formData.get("formType") as string;
   const rawData  = Object.fromEntries(formData.entries());
-
-  let validatedData
-  try {
-    switch (formType) {
-      case "Request a Demo":
-        validatedData = requestDemoSchema.safeParse(rawData)
-        break
-      case "Startup Partnership":
-        validatedData = startupPartnershipSchema.safeParse(rawData)
-        break
-      case "Industry Partnership":
-        validatedData = industryPartnershipSchema.safeParse(rawData)
-        break
-      case "Canadian Partnerships":
-        validatedData = canadianPartnershipsSchema.safeParse(rawData)
-        break
-      case "Contact Us":
-        validatedData = contactUsSchema.safeParse(rawData)
-        break
-      default:
-        return { success: false, message: "Invalid form type." }
-    }
-
-    if (!validatedData.success) {
-      const fieldErrors: Record<string, string[]> = {}
-      for (const issue of validatedData.error.issues) {
-        fieldErrors[issue.path.join(".")] = [issue.message]
-      }
-      return {
-        success: false,
-        message: "Validation failed. Please check your input.",
-        errors: fieldErrors,
-      }
-    }
-
-
-
-    // --- Production Email Sending Logic (Using Resend) ---
-    if (process.env.RESEND_API_KEY) {
-      const resend = new Resend(process.env.RESEND_API_KEY)
-      const emailTo = "tobias@truenorthmaterials.com"
-
-      // Attempt to get a company name or individual name for the subject line
-      let subjectIdentifier = "N/A"
-      if ("companyName" in validatedData.data && validatedData.data.companyName) {
-        subjectIdentifier = validatedData.data.companyName as string
-      } else if ("organizationName" in validatedData.data && validatedData.data.organizationName) {
-        subjectIdentifier = validatedData.data.organizationName as string
-      } else if ("name" in validatedData.data && validatedData.data.name) {
-        subjectIdentifier = validatedData.data.name as string
-      } else if ("contactName" in validatedData.data && validatedData.data.contactName) {
-        subjectIdentifier = validatedData.data.contactName as string
-      }
-
-      const emailSubject = `New Submission: ${formType} - ${subjectIdentifier}`
-
-      // Create a more formatted HTML email
-      let emailBodyHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #10b981;">New ${formType} Submission</h1>
-          <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px;">
-      `
-      
-      for (const [key, value] of Object.entries(validatedData.data)) {
-        if (key === "formType") continue; // Skip the formType field
-        
-        // Convert camelCase to Title Case
-        const formattedKey = key
-          .replace(/([A-Z])/g, " $1")
-          .replace(/^./, (str) => str.toUpperCase())
-          .trim()
-        
-        // Format the value (handle multiline text)
-        const formattedValue = typeof value === 'string' && value.includes('\n') 
-          ? value.split('\n').join('<br>') 
-          : value
-        
-        emailBodyHtml += `
-          <div style="margin-bottom: 15px;">
-            <strong style="color: #334155;">${formattedKey}:</strong><br>
-            <span style="color: #64748b;">${formattedValue || 'Not provided'}</span>
-          </div>
-        `
-      }
-      
-      emailBodyHtml += `
-          </div>
-          <p style="color: #64748b; font-size: 12px; margin-top: 20px;">
-            This email was sent from the TrueNorth Materials website contact form.
-          </p>
-        </div>
-      `
-
-      try {
-        const { data, error } = await resend.emails.send({
-          from: "TrueNorth Platform <tobias@truenorthmaterials.com>", // Replace with verified domain
-          to: [emailTo],
-          cc: "peti@truenorthmaterials.com",
-          subject: emailSubject,
-          html: emailBodyHtml,
-        })
-
-        if (error) {
-          console.error("Error sending email with Resend:", error)
-        } else {
   
-        }
-      } catch (e) {
-        console.error("Exception sending email:", e)
-      }
-    } else {
+  // 1) Validate by form type
+  let parsed:
+    | ReturnType<typeof requestDemoSchema.safeParse>
+    | ReturnType<typeof startupPartnershipSchema.safeParse>
+    | ReturnType<typeof industryPartnershipSchema.safeParse>
+    | ReturnType<typeof canadianPartnershipsSchema.safeParse>
+    | ReturnType<typeof contactUsSchema.safeParse>;
 
+  switch (formType) {
+    case "Request a Demo":
+      parsed = requestDemoSchema.safeParse(rawData);
+      break;
+    case "Startup Partnership":
+      parsed = startupPartnershipSchema.safeParse(rawData);
+      break;
+    case "Industry Partnership":
+      parsed = industryPartnershipSchema.safeParse(rawData);
+      break;
+    case "Canadian Partnerships":
+      parsed = canadianPartnershipsSchema.safeParse(rawData);
+      break;
+    case "Contact Us":
+      parsed = contactUsSchema.safeParse(rawData);
+      break;
+    default:
+      return { success: false, message: "Invalid form type." };
+  }
+
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string[]> = {};
+    for (const issue of parsed.error.issues) {
+      fieldErrors[issue.path.join(".")] = [issue.message];
     }
-
     return {
-      success : false,
-      message : "Validation failed. Please check your input.",
-      errors  : fieldErrors,
+      success: false,
+      message: "Validation failed. Please check your input.",
+      errors: fieldErrors,
     };
   }
 
-  /* --------- business logic (e-mail) --------- */
+  // 2) Business logic (e-mail)
   console.log("✅ Valid submission:", formType, parsed.data);
 
   if (process.env.RESEND_API_KEY) {
     try {
-      const resend  = new Resend(process.env.RESEND_API_KEY);
+      const resend = new Resend(process.env.RESEND_API_KEY);
       const toEmail = "tobias@truenorthmaterials.com";
 
+      const dataAny = parsed.data as any;
       const subjectId =
-        (parsed.data as any).companyName        ||
-        (parsed.data as any).organizationName   ||
-        (parsed.data as any).name               ||
-        (parsed.data as any).contactName        ||
+        dataAny.companyName ||
+        dataAny.organizationName ||
+        dataAny.name ||
+        dataAny.contactName ||
         "N/A";
 
       const { error } = await resend.emails.send({
-        from   : "TrueNorth Platform <tobias@truenorthmaterials.com>",
-        to     : [toEmail],
-        cc     : "peti@truenorthmaterials.com",
+        from: "TrueNorth Platform <tobias@truenorthmaterials.com>",
+        to: [toEmail],
+        cc: "peti@truenorthmaterials.com",
         subject: `New Submission: ${formType} – ${subjectId}`,
-        html   : buildHtmlBody(parsed.data),
+        html: buildHtmlBody(parsed.data as Record<string, unknown>),
       });
       if (error) console.error("✉️ Resend error:", error);
     } catch (err) {
@@ -248,9 +169,10 @@ export async function submitForm(
     }
   }
 
+  // 3) Final success response
   return {
-    success : true,
-    message : `Thank you for your ${formType} submission! We'll be in touch shortly.`,
+    success: true,
+    message: `Thank you for your ${formType} submission! We'll be in touch shortly.`,
   };
 }
 
