@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,7 +12,7 @@ import { auth } from '@/lib/firebase'
 import { useAuthStore } from '@/lib/store'
 import { useLanguage } from '@/lib/i18n'
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirect = searchParams.get('redirect') || '/dashboard'
@@ -297,4 +297,14 @@ export default function LoginPage() {
       </div>
     </div>
   )
-} 
+}
+
+export const dynamic = "force-dynamic"
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-white">Loading...</div>}>
+      <LoginContent />
+    </Suspense>
+  )
+}
