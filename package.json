@@ -10,6 +10,9 @@
   },
   "dependencies": {
     "@emotion/is-prop-valid": "latest",
+    "@expo/webpack-config": "^18.0.1",
+    "@genkit-ai/googleai": "^1.15.2",
+    "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
@@ -38,21 +41,30 @@
     "@radix-ui/react-toggle": "1.1.1",
     "@radix-ui/react-toggle-group": "1.1.1",
     "@radix-ui/react-tooltip": "1.1.6",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
     "autoprefixer": "^10.4.20",
+    "axios": "^1.10.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
     "date-fns": "latest",
     "embla-carousel-react": "8.5.1",
+    "expo": "~48.0.0",
+    "firebase": "^12.0.0",
     "framer-motion": "latest",
+    "genkit": "^1.15.2",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
     "next": "^15.2.4",
     "next-themes": "^0.4.4",
+    "pdfjs-dist": "^5.3.93",
     "react": "^18.3.1",
     "react-day-picker": "latest",
     "react-dom": "^18.3.1",
+    "react-dropzone": "^14.3.8",
     "react-hook-form": "^7.54.1",
+    "react-markdown": "^10.1.0",
     "react-resizable-panels": "^2.1.7",
     "recharts": "latest",
     "resend": "latest",
@@ -60,15 +72,17 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "three": "latest",
-    "vaul": "^0.9.6",
-    "zod": "latest"
+    "typescript": "^4.9.4",
+    "zod": "latest",
+    "zustand": "^5.0.6"
   },
   "devDependencies": {
     "@types/node": "^22",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
     "postcss": "^8",
-    "tailwindcss": "^3.4.17",
-    "typescript": "^5"
-  }
+    "tailwindcss": "^3.4.17"
+  },
+"scripts": {
+  "dev": "next dev",
+  "dev:force": "lsof -ti tcp:3000 | xargs kill -9 || true && npm run dev -- -H 10.88.111.93 -p 3000"
+}
 }

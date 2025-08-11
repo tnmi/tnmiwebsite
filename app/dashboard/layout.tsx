@@ -1,20 +1,39 @@
-import type React from "react"
-import { Inter } from "next/font/google"
+"use client"
+import React from "react"
 import Sidebar from "@/components/dashboard/sidebar"
 import Header from "@/components/dashboard/header"
 import ChatbotToggle from "@/components/dashboard/chatbot/chatbot-toggle"
 import { Toaster } from "@/components/ui/toaster"
-
-const inter = Inter({ subsets: ["latin"] })
+import { useAuthStore } from "@/lib/store"
+import { useRouter, usePathname } from "next/navigation"
+import { SidebarProvider } from "@/hooks/use-sidebar"
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const loading = useAuthStore((state) => state.loading)
+  const router = useRouter()
+  const pathname = usePathname()
+
+  React.useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      router.replace(`/login?redirect=${encodeURIComponent(pathname)}`)
+    }
+  }, [isAuthenticated, loading, router, pathname])
+
+  if (loading) {
+    return null
+  }
+  if (!isAuthenticated) {
+    return null
+  }
+
   return (
-    <html lang="en">
-      <body className={`${inter.className} bg-tn-light-bg flex h-screen overflow-hidden`}>
+    <SidebarProvider>
+      <div className="font-satoshi bg-tn-light-bg flex h-screen overflow-hidden">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header />
@@ -22,7 +41,7 @@ export default function DashboardLayout({
         </div>
         <ChatbotToggle />
         <Toaster />
-      </body>
-    </html>
+      </div>
+    </SidebarProvider>
   )
 }
