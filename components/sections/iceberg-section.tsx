@@ -305,7 +305,7 @@ const IcebergVisualization = () => {
             marginBottom: '12px',
             color: '#e0e7ff',
             fontSize: '20px'
-          }}>What You Should Really Know</h3>
+          }}>What You Should Know</h3>
           <div style={{
             fontSize: '36px',
             fontWeight: '900',
@@ -320,11 +320,10 @@ const IcebergVisualization = () => {
             listStyle: 'none',
             padding: 0
           }}>
-            <li style={{ marginBottom: '8px' }}>• Cross-domain material synergies</li>
-            <li style={{ marginBottom: '8px' }}>• Unexplored chemical spaces</li>
-            <li style={{ marginBottom: '8px' }}>• Quantum-level interactions</li>
-            <li style={{ marginBottom: '8px' }}>• Manufacturing scalability secrets</li>
-            <li>• Cost optimization pathways</li>
+            <li style={{ marginBottom: '8px' }}>• Procurement pathways</li>
+            <li style={{ marginBottom: '8px' }}>• Constant market needs</li>
+            <li style={{ marginBottom: '8px' }}>• Lines of communication</li>
+            <li style={{ marginBottom: '8px' }}>• Your perfect fit scenarios</li>
           </ul>
         </motion.div>
       </div>

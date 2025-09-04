@@ -239,7 +239,7 @@ const Diagram = () => {
   };
 
 return (
-<div id="platform">
+<div id="platform1">
 <div className="text-center">
           {/* Tab Navigation */}
           

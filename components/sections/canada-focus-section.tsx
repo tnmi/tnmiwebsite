@@ -54,7 +54,7 @@ export default function CanadaFocusSection() {
   }, [])
 
   return (
-    <section id="Government & Grants" ref={ref} className="relative z-10 min-h-screen overflow-hidden">
+    <section id="Research Partnerships" ref={ref} className="relative z-10 min-h-screen overflow-hidden">
       <BackgroundVideo
         videoUrl="/Vid2.mp4"
         fallbackImageUrl="/placeholder.svg"
@@ -134,25 +134,36 @@ export default function CanadaFocusSection() {
           transition={{ duration: 1, delay: 1.2 }}
           className="text-center"
         >
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-4">
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-7">
             <Button
-              size="lg"
-              className="bg-white/5 text-white border border-red-400/20 backdrop-blur-md hover:bg-white/10 px-6 py-4 rounded-xl shadow-md transition-all hover:shadow-lg hover:scale-105 active:scale-95"
-              asChild
-            >
-              <Link href="https://www.canada.ca/en/campaign/critical-minerals-in-canada/critical-minerals-an-opportunity-for-canada.html" target="_blank" rel="noopener noreferrer">
-                Learn more about Canada's Critical Minerals
-              </Link>
-            </Button>
-            <Button
-              size="lg"
-              className="bg-white/10 text-white px-6 py-4 rounded-xl shadow border border-white/10 hover:bg-white/20 transition-all hover:shadow-lg"
-              asChild
-            >
-              <Link href="/canadian-partnerships">
-                Explore Collaborative Funding Options
-              </Link>
-            </Button>
+  // you can keep size="lg" or remove it; className below overrides height
+  size="lg"
+  className="h-auto text-lg md:text-xl w-full sm:w-auto px-10 md:px-12 py-5 md:py-6 rounded-2xl
+             bg-white/5 text-white border border-red-400/20 backdrop-blur-md
+             hover:bg-white/10 shadow-md transition-all hover:shadow-lg hover:scale-105 active:scale-95"
+  asChild
+>
+  <Link
+    href="https://www.canada.ca/en/campaign/critical-minerals-in-canada/critical-minerals-an-opportunity-for-canada.html"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    Learn more about Canada&apos;s Critical Minerals
+  </Link>
+</Button>
+
+<Button
+  size="lg"
+  className="h-auto text-lg md:text-xl w-full sm:w-auto px-10 md:px-12 py-5 md:py-6 rounded-2xl
+             bg-white/10 text-white shadow border border-white/10
+             hover:bg-white/20 transition-all hover:shadow-lg"
+  asChild
+>
+  <Link href="/canadian-partnerships">
+    Explore Collaborative Funding Options
+  </Link>
+</Button>
+
           </div>
         </motion.div>
 

@@ -39,11 +39,9 @@ export default function TrueNorthWebsite() {
   const router = useRouter()
 
   const navigationItems = [
-    "platform",
-    "technology", 
-    "how-we-help",
-    "canada",
-    "partnerships",
+    "services",
+    "Industry or Startup Partnerships",
+      "Research Partnerships",
     "team",
     "contact",
   ]
@@ -115,14 +113,13 @@ export default function TrueNorthWebsite() {
                 {section.replace(/-/g, " ").replace(/^./, str => str.toUpperCase())}
               </motion.a>
             ))}
-            {/* Login button hidden */}
-            {/* <Button 
+            <Button 
               size="sm" 
               className="ml-4 bg-emerald-400 text-black hover:bg-emerald-500"
               onClick={handleLoginClick}
             >
               {isAuthenticated ? 'Dashboard' : 'Login'}
-            </Button> */}
+            </Button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -162,8 +159,7 @@ export default function TrueNorthWebsite() {
                     {section.replace(/-/g, " ").replace(/^./, str => str.toUpperCase())}
                   </motion.button>
                 ))}
-                {/* Login button hidden */}
-                {/* <div className="pt-4 border-t border-white/10">
+                <div className="pt-4 border-t border-white/10">
                   <Button 
                     className="w-full bg-emerald-400 text-black hover:bg-emerald-500 font-medium"
                     onClick={() => {
@@ -173,7 +169,7 @@ export default function TrueNorthWebsite() {
                   >
                     {isAuthenticated ? 'Dashboard' : 'Login'}
                   </Button>
-                </div> */}
+                </div>
               </div>
             </motion.div>
           )}
@@ -267,13 +263,10 @@ export default function TrueNorthWebsite() {
       {/* Sections */}
       {/* <ProblemSection /> */}
       <ServicesSection />
-      <Diagram />
-	  <TechnologySection />
       <IcebergVisualization />
       <PartnershipsSection />
       <CanadaFocusSection />
       <TeamSection />
-      <PlatformSection />
       <ProblemSection />
       <HowWeHelpSection />
 

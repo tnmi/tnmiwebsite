@@ -107,7 +107,7 @@ export default function TeamSection() {
           className="text-center"
         >
           <Button size="lg" className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-4 rounded-xl shadow-lg" asChild>
-            <Link href="https://calendly.com/jasondeacon/30">
+            <Link href="https://calendly.com/tobiastnmi/20min">
               Join the Vision →
             </Link>
           </Button>
