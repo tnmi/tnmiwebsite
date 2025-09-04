@@ -115,13 +115,14 @@ export default function TrueNorthWebsite() {
                 {section.replace(/-/g, " ").replace(/^./, str => str.toUpperCase())}
               </motion.a>
             ))}
-            <Button 
+            {/* Login button hidden */}
+            {/* <Button 
               size="sm" 
               className="ml-4 bg-emerald-400 text-black hover:bg-emerald-500"
               onClick={handleLoginClick}
             >
               {isAuthenticated ? 'Dashboard' : 'Login'}
-            </Button>
+            </Button> */}
           </div>
 
           {/* Mobile Menu Button */}
@@ -161,7 +162,8 @@ export default function TrueNorthWebsite() {
                     {section.replace(/-/g, " ").replace(/^./, str => str.toUpperCase())}
                   </motion.button>
                 ))}
-                <div className="pt-4 border-t border-white/10">
+                {/* Login button hidden */}
+                {/* <div className="pt-4 border-t border-white/10">
                   <Button 
                     className="w-full bg-emerald-400 text-black hover:bg-emerald-500 font-medium"
                     onClick={() => {
@@ -171,7 +173,7 @@ export default function TrueNorthWebsite() {
                   >
                     {isAuthenticated ? 'Dashboard' : 'Login'}
                   </Button>
-                </div>
+                </div> */}
               </div>
             </motion.div>
           )}
