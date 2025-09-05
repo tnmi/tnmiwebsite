@@ -36,15 +36,15 @@ export const CanadaFocusSection = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 w-full max-w-6xl">
           {[
             {
-              title: "⚛️  National Research Leadership",
+              title: "National Research Leadership",
               content: "Our platform links institutions across Canada, accelerating shared innovation across domains from quantum to sustainable concrete."
             },
             {
-              title: "🚀 Startup Enablement",
+              title: "Startup Enablement",
               content: "We provide Canada's deeptech startups with AI-driven insight engines, market navigation, and scalable infrastructure."
             },
             {
-              title: "🌐 Cross-Sector Integration",
+              title: "Cross-Sector Integration",
               content: "From aerospace to energy, TrueNorth powers collaborative material innovation between R&D and industry across the country."
             }
           ].map((card, idx) => (
@@ -66,7 +66,7 @@ export const CanadaFocusSection = () => {
             className="bg-emerald-400/10 hover:bg-emerald-400/20 text-white border border-white/20 backdrop-blur-xl shadow-lg px-8 py-4 rounded-xl"
             onClick={() => window.open('https://www.canada.ca', '_blank')}
           >
-            🚀 Join Canada’s Innovation Frontier
+            Join Canada's Innovation Frontier
           </Button>
         </div>
       </div>

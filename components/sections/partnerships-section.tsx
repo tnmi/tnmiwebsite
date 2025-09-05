@@ -41,10 +41,10 @@ export default function PartnershipsSection() {
           <div className="glass-card p-8 rounded-3xl border border-white/10 backdrop-blur-2xl bg-white/5 shadow-2xl">
             <h3 className="text-2xl font-bold mb-4">Startup Partnership</h3>
             <ul className="space-y-4 text-slate-300 text-sm leading-relaxed">
-              <li>🔗 Find the market pull.</li>
-              <li>📊 Get conneted to the ecosystem that exists to help you.</li>
-              <li>💸 Material-use Discovery (find a buyer for your material!) </li>
-              <li>🚀 Is there a use for your material or material product you're missing?</li>
+              <li>Find the market pull.</li>
+              <li>Get connected to the ecosystem that exists to help you.</li>
+              <li>Material-use Discovery (find a buyer for your material!) </li>
+              <li>Is there a use for your material or material product you're missing?</li>
             </ul>
             <a
               href="/startup-partnership"
@@ -59,10 +59,10 @@ export default function PartnershipsSection() {
           <div className="glass-card p-8 rounded-3xl border border-white/10 backdrop-blur-2xl bg-white/5 shadow-2xl">
             <h3 className="text-2xl font-bold mb-4">Enterprise Partnership</h3>
             <ul className="space-y-4 text-slate-300 text-sm leading-relaxed">
-              <li>🧠 Make decisions with data-driven intelligence</li>
-              <li>🔬 Reduce your R&D time by up to 90%</li>
-              <li>📈 Increase productivity and reduce energy costs</li>
-              <li>🏗️ More companies adopt AI everyday, are you keeping up?</li>
+              <li>Make decisions with data-driven intelligence</li>
+              <li>Reduce your R&D time by up to 90%</li>
+              <li>Increase productivity and reduce energy costs</li>
+              <li>More companies adopt AI everyday, are you keeping up?</li>
             </ul>
             <a
               href="/industry-partnership"

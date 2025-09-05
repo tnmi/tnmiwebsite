@@ -281,7 +281,7 @@ export default function AICoresSection({ isInView }: { isInView: boolean }) {
         </p>
         <Button className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl shadow-lg" asChild>
           <Link href="https://calendly.com/jasondeacon/30" target="_blank" rel="noopener noreferrer">
-            🤝 Start a Core Partnership
+            Start a Core Partnership
           </Link>
         </Button>
       </motion.div>

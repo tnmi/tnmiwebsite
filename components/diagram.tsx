@@ -13,7 +13,7 @@ const Diagram = () => {
       name: 'Template', 
       centralCore: { 
         name: 'ORCHESTRAL', 
-        icon: '🎼', 
+        icon: 'ORCH', 
         description: 'The central agentic AI hub that coordinates and optimizes all processing cores through real-time data integration and proactive decision-making.' 
       } 
     },
@@ -22,7 +22,7 @@ const Diagram = () => {
       name: 'Carbon', 
       centralCore: { 
         name: 'CABAL', 
-        icon: '⚫', 
+        icon: 'C', 
         description: 'Carbon Agentic Business Analytics Lab - specialized AI coordination for carbon material processing, optimization, and lifecycle management.' 
       } 
     },
@@ -31,7 +31,7 @@ const Diagram = () => {
       name: 'Lithium', 
       centralCore: { 
         name: 'LABAL', 
-        icon: '🔋', 
+        icon: 'Li', 
         description: 'Lithium Agentic Business Analytics Lab - dedicated AI orchestration for lithium extraction, processing, and battery material optimization.' 
       } 
     },
@@ -40,7 +40,7 @@ const Diagram = () => {
       name: 'Nickel', 
       centralCore: { 
         name: 'NABAL', 
-        icon: '🔩', 
+        icon: 'Ni', 
         description: 'Nickel Agentic Business Analytics Lab - specialized AI coordination for nickel mining, refining, and high-performance alloy development.' 
       } 
     },
@@ -49,7 +49,7 @@ const Diagram = () => {
       name: 'Copper', 
       centralCore: { 
         name: 'CuABAL', 
-        icon: '🟫', 
+        icon: 'Cu', 
         description: 'Copper Agentic Business Analytics Lab - dedicated AI orchestration for copper extraction, purification, and electrical component optimization.' 
       } 
     },
@@ -58,7 +58,7 @@ const Diagram = () => {
       name: 'Steel', 
       centralCore: { 
         name: 'SABAL', 
-        icon: '🔧', 
+        icon: 'Steel', 
         description: 'Steel Agentic Business Analytics Lab - specialized AI coordination for iron ore processing, steel production, and advanced metallurgy optimization.' 
       } 
     }
@@ -75,7 +75,7 @@ const Diagram = () => {
       purpose: 'Agentic AI understanding where raw materials come from and the macro-dynamics of sourcing them',
       position: { x: 50, y: 15 },
       color: '#A9C6F5',
-      icon: '🌍',
+      icon: 'Geo',
       dataSources: [
         { x: 65, y: 25, label: 'Geological Data' },
         { x: 70, y: 8, label: 'Indigenous OCAP' },
@@ -88,7 +88,7 @@ const Diagram = () => {
       purpose: 'Agentic AI understanding how to efficiently and consistently extract material from raw inputs',
       position: { x: 85, y: 35 },
       color: '#1ED9A1',
-      icon: '⛏️',
+      icon: 'Extract',
       dataSources: [
         { x: 95, y: 25, label: 'Processing Library' },
         { x: 90, y: 45, label: 'Equipment Specs' },
@@ -114,7 +114,7 @@ const Diagram = () => {
       purpose: 'Agentic AI understanding the factory that will produce the formulated product',
       position: { x: 50, y: 85 },
       color: '#8BBFF0',
-      icon: '🏭',
+      icon: 'Foundry',
       dataSources: [
         { x: 30, y: 95, label: '3D Factory Design' },
         { x: 70, y: 92, label: 'Funding Matches' },
@@ -127,7 +127,7 @@ const Diagram = () => {
       purpose: 'Agentic AI optimizing the factory to run smarter, cheaper, and more reliably through IoT sensors',
       position: { x: 15, y: 65 },
       color: '#5EF6D2',
-      icon: '⚡',
+      icon: 'Energy',
       dataSources: [
         { x: 5, y: 55, label: 'CMMS Data' },
         { x: 10, y: 75, label: 'IoT Sensors' },
@@ -140,7 +140,7 @@ const Diagram = () => {
       purpose: 'Agentic AI planning for the product\'s entire lifecycle, from use to reuse',
       position: { x: 15, y: 35 },
       color: '#A3C1AD',
-      icon: '♻️',
+      icon: 'Recycle',
       dataSources: [
         { x: 5, y: 25, label: 'Lifecycle Databases' },
         { x: 10, y: 45, label: 'Degradation Data' },
@@ -698,7 +698,7 @@ return (
                 </p>
                 <div className="space-y-6">
                   <div>
-                    <h4 className="text-xl font-semibold mb-3" style={{ color: '#5EF6D2' }}>🤖 AI Orchestration</h4>
+                    <h4 className="text-xl font-semibold mb-3" style={{ color: '#5EF6D2' }}>AI Orchestration</h4>
                     <ul className="space-y-2 text-base" style={{ color: '#A3C1AD' }}>
                       <li>• Autonomous data integration across all cores</li>
                       <li>• Predictive decision-making algorithms</li>
@@ -772,7 +772,7 @@ return (
                 return core ? (
                   <div>
                     <h3 className="text-3xl font-bold mb-4" style={{ color: '#1ED9A1' }}>
-                      {core.icon} {core.name} 🤖
+                      {core.icon} {core.name} AI
                     </h3>
                     <p className="mb-6 text-lg leading-relaxed" style={{ color: '#A3C1AD' }}>{core.purpose}</p>
                     <div className="space-y-6">
@@ -830,7 +830,7 @@ return (
                         </div>
                       </div>
                       <div>
-                        <h4 className="text-xl font-semibold mb-3" style={{ color: core.color }}>📊 AI Data Sources</h4>
+                        <h4 className="text-xl font-semibold mb-3" style={{ color: core.color }}>AI Data Sources</h4>
                         <div className="text-base" style={{ color: '#A3C1AD' }}>
                           {core.dataSources.map((source, idx) => (
                             <div key={idx} className="mb-2 p-2 rounded" style={{ backgroundColor: '#1A2735' }}>
@@ -840,7 +840,7 @@ return (
                           {agenticFlow && agenticFlow.coreId === core.id && (
                             <div className="mt-4 p-3 rounded-lg" style={{ backgroundColor: '#1A2735', border: '1px solid #5EF6D2' }}>
                               <div className="text-base font-semibold" style={{ color: '#5EF6D2' }}>
-                                🤖 AI Agent Status: {agenticFlow.phase === 'gathering' ? 'Gathering data from sources...' : 'Processing information with AI algorithms...'}
+                                AI Agent Status: {agenticFlow.phase === 'gathering' ? 'Gathering data from sources...' : 'Processing information with AI algorithms...'}
                               </div>
                             </div>
                           )}

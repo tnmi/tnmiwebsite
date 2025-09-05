@@ -11,23 +11,23 @@ export default function CanadaFocusSection() {
   const isInView = useInView(ref, { once: true, margin: "-100px" })
 
   const criticalMinerals = [
-    { name: "Carbon", applications: "Batteries, Electronics, Construction, Agriculture", icon: "⚫", color: "#1f2937" },
-    { name: "Lithium", applications: "Batteries, Energy Storage", icon: "⚡", color: "#3b82f6" },
-    { name: "Graphite", applications: "Batteries, Electronics", icon: "🔋", color: "#10b981" },
-    { name: "Nickel", applications: "Batteries, Stainless Steel", icon: "🔩", color: "#6b7280" },
-    { name: "Cobalt", applications: "Batteries, Superalloys", icon: "⚙️", color: "#8b5cf6" },
-    { name: "Copper", applications: "Electronics, Infrastructure", icon: "🔌", color: "#f59e0b" },
-    { name: "Rare Earth Elements", applications: "Electronics, Defense", icon: "🔬", color: "#ef4444" },
-    { name: "Natural Hydrogen", applications: "Clean Energy, Hard-to-Abate Industries", icon: "💨", color: "#06b6d4" },
+    { name: "Carbon", applications: "Batteries, Electronics, Construction, Agriculture", icon: "C", color: "#1f2937" },
+    { name: "Lithium", applications: "Batteries, Energy Storage", icon: "Li", color: "#3b82f6" },
+    { name: "Graphite", applications: "Batteries, Electronics", icon: "G", color: "#10b981" },
+    { name: "Nickel", applications: "Batteries, Stainless Steel", icon: "Ni", color: "#6b7280" },
+    { name: "Cobalt", applications: "Batteries, Superalloys", icon: "Co", color: "#8b5cf6" },
+    { name: "Copper", applications: "Electronics, Infrastructure", icon: "Cu", color: "#f59e0b" },
+    { name: "Rare Earth Elements", applications: "Electronics, Defense", icon: "REE", color: "#ef4444" },
+    { name: "Natural Hydrogen", applications: "Clean Energy, Hard-to-Abate Industries", icon: "H2", color: "#06b6d4" },
   ]
 
   const hardToAbateIndustries = [
-    { name: "Steel Production", impact: "28% of industrial emissions", icon: "🏭" },
-    { name: "Cement Manufacturing", impact: "8% of global CO2", icon: "🏗️" },
-    { name: "Chemical Processing", impact: "High energy intensity", icon: "⚗️" },
-    { name: "Aviation", impact: "2.5% of global emissions", icon: "✈️" },
-    { name: "Shipping", impact: "3% of global emissions", icon: "🚢" },
-    { name: "Heavy Manufacturing", impact: "Energy-intensive processes", icon: "🔧" },
+    { name: "Steel Production", impact: "28% of industrial emissions", icon: "Steel" },
+    { name: "Cement Manufacturing", impact: "8% of global CO2", icon: "Cement" },
+    { name: "Chemical Processing", impact: "High energy intensity", icon: "Chem" },
+    { name: "Aviation", impact: "2.5% of global emissions", icon: "Aviation" },
+    { name: "Shipping", impact: "3% of global emissions", icon: "Shipping" },
+    { name: "Heavy Manufacturing", impact: "Energy-intensive processes", icon: "Manufacturing" },
   ]
 
   const [mineralIndex, setMineralIndex] = useState(0)

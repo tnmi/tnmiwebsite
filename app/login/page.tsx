@@ -204,7 +204,7 @@ function LoginContent() {
                     name="password"
                     value={formData.password}
                     onChange={handleInputChange}
-                    placeholder={`🔒 ${t('password')}`}
+                    placeholder={`${t('password')}`}
                     className="w-full pr-12 p-3 border border-emerald-400 bg-slate-900 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 placeholder-white/50"
                     required
                   />
@@ -228,7 +228,7 @@ function LoginContent() {
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
-                    placeholder={`🔒 ${t('confirmPassword')}`}
+                    placeholder={`${t('confirmPassword')}`}
                     className="w-full pr-12 p-3 border border-emerald-400 bg-slate-900 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 placeholder-white/50"
                     required
                   />

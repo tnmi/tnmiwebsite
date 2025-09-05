@@ -46,43 +46,43 @@ const Chatbot: React.FC = () => {
   const qaDatabase: QADatabase = {
     'services': {
       keywords: ['services', 'offer', 'provide', 'what do you do', 'solutions', 'help', 'capabilities'],
-      response: "TrueNorth Materials provides AI-driven materials intelligence solutions. We transform sensor data and big data into actionable insights for sustainable innovation.\n\n🔬 **Our Focus:**\n• Materials data analytics\n• Sensor integration and monitoring\n• AI-powered analysis\n• Sustainable materials innovation\n\n2025 is the year of AI agents putting vast materials data to work. We're here to help you harness this potential.\n\nWould you like to learn more about any specific aspect of our services?"
+      response: "TrueNorth Materials provides AI-driven materials intelligence solutions. We transform sensor data and big data into actionable insights for sustainable innovation.\n\n**Our Focus:**\n• Materials data analytics\n• Sensor integration and monitoring\n• AI-powered analysis\n• Sustainable materials innovation\n\n2025 is the year of AI agents putting vast materials data to work. We're here to help you harness this potential.\n\nWould you like to learn more about any specific aspect of our services?"
     },
     'ai': {
       keywords: ['ai', 'artificial intelligence', 'machine learning', 'agents', 'algorithm', 'model'],
-      response: "🤖 **Our AI Technology:**\n\nTrueNorth Materials leverages advanced AI and machine learning to transform materials data into actionable intelligence.\n\n• **AI Agents** - Putting vast materials data to work\n• **Big Data Processing** - Turning sensor data into insights\n• **Predictive Analytics** - Forecasting material behavior\n• **Intelligent Analysis** - Extracting meaningful patterns\n\n2025 is the year of AI agents revolutionizing materials innovation. Our platform is at the forefront of this transformation.\n\nFor more details about our specific AI capabilities, contact us at jason.deacon@truenorthmaterials.com"
+      response: "**Our AI Technology:**\n\nTrueNorth Materials leverages advanced AI and machine learning to transform materials data into actionable intelligence.\n\n• **AI Agents** - Putting vast materials data to work\n• **Big Data Processing** - Turning sensor data into insights\n• **Predictive Analytics** - Forecasting material behavior\n• **Intelligent Analysis** - Extracting meaningful patterns\n\n2025 is the year of AI agents revolutionizing materials innovation. Our platform is at the forefront of this transformation.\n\nFor more details about our specific AI capabilities, contact us at jason.deacon@truenorthmaterials.com"
     },
     'sustainability': {
       keywords: ['sustainable', 'sustainability', 'environment', 'green', 'eco', 'carbon', 'emissions'],
-      response: "🌱 **Sustainability Focus:**\n\nTrueNorth Materials is committed to driving sustainable innovation in the materials industry.\n\nOur AI-driven platform helps organizations:\n• Make data-driven decisions for sustainable materials\n• Transform sensor and big data into environmental insights\n• Support sustainable innovation initiatives\n• Optimize material selection for environmental impact\n\nWe believe that intelligent use of materials data is key to building a more sustainable future.\n\nTo learn more about how we can support your sustainability goals, contact us at jason.deacon@truenorthmaterials.com"
+      response: "**Sustainability Focus:**\n\nTrueNorth Materials is committed to driving sustainable innovation in the materials industry.\n\nOur AI-driven platform helps organizations:\n• Make data-driven decisions for sustainable materials\n• Transform sensor and big data into environmental insights\n• Support sustainable innovation initiatives\n• Optimize material selection for environmental impact\n\nWe believe that intelligent use of materials data is key to building a more sustainable future.\n\nTo learn more about how we can support your sustainability goals, contact us at jason.deacon@truenorthmaterials.com"
     },
     'contact': {
       keywords: ['contact', 'reach', 'email', 'phone', 'talk', 'speak', 'get in touch', 'support'],
-      response: "📧 **Get in Touch:**\n\nYou can reach us at:\n\n📧 jason.deacon@truenorthmaterials.com\n\nWe'd love to hear from you about how our AI-driven materials intelligence platform can help transform your business.\n\nFeel free to email us with any questions about our services, technology, or to schedule a discussion about your specific needs."
+      response: "**Get in Touch:**\n\nYou can reach us at:\n\njason.deacon@truenorthmaterials.com\n\nWe'd love to hear from you about how our AI-driven materials intelligence platform can help transform your business.\n\nFeel free to email us with any questions about our services, technology, or to schedule a discussion about your specific needs."
     },
     'demo': {
       keywords: ['demo', 'trial', 'try', 'test', 'free', 'poc', 'pilot', 'proof of concept'],
-      response: "🚀 **See TrueNorth in Action:**\n\nInterested in seeing how our AI-driven materials intelligence platform can transform your business?\n\nWe'd be happy to arrange a demonstration tailored to your specific needs and use cases.\n\n📧 Contact us at: jason.deacon@truenorthmaterials.com\n\nLet us know about your materials challenges and we'll show you how our platform can help!"
+      response: "**See TrueNorth in Action:**\n\nInterested in seeing how our AI-driven materials intelligence platform can transform your business?\n\nWe'd be happy to arrange a demonstration tailored to your specific needs and use cases.\n\nContact us at: jason.deacon@truenorthmaterials.com\n\nLet us know about your materials challenges and we'll show you how our platform can help!"
     },
     'industries': {
       keywords: ['industries', 'sectors', 'who uses', 'clients', 'applications', 'use cases', 'customers'],
-      response: "🏭 **Industries & Applications:**\n\nTrueNorth Materials' AI-driven platform can benefit organizations across various sectors working with materials data and innovation.\n\nOur platform is designed to help any industry that:\n• Works with materials and sensors\n• Needs data-driven insights\n• Focuses on sustainable innovation\n• Requires intelligent materials analysis\n\nWhether you're in manufacturing, construction, electronics, energy, or any other materials-intensive industry, our platform can transform your data into actionable intelligence.\n\nTo discuss your specific industry needs, reach out to jason.deacon@truenorthmaterials.com"
+      response: "**Industries & Applications:**\n\nTrueNorth Materials' AI-driven platform can benefit organizations across various sectors working with materials data and innovation.\n\nOur platform is designed to help any industry that:\n• Works with materials and sensors\n• Needs data-driven insights\n• Focuses on sustainable innovation\n• Requires intelligent materials analysis\n\nWhether you're in manufacturing, construction, electronics, energy, or any other materials-intensive industry, our platform can transform your data into actionable intelligence.\n\nTo discuss your specific industry needs, reach out to jason.deacon@truenorthmaterials.com"
     },
     'pricing': {
       keywords: ['price', 'pricing', 'cost', 'how much', 'plans', 'packages', 'subscription', 'payment'],
-      response: "💰 **Pricing Information:**\n\nFor pricing information tailored to your specific needs and use case, please reach out to us at:\n\n📧 jason.deacon@truenorthmaterials.com\n\nWe'll be happy to discuss how our AI-driven materials intelligence platform can meet your requirements and provide you with relevant pricing details."
+      response: "**Pricing Information:**\n\nFor pricing information tailored to your specific needs and use case, please reach out to us at:\n\njason.deacon@truenorthmaterials.com\n\nWe'll be happy to discuss how our AI-driven materials intelligence platform can meet your requirements and provide you with relevant pricing details."
     },
     'data': {
       keywords: ['data', 'security', 'privacy', 'safe', 'protect', 'encryption', 'compliance'],
-      response: "🔒 **Data Security:**\n\nAt TrueNorth Materials, we take data security seriously. Our platform is designed with security in mind to protect your valuable materials data and insights.\n\nWe implement industry-standard security practices to ensure your data remains safe and confidential.\n\nFor specific questions about our security measures and data handling practices, please contact us at jason.deacon@truenorthmaterials.com"
+      response: "**Data Security:**\n\nAt TrueNorth Materials, we take data security seriously. Our platform is designed with security in mind to protect your valuable materials data and insights.\n\nWe implement industry-standard security practices to ensure your data remains safe and confidential.\n\nFor specific questions about our security measures and data handling practices, please contact us at jason.deacon@truenorthmaterials.com"
     },
     'integration': {
       keywords: ['integration', 'api', 'connect', 'integrate', 'erp', 'systems', 'software'],
-      response: "🔗 **Platform Integration:**\n\nOur AI-driven materials intelligence platform is designed to work with your existing systems and data sources.\n\nWe can help you:\n• Connect sensor networks\n• Integrate materials databases\n• Work with your existing data infrastructure\n\nFor details about specific integration capabilities and how we can work with your systems, contact us at jason.deacon@truenorthmaterials.com"
+      response: "**Platform Integration:**\n\nOur AI-driven materials intelligence platform is designed to work with your existing systems and data sources.\n\nWe can help you:\n• Connect sensor networks\n• Integrate materials databases\n• Work with your existing data infrastructure\n\nFor details about specific integration capabilities and how we can work with your systems, contact us at jason.deacon@truenorthmaterials.com"
     },
     'features': {
       keywords: ['features', 'benefits', 'advantages', 'why choose', 'unique'],
-      response: "⭐ **Why TrueNorth Materials:**\n\n• **AI-Driven Intelligence** - Transform sensors and big data into actionable insights\n• **Sustainable Innovation** - Focus on materials solutions for a better future\n• **2025 Vision** - Leading the year of AI agents in materials innovation\n• **Data-Driven Decisions** - Make informed choices based on real intelligence\n\nWe're transforming how organizations work with materials data.\n\nTo learn more about how TrueNorth can benefit your organization, reach out to jason.deacon@truenorthmaterials.com"
+      response: "**Why TrueNorth Materials:**\n\n• **AI-Driven Intelligence** - Transform sensors and big data into actionable insights\n• **Sustainable Innovation** - Focus on materials solutions for a better future\n• **2025 Vision** - Leading the year of AI agents in materials innovation\n• **Data-Driven Decisions** - Make informed choices based on real intelligence\n\nWe're transforming how organizations work with materials data.\n\nTo learn more about how TrueNorth can benefit your organization, reach out to jason.deacon@truenorthmaterials.com"
     }
   };
 
@@ -113,7 +113,7 @@ const Chatbot: React.FC = () => {
     }
     
     if (lowerInput.match(/bye|goodbye|see you|exit|quit/)) {
-      return "Thank you for your interest in TrueNorth Materials! Feel free to return anytime you have questions. Have a wonderful day! 👋";
+      return "Thank you for your interest in TrueNorth Materials! Feel free to return anytime you have questions. Have a wonderful day!";
     }
 
     if (lowerInput.match(/who are you|what are you/)) {
@@ -121,7 +121,7 @@ const Chatbot: React.FC = () => {
     }
     
     // Default response with suggestions
-    return "I'm not quite sure about that specific question. Here are some topics I can help you with:\n\n• 🔬 **Services** - Our AI solutions and capabilities\n• 🤖 **Technology** - How our AI works\n• 🌱 **Sustainability** - Environmental impact solutions\n• 🏭 **Industries** - Sectors we serve\n• 💰 **Pricing** - Plans and packages\n• 🔒 **Security** - Data protection measures\n• 🚀 **Demo** - Try our platform\n• 📞 **Contact** - Get in touch\n\nWhat would you like to explore?";
+    return "I'm not quite sure about that specific question. Here are some topics I can help you with:\n\n• **Services** - Our AI solutions and capabilities\n• **Technology** - How our AI works\n• **Sustainability** - Environmental impact solutions\n• **Industries** - Sectors we serve\n• **Pricing** - Plans and packages\n• **Security** - Data protection measures\n• **Demo** - Try our platform\n• **Contact** - Get in touch\n\nWhat would you like to explore?";
   };
 
   const handleSendMessage = (): void => {

@@ -163,9 +163,9 @@ export async function submitForm(
         subject: `New Submission: ${formType} – ${subjectId}`,
         html: buildHtmlBody(parsed.data as Record<string, unknown>),
       });
-      if (error) console.error("✉️ Resend error:", error);
+      if (error) console.error("Resend error:", error);
     } catch (err) {
-      console.error("✉️ Resend exception:", err);
+      console.error("Resend exception:", err);
     }
   }
 

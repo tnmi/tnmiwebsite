@@ -321,7 +321,7 @@ export default function StepOne({ onComplete, setParentLoading, geminiData, pars
           <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none">
             {isDragging ? (
               <div className="flex flex-col items-center space-y-2">
-                <div className="text-4xl animate-bounce">🚀</div>
+                <div className="text-4xl animate-bounce font-bold text-emerald-400">LAUNCH</div>
                 <p className="text-2xl font-bold text-white">
                   Drop to Launch Upload!
                 </p>
