@@ -54,10 +54,7 @@ export default function ServicesSection() {
     transition={{ duration: 0.6, delay: 0.3 + i * 0.1 }}
     className="bg-white/5 backdrop-blur-xl p-6 rounded-2xl border border-white/10 shadow-xl hover:shadow-emerald-400/30 transition-all"
   >
-    <div className="flex items-start gap-4">
-      <div className="text-2xl font-bold text-emerald-400">{["AI","Data","Research","Process","Lab","Launch","Partner","Tech"][i]}</div>
-      <p className="text-white text-lg font-medium leading-relaxed"><span className="text-emerald-300 font-semibold">{item.split(" - ")[0]}</span>{item.includes(" - ") ? ` - ${item.split(" - ").slice(1).join(" - ")}` : ""}</p>
-    </div>
+    <p className="text-white text-lg font-medium leading-relaxed"><span className="text-emerald-300 font-semibold">{item.split(" - ")[0]}</span>{item.includes(" - ") ? ` - ${item.split(" - ").slice(1).join(" - ")}` : ""}</p>
   </motion.div>
 ))}
 

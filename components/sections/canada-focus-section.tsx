@@ -11,23 +11,23 @@ export default function CanadaFocusSection() {
   const isInView = useInView(ref, { once: true, margin: "-100px" })
 
   const criticalMinerals = [
-    { name: "Carbon", applications: "Batteries, Electronics, Construction, Agriculture", icon: "C", color: "#1f2937" },
-    { name: "Lithium", applications: "Batteries, Energy Storage", icon: "Li", color: "#3b82f6" },
-    { name: "Graphite", applications: "Batteries, Electronics", icon: "G", color: "#10b981" },
-    { name: "Nickel", applications: "Batteries, Stainless Steel", icon: "Ni", color: "#6b7280" },
-    { name: "Cobalt", applications: "Batteries, Superalloys", icon: "Co", color: "#8b5cf6" },
-    { name: "Copper", applications: "Electronics, Infrastructure", icon: "Cu", color: "#f59e0b" },
-    { name: "Rare Earth Elements", applications: "Electronics, Defense", icon: "REE", color: "#ef4444" },
-    { name: "Natural Hydrogen", applications: "Clean Energy, Hard-to-Abate Industries", icon: "H2", color: "#06b6d4" },
+    { name: "Carbon", applications: "Batteries, Electronics, Construction, Agriculture", color: "#1f2937" },
+    { name: "Lithium", applications: "Batteries, Energy Storage", color: "#3b82f6" },
+    { name: "Graphite", applications: "Batteries, Electronics", color: "#10b981" },
+    { name: "Nickel", applications: "Batteries, Stainless Steel", color: "#6b7280" },
+    { name: "Cobalt", applications: "Batteries, Superalloys", color: "#8b5cf6" },
+    { name: "Copper", applications: "Electronics, Infrastructure", color: "#f59e0b" },
+    { name: "Rare Earth Elements", applications: "Electronics, Defense", color: "#ef4444" },
+    { name: "Natural Hydrogen", applications: "Clean Energy, Hard-to-Abate Industries", color: "#06b6d4" },
   ]
 
   const hardToAbateIndustries = [
-    { name: "Steel Production", impact: "28% of industrial emissions", icon: "Steel" },
-    { name: "Cement Manufacturing", impact: "8% of global CO2", icon: "Cement" },
-    { name: "Chemical Processing", impact: "High energy intensity", icon: "Chem" },
-    { name: "Aviation", impact: "2.5% of global emissions", icon: "Aviation" },
-    { name: "Shipping", impact: "3% of global emissions", icon: "Shipping" },
-    { name: "Heavy Manufacturing", impact: "Energy-intensive processes", icon: "Manufacturing" },
+    { name: "Steel Production", impact: "28% of industrial emissions" },
+    { name: "Cement Manufacturing", impact: "8% of global CO2" },
+    { name: "Chemical Processing", impact: "High energy intensity" },
+    { name: "Aviation", impact: "2.5% of global emissions" },
+    { name: "Shipping", impact: "3% of global emissions" },
+    { name: "Heavy Manufacturing", impact: "Energy-intensive processes" },
   ]
 
   const [mineralIndex, setMineralIndex] = useState(0)
@@ -102,7 +102,6 @@ export default function CanadaFocusSection() {
               transition={{ duration: 0.4 }}
               className="min-w-[220px] bg-white/10 backdrop-blur-lg border border-white/10 rounded-2xl p-5 text-center space-y-2 shadow-lg"
             >
-              <div className="text-3xl">{criticalMinerals[mineralIndex].icon}</div>
               <div className="text-white font-semibold">{criticalMinerals[mineralIndex].name}</div>
               <div className="text-slate-400 text-xs">{criticalMinerals[mineralIndex].applications}</div>
             </motion.div>
@@ -120,7 +119,6 @@ export default function CanadaFocusSection() {
               transition={{ duration: 0.4 }}
               className="min-w-[220px] bg-white/10 backdrop-blur-lg border border-white/10 rounded-2xl p-5 text-center space-y-2 shadow-lg"
             >
-              <div className="text-3xl">{hardToAbateIndustries[industryIndex].icon}</div>
               <div className="text-white font-semibold">{hardToAbateIndustries[industryIndex].name}</div>
               <div className="text-slate-400 text-xs">{hardToAbateIndustries[industryIndex].impact}</div>
             </motion.div>
