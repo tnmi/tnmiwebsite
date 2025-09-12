@@ -12,7 +12,7 @@ export async function GET(request, { params }) {
     
     const token = authHeader.split(' ')[1]
     
-    const response = await fetch(`https://upload-file-194429268019.northamerica-northeast2.run.app/product/${id}`, {
+    const response = await fetch(`https://northstar-backend-194429268019.us-central1.run.app/product/${id}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -38,13 +38,11 @@ export async function GET(request, { params }) {
 export async function PATCH(request, { params }) {
   try {
     const { id } = await params; // Get the product ID from params
-    console.log('PATCH request received for product ID:', id);
     
     // Validate authorization header
     const authHeader = request.headers.get('authorization')
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.error('Missing or invalid authorization header');
       return new Response(JSON.stringify({ error: 'Authorization header required' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
@@ -52,85 +50,96 @@ export async function PATCH(request, { params }) {
     }
     
     const token = authHeader.split(' ')[1]
-    console.log('Token extracted successfully');
 
-    // NOTE: No need to fetch current product first since the external PATCH endpoint
-    // handles merging new files with existing ones automatically
-
-    // STEP 2: Parse the incoming data (handle both FormData and JSON)
-    console.log('Parsing request data...');
+    // Parse the incoming data (handle both FormData and JSON)
     const contentType = request.headers.get('content-type') || '';
-    console.log('Content-Type:', contentType);
-    
-    let productName, description, files = [];
-    
-    if (contentType.includes('multipart/form-data')) {
-      // Handle FormData (with files)
-      console.log('Processing as FormData...');
-      const formData = await request.formData();
-      productName = formData.get('product_name');
-      description = formData.get('description');
-      files = formData.getAll('file');
-    } else {
-      // Handle JSON (without files)
-      console.log('Processing as JSON...');
-      const jsonData = await request.json();
-      productName = jsonData.product_name;
-      description = jsonData.description;
-      files = []; // No files in JSON requests
-    }
-    
-    console.log('Request data parsed:', {
-      productName,
-      description: description ? 'provided' : 'not provided',
-      filesCount: files.length
-    });
-
-    // STEP 3: Send data directly to external PATCH endpoint
-    // FIXED: Use the correct endpoint that updates existing products instead of creating new ones
-    console.log('Sending data to external PATCH endpoint...');
     
     let updateResponse;
     
-    if (files.length > 0) {
-      // Send FormData with files directly to the PATCH endpoint
-      console.log('Sending FormData with files to external PATCH endpoint...');
-      const patchFormData = new FormData();
-      patchFormData.append('product_name', productName);
-      patchFormData.append('description', description || '');
+    if (contentType.includes('multipart/form-data')) {
+      // Handle FormData (with files) - new structure
+      const formData = await request.formData();
       
-      // Add all files to the FormData
-      files.forEach((file, index) => {
-        if (file && file.size > 0 && file.name) {
-          patchFormData.append('file', file);
-          console.log(`Adding file ${index + 1}/${files.length}: ${file.name} (${file.size} bytes)`);
+      // Create new FormData for external API
+      const externalFormData = new FormData();
+      
+      // Add text fields
+      const product_name = formData.get('product_name');
+      const description = formData.get('description');
+      const sku = formData.get('sku');
+      const trl_level = formData.get('trl_level');
+      
+      if (product_name) externalFormData.append('product_name', product_name);
+      if (description) externalFormData.append('description', description);
+      if (sku) externalFormData.append('sku', sku);
+      if (trl_level) externalFormData.append('trl_level', trl_level);
+      
+      // Add file arrays with new naming convention
+      const generalFiles = formData.getAll('general_files[]');
+      const sdsFiles = formData.getAll('sds_files[]');
+      const coaFiles = formData.getAll('coa_files[]');
+      const labReports = formData.getAll('lab_reports[]');
+      const analyzerLogs = formData.getAll('analyzer_logs[]');
+      const calibrationDocs = formData.getAll('calibration_docs[]');
+      
+      // Append each file to the appropriate array
+      generalFiles.forEach(file => {
+        if (file && file.size > 0) {
+          externalFormData.append('general_files[]', file);
         }
       });
       
-      // Send to external PATCH endpoint that handles file uploads for existing products
-      updateResponse = await fetch(`https://upload-file-194429268019.northamerica-northeast2.run.app/product/${id}`, {
+      sdsFiles.forEach(file => {
+        if (file && file.size > 0) {
+          externalFormData.append('sds_files[]', file);
+        }
+      });
+      
+      coaFiles.forEach(file => {
+        if (file && file.size > 0) {
+          externalFormData.append('coa_files[]', file);
+        }
+      });
+      
+      labReports.forEach(file => {
+        if (file && file.size > 0) {
+          externalFormData.append('lab_reports[]', file);
+        }
+      });
+      
+      analyzerLogs.forEach(file => {
+        if (file && file.size > 0) {
+          externalFormData.append('analyzer_logs[]', file);
+        }
+      });
+      
+      calibrationDocs.forEach(file => {
+        if (file && file.size > 0) {
+          externalFormData.append('calibration_docs[]', file);
+        }
+      });
+      
+      
+      // Send to external PATCH endpoint
+      updateResponse = await fetch(`https://northstar-backend-194429268019.us-central1.run.app/product/${id}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
           // Don't set Content-Type, let browser set it with boundary for FormData
         },
-        body: patchFormData,
+        body: externalFormData,
       });
     } else {
-      // Send JSON for metadata-only updates
-      console.log('Sending JSON for metadata-only update...');
-      const updatedProduct = {
-        product_name: productName,
-        description: description || '',
-      };
+      // Handle JSON (metadata-only updates)
+      const jsonData = await request.json();
       
-      updateResponse = await fetch(`https://upload-file-194429268019.northamerica-northeast2.run.app/product/${id}`, {
+      updateResponse = await fetch(`https://northstar-backend-194429268019.us-central1.run.app/product/${id}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updatedProduct),
+        body: JSON.stringify(jsonData),
       });
     }
 
@@ -141,7 +150,6 @@ export async function PATCH(request, { params }) {
     }
 
     const finalData = await updateResponse.json();
-    console.log('Product updated successfully');
 
     return new Response(JSON.stringify(finalData), { 
       status: 200,
@@ -149,16 +157,11 @@ export async function PATCH(request, { params }) {
     });
     
   } catch (error) {
-    console.error('PATCH error details:', {
-      message: error.message,
-      stack: error.stack,
-      timestamp: new Date().toISOString()
-    });
+    console.error('PATCH error:', error);
     
     return new Response(JSON.stringify({ 
       error: 'Failed to update product',
-      details: error.message,
-      timestamp: new Date().toISOString()
+      details: error.message
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -180,7 +183,7 @@ export async function DELETE(request, { params }) {
     
     const token = authHeader.split(' ')[1]
     
-    const response = await fetch(`https://upload-file-194429268019.northamerica-northeast2.run.app/product/${id}`, {
+    const response = await fetch(`https://northstar-backend-194429268019.us-central1.run.app/product/${id}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,

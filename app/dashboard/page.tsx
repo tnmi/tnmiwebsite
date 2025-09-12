@@ -13,50 +13,51 @@ import { useAuthStore } from "@/lib/store"
 import { storage } from "@/lib/firebase"
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage"
 import { useLanguage } from "@/lib/i18n"
+import { useToast } from "@/components/ui/use-toast"
 
 interface ProductFile {
   id: string;
-  user_id: string;
-  bucket: string;
-  filename: string;
   original_filename: string;
-  file_url: string;
+  category: string;
+  download_url: string | null;
+  content_type?: string;
   uploaded_at: string;
 }
 
 interface Product {
-  id: string; // Product doc id
-  ownerId?: string;
-  name?: string;
-  product_name?: string; // From API response
-  trlLevel?: string;
-  trl_level?: string; // From API response
+  id: string;
+  product_name?: string;
   description?: string;
-  techSheetFile?: File; // UI-only, not stored in Firestore
-  techSheetUrl?: string; // URL of the uploaded PDF
-  filenames?: string[];
-  files?: ProductFile[]; // Array of attached files from API
+  sku?: string;
+  trl_level?: string;
+  files_by_category: Record<"general"|"sds"|"coa"|"lab_reports"|"analyzer_logs"|"calibration_docs", string[]>;
+  files: Record<string, ProductFile[]>;
   created_at?: string;
   user_id?: string;
 }
 
 export default function MyProductsPage() {
   const { t } = useLanguage()
+  const { toast } = useToast()
   const [products, setProducts] = useState<Product[]>([])
   const [showModal, setShowModal] = useState(false)
+
   const [modalProduct, setModalProduct] = useState<Product | null>(null)
   const [name, setName] = useState("")
+  const [sku, setSku] = useState("")
   const [trlLevel, setTrlLevel] = useState("")
   const [description, setDescription] = useState("")
-  const [techSheetFile, setTechSheetFile] = useState<File | undefined>()
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   
-  // Specific file types for uploads
-  const [sdsFiles, setSdsFiles] = useState<File[]>([])
-  const [coaFiles, setCoaFiles] = useState<File[]>([])
-  const [labTestFiles, setLabTestFiles] = useState<File[]>([])
-  const [analyzerLogFiles, setAnalyzerLogFiles] = useState<File[]>([])
-  const [calibrationFiles, setCalibrationFiles] = useState<File[]>([])
+  // File state organized by category
+  const [files, setFiles] = useState({
+    general: [] as File[],
+    sds: [] as File[],
+    coa: [] as File[],
+    lab: [] as File[],
+    logs: [] as File[],
+    calibration: [] as File[],
+  })
+  
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [addError, setAddError] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
@@ -138,24 +139,45 @@ export default function MyProductsPage() {
     setAddError(null)
     setAdding(true)
     
-    // Collect all files from different categories
-    const allFiles = [
-      ...selectedFiles,
-      ...sdsFiles,
-      ...coaFiles,
-      ...labTestFiles,
-      ...analyzerLogFiles,
-      ...calibrationFiles
-    ]
+    // Check if we have at least one file or a product name
+    const totalFiles = Object.values(files).reduce((sum, fileArray) => sum + fileArray.length, 0)
     
-    if (allFiles.length === 0) {
-      setAddError('Please select at least one file to upload.')
+    if (totalFiles === 0 && !name.trim()) {
+      const errorMessage = 'Please provide a product name and select at least one file to upload.'
+      setAddError(errorMessage)
+      toast({
+        title: "Validation Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
       setAdding(false)
       return
     }
     
     if (!user) {
-      setAddError('You must be signed in to upload a file.')
+      const errorMessage = 'You must be signed in to upload a file.'
+      setAddError(errorMessage)
+      toast({
+        title: "Authentication Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
+      setAdding(false)
+      return
+    }
+    
+    // Check file sizes (limit to 10MB per file)
+    const maxFileSize = 10 * 1024 * 1024 // 10MB in bytes
+    const largeFiles = Object.values(files).flat().filter(file => file.size > maxFileSize)
+    
+    if (largeFiles.length > 0) {
+      const errorMessage = `The following files are too large (max 10MB per file): ${largeFiles.map(f => f.name).join(', ')}`
+      setAddError(errorMessage)
+      toast({
+        title: "File Size Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
       setAdding(false)
       return
     }
@@ -164,15 +186,22 @@ export default function MyProductsPage() {
       // Get Firebase JWT token
       const token = await user.getIdToken()
       
-      // Upload only the first file to create the product
-      // TODO: Need API endpoint to attach additional files to existing products
-      const firstFile = allFiles[0]
+      // Create FormData with new structure
       const formData = new FormData()
-      formData.append('file', firstFile)
-      formData.append('product_name', name) // Add product name to form data
-      if (description) {
-        formData.append('description', description) // Add description if provided
-      }
+      
+      // Add text fields
+      if (name.trim()) formData.append('product_name', name.trim())
+      if (description.trim()) formData.append('description', description.trim())
+      if (sku.trim()) formData.append('sku', sku.trim())
+      if (trlLevel.trim()) formData.append('trl_level', trlLevel.trim())
+      
+      // Add files by category with new naming convention
+      files.general.forEach(file => formData.append('general_files[]', file))
+      files.sds.forEach(file => formData.append('sds_files[]', file))
+      files.coa.forEach(file => formData.append('coa_files[]', file))
+      files.lab.forEach(file => formData.append('lab_reports[]', file))
+      files.logs.forEach(file => formData.append('analyzer_logs[]', file))
+      files.calibration.forEach(file => formData.append('calibration_docs[]', file))
       
       const response = await fetch('/api/upload-file', {
         method: 'POST',
@@ -183,30 +212,43 @@ export default function MyProductsPage() {
       })
       
       if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`)
+        const errorData = await response.json().catch(() => ({}))
+        
+        // Handle specific error cases
+        if (response.status === 413) {
+          throw new Error('Files are too large. Please ensure each file is under 10MB.')
+        } else if (response.status === 400) {
+          throw new Error(errorData.error || 'Invalid request. Please check your input.')
+        } else if (response.status === 401) {
+          throw new Error('Authentication failed. Please log in again.')
+        } else {
+          throw new Error(`Upload failed: ${errorData.error || response.statusText}`)
+        }
       }
       
       const result = await response.json()
       
-      // Log info about remaining files that weren't uploaded
-      if (selectedFiles.length > 1) {
-        console.log(`Note: Only uploaded the first file. ${selectedFiles.length - 1} additional files were not uploaded.`)
-        console.log('Additional files:', selectedFiles.slice(1).map(f => f.name))
-      }
-      
       // Reset form
       setName("")
+      setSku("")
+      setTrlLevel("")
       setDescription("")
-      setSelectedFiles([])
-      setSdsFiles([])
-      setCoaFiles([])
-      setLabTestFiles([])
-      setAnalyzerLogFiles([])
-      setCalibrationFiles([])
-      setTechSheetFile(undefined)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ""
-      }
+      setFiles({
+        general: [],
+        sds: [],
+        coa: [],
+        lab: [],
+        logs: [],
+        calibration: [],
+      })
+      
+      // Clear all file inputs
+      const fileInputs = document.querySelectorAll('input[type="file"]')
+      fileInputs.forEach(input => {
+        if (input instanceof HTMLInputElement) {
+          input.value = ""
+        }
+      })
       
       // Refresh product list
       await fetchProducts()
@@ -216,7 +258,13 @@ export default function MyProductsPage() {
       setModalProduct(null)
     } catch (err: any) {
       console.error('Upload error:', err)
-      setAddError(`Failed to upload file: ${err.message}`)
+      const errorMessage = `Failed to upload product: ${err.message}`
+      setAddError(errorMessage)
+      toast({
+        title: "Upload Failed",
+        description: errorMessage,
+        variant: "destructive",
+      })
     } finally {
       setAdding(false)
     }
@@ -226,13 +274,19 @@ export default function MyProductsPage() {
     e.preventDefault()
     setEditError(null)
     setEditing(true)
-    if (!name) {
-      setEditError('Product name is required.')
+    
+    if (!user || !modalProduct) {
+      setEditError('You must be signed in to edit a product.')
       setEditing(false)
       return
     }
-    if (!user || !modalProduct) {
-      setEditError('You must be signed in to edit a product.')
+    
+    // Check file sizes (limit to 10MB per file)
+    const maxFileSize = 10 * 1024 * 1024 // 10MB in bytes
+    const largeFiles = Object.values(files).flat().filter(file => file.size > maxFileSize)
+    
+    if (largeFiles.length > 0) {
+      setEditError(`The following files are too large (max 10MB per file): ${largeFiles.map(f => f.name).join(', ')}`)
       setEditing(false)
       return
     }
@@ -241,24 +295,28 @@ export default function MyProductsPage() {
       // Get Firebase JWT token
       const token = await user.getIdToken()
       
-      console.log('Updating product with files:', selectedFiles.length)
-      console.log('Product ID:', modalProduct.id)
+      // Check if we have new files to upload
+      const totalFiles = Object.values(files).reduce((sum, fileArray) => sum + fileArray.length, 0)
       
       let response;
       
-      if (selectedFiles.length > 0) {
-        // FIXED: Handle file uploads for existing products using FormData
-        console.log('Updating product with files via FormData...')
+      if (totalFiles > 0) {
+        // Handle file uploads for existing products using FormData
         const formData = new FormData()
         
         // Add product metadata
-        formData.append('product_name', name.trim())
-        formData.append('description', description ? description.trim() : '')
+        if (name.trim()) formData.append('product_name', name.trim())
+        if (description.trim()) formData.append('description', description.trim())
+        if (sku.trim()) formData.append('sku', sku.trim())
+        if (trlLevel.trim()) formData.append('trl_level', trlLevel.trim())
         
-        // Add all selected files
-        selectedFiles.forEach((file) => {
-          formData.append('file', file)
-        })
+        // Add files by category with new naming convention
+        files.general.forEach(file => formData.append('general_files[]', file))
+        files.sds.forEach(file => formData.append('sds_files[]', file))
+        files.coa.forEach(file => formData.append('coa_files[]', file))
+        files.lab.forEach(file => formData.append('lab_reports[]', file))
+        files.logs.forEach(file => formData.append('analyzer_logs[]', file))
+        files.calibration.forEach(file => formData.append('calibration_docs[]', file))
         
         response = await fetch(`/api/product/${modalProduct.id}`, {
           method: 'PATCH',
@@ -270,11 +328,11 @@ export default function MyProductsPage() {
         })
       } else {
         // Handle metadata-only updates via JSON
-        console.log('Updating product metadata only via JSON...')
-        const updateData = {
-          product_name: name.trim(),
-          description: description ? description.trim() : ''
-        }
+        const updateData: any = {}
+        if (name.trim()) updateData.product_name = name.trim()
+        if (description.trim()) updateData.description = description.trim()
+        if (sku.trim()) updateData.sku = sku.trim()
+        if (trlLevel.trim()) updateData.trl_level = trlLevel.trim()
         
         response = await fetch(`/api/product/${modalProduct.id}`, {
           method: 'PATCH',
@@ -293,22 +351,52 @@ export default function MyProductsPage() {
           statusText: response.statusText,
           errorData
         })
+        
+        // Handle specific error cases
+        if (response.status === 413) {
+          throw new Error('Files are too large. Please ensure each file is under 10MB.')
+        } else if (response.status === 400) {
+          throw new Error(errorData.error || 'Invalid request. Please check your input.')
+        } else if (response.status === 401) {
+          throw new Error('Authentication failed. Please log in again.')
+        } else {
         throw new Error(`Failed to update product: ${response.statusText} - ${errorData.error || JSON.stringify(errorData)}`)
+        }
       }
       
       const result = await response.json()
-      console.log('Product updated successfully:', result)
       
+      // Reset form
+      setFiles({
+        general: [],
+        sds: [],
+        coa: [],
+        lab: [],
+        logs: [],
+        calibration: [],
+      })
+      
+      // Clear all file inputs
+      const fileInputs = document.querySelectorAll('input[type="file"]')
+      fileInputs.forEach(input => {
+        if (input instanceof HTMLInputElement) {
+          input.value = ""
+        }
+      })
       
       await fetchProducts()
-      setSelectedFiles([])
-      setTechSheetFile(undefined)
       setShowModal(false)
       setModalProduct(null)
       setEditMode(false)
     } catch (err: any) {
       console.error('Edit error:', err)
-      setEditError(err.message || 'Failed to update product.')
+      const errorMessage = err.message || 'Failed to update product.'
+      setEditError(errorMessage)
+      toast({
+        title: "Update Failed",
+        description: errorMessage,
+        variant: "destructive",
+      })
     } finally {
       setEditing(false)
     }
@@ -347,10 +435,17 @@ export default function MyProductsPage() {
 
   const openAddModal = () => {
     setName("")
+    setSku("")
     setTrlLevel("")
     setDescription("")
-    setTechSheetFile(undefined)
-    setSelectedFiles([])
+    setFiles({
+      general: [],
+      sds: [],
+      coa: [],
+      lab: [],
+      logs: [],
+      calibration: [],
+    })
     setShowModal(true)
     setModalProduct(null)
   }
@@ -372,8 +467,6 @@ export default function MyProductsPage() {
       }
       
       const productData = await response.json()
-      console.log('Fetched product details:', productData)
-      console.log('Files array:', productData.files)
       return productData
     } catch (err) {
       console.error('Error fetching product details:', err)
@@ -382,10 +475,8 @@ export default function MyProductsPage() {
   }
 
   const openProductModal = async (product: Product) => {
-    console.log('Opening product modal for:', product)
     // Fetch detailed product information including files
     const detailedProduct = await fetchProductDetails(product.id)
-    console.log('Setting modal product to:', detailedProduct || product)
     setModalProduct(detailedProduct || product)
     setShowModal(true)
     setEditMode(false)
@@ -428,15 +519,26 @@ export default function MyProductsPage() {
     }
   }
 
-  const handleDownloadFile = async (fileId: string, filename: string) => {
+  const handleDownloadFile = async (file: ProductFile) => {
     if (!user) return
     
     try {
-      // Get Firebase JWT token
+      // If we have a download_url, use it directly
+      if (file.download_url) {
+        const a = document.createElement('a')
+        a.href = file.download_url
+        a.download = file.original_filename
+        a.target = '_blank'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        return
+      }
+      
+      // Fallback to API download if no direct URL
       const token = await user.getIdToken()
       
-      // Call the single file download endpoint
-      const response = await fetch(`/api/file/${fileId}/download`, {
+      const response = await fetch(`/api/file/${file.id}/download`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -454,7 +556,7 @@ export default function MyProductsPage() {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = filename // Use the original filename
+      a.download = file.original_filename
       document.body.appendChild(a)
       a.click()
       
@@ -485,6 +587,7 @@ export default function MyProductsPage() {
         </CardHeader>
       </Card>
 
+
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
         {/* + Card */}
         <Card className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-500 cursor-pointer group shadow-xl hover:shadow-2xl">
@@ -495,29 +598,33 @@ export default function MyProductsPage() {
             </Card>
         
         {/* Product Cards */}
-        {Array.isArray(products) && products.map((prod, idx) => (
+        {Array.isArray(products) && products.map((prod, idx) => {
+          const totalFiles = Object.values(prod.files || {}).reduce((sum, fileArray) => sum + fileArray.length, 0)
+          return (
           <Card key={idx} className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-500 cursor-pointer group shadow-xl hover:shadow-2xl" onClick={() => openProductModal(prod)}>
             <CardContent className="p-4 sm:p-6 h-40 sm:h-48 flex flex-col">
               <div className="flex-1">
-                <h3 className="font-medium text-base sm:text-lg mb-2 sm:mb-3 text-gray-800 truncate tracking-wide drop-shadow-sm" title={prod.name || prod.product_name}>
-                  {prod.name || prod.product_name || 'Unnamed Product'}
+                  <h3 className="font-medium text-base sm:text-lg mb-2 sm:mb-3 text-gray-800 truncate tracking-wide drop-shadow-sm" title={prod.product_name}>
+                    {prod.product_name || 'Unnamed Product'}
                 </h3>
                 <p className="text-xs sm:text-sm text-gray-700 mb-1 sm:mb-2 font-light tracking-wide drop-shadow-sm">
-                  {(prod.trlLevel || prod.trl_level) && `TRL Level: ${prod.trlLevel || prod.trl_level}`}
+                    {prod.trl_level && `TRL Level: ${prod.trl_level}`}
+                    {prod.sku && ` • SKU: ${prod.sku}`}
                 </p>
                 <p className="text-xs text-gray-600 line-clamp-2 sm:line-clamp-3 font-light tracking-wide leading-relaxed drop-shadow-sm">
                   {prod.description || t('noDescription')}
                 </p>
               </div>
-              {prod.techSheetUrl && (
+                {totalFiles > 0 && (
                 <div className="flex items-center mt-2 sm:mt-3 text-xs text-gray-700">
                   <FileText className="w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2" />
-                  <span className="font-light tracking-wide drop-shadow-sm">{t('techSheetAvailable')}</span>
+                    <span className="font-light tracking-wide drop-shadow-sm">{totalFiles} file{totalFiles > 1 ? 's' : ''} attached</span>
                 </div>
               )}
             </CardContent>
           </Card>
-        ))}
+          )
+        })}
       </div>
 
       {/* Modal */}
@@ -530,9 +637,10 @@ export default function MyProductsPage() {
               </button>
               {modalProduct ? (
                 <div>
-                  <CardTitle className="text-lg sm:text-xl mb-2 font-medium text-gray-800 tracking-wide pr-8">{modalProduct.name || modalProduct.product_name || 'Unnamed Product'}</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl mb-2 font-medium text-gray-800 tracking-wide pr-8">{modalProduct.product_name || 'Unnamed Product'}</CardTitle>
                   <CardDescription className="text-gray-600 font-light tracking-wide text-sm sm:text-base">
-                    {(modalProduct.trlLevel || modalProduct.trl_level) && `TRL Level: ${modalProduct.trlLevel || modalProduct.trl_level}`}
+                    {modalProduct.trl_level && `TRL Level: ${modalProduct.trl_level}`}
+                    {modalProduct.sku && ` • SKU: ${modalProduct.sku}`}
               </CardDescription>
                 </div>
               ) : (
@@ -547,23 +655,41 @@ export default function MyProductsPage() {
                       {modalProduct.description || t('noDescription')}
                     </div>
                   )}
-                  {!editMode && modalProduct.techSheetUrl && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <FileText className="w-4 h-4 mr-2" />
-                      <a href={modalProduct.techSheetUrl} target="_blank" rel="noopener noreferrer" className="underline font-light hover:text-tn-primary-blue transition-colors duration-200 tracking-wide">
-                        {t('viewTechSheet')}
-                      </a>
-                    </div>
-                  )}
                   
                   {/* Attached Files Section - Hide when editing */}
                   {!editMode && (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <h4 className="text-sm font-medium text-gray-800 tracking-wide">{t('attachedFiles')}</h4>
-                      {console.log('Modal product files check:', modalProduct.files, modalProduct.files?.length)}
-                      {modalProduct.files && modalProduct.files.length > 0 ? (
+                      {(() => {
+                        // Handle the new backend structure with files organized by category
+                        if (modalProduct.files && typeof modalProduct.files === 'object') {
+                          const categoryLabels = {
+                            general: 'General Files',
+                            sds: 'SDS/TDS/MSDS',
+                            coa: 'COA (Certificate of Analysis)',
+                            lab_reports: 'Lab Test Reports',
+                            analyzer_logs: 'Analyzer Logs',
+                            calibration_docs: 'Calibration Certificates & SOPs'
+                          };
+                          
+                          // Get all categories that have files
+                          const categoriesWithFiles = Object.entries(modalProduct.files).filter(([category, fileList]) => {
+                            return Array.isArray(fileList) && fileList.length > 0;
+                          });
+                          
+                          if (categoriesWithFiles.length === 0) {
+                            return <p className="text-sm text-gray-500 font-light tracking-wide">{t('noFilesAttached')}</p>;
+                          }
+                          
+                          return (
+                            <div className="space-y-4">
+                              {categoriesWithFiles.map(([category, fileList]) => (
+                                <div key={category} className="space-y-2">
+                                  <h5 className="text-xs font-medium text-gray-700 tracking-wide uppercase">
+                                    {categoryLabels[category as keyof typeof categoryLabels] || category}
+                                  </h5>
                         <div className="space-y-2">
-                          {modalProduct.files.map((file) => (
+                                    {fileList.map((file) => (
                             <div key={file.id} className="flex items-center justify-between p-3 bg-white/60 backdrop-blur-sm rounded-lg border border-gray-200">
                               <div className="flex items-center space-x-3 flex-1 min-w-0">
                                 <FileText className="w-4 h-4 text-gray-500 flex-shrink-0" />
@@ -581,7 +707,7 @@ export default function MyProductsPage() {
                                   variant="ghost"
                                   size="sm"
                                   className="h-8 w-8 p-0 hover:bg-gray-100"
-                                  onClick={() => handleDownloadFile(file.id, file.original_filename)}
+                                            onClick={() => handleDownloadFile(file)}
                                   title={`Download ${file.original_filename}`}
                                 >
                                   <Download className="w-4 h-4 text-gray-600" />
@@ -603,9 +729,14 @@ export default function MyProductsPage() {
                             </div>
                           ))}
                         </div>
-                      ) : (
-                        <p className="text-sm text-gray-500 font-light tracking-wide">{t('noFilesAttached')}</p>
-                      )}
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        }
+                        
+                        return <p className="text-sm text-gray-500 font-light tracking-wide">{t('noFilesAttached')}</p>;
+                      })()}
                     </div>
                   )}
                   
@@ -613,10 +744,18 @@ export default function MyProductsPage() {
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" className="border-gray-300 text-white font-light tracking-wide transition-all duration-200 text-xs sm:text-sm" onClick={() => {
                         setEditMode(true)
-                        setName(modalProduct.name || modalProduct.product_name || '')
+                        setName(modalProduct.product_name || '')
+                        setSku(modalProduct.sku || '')
+                        setTrlLevel(modalProduct.trl_level || '')
                         setDescription(modalProduct.description || '')
-                        setTechSheetFile(undefined)
-                        setSelectedFiles([])
+                        setFiles({
+                          general: [],
+                          sds: [],
+                          coa: [],
+                          lab: [],
+                          logs: [],
+                          calibration: [],
+                        })
                       }}>
                         <Pencil className="w-3 sm:w-4 h-3 sm:h-4 mr-1 text-white" />
                         {t('edit')}
@@ -627,6 +766,11 @@ export default function MyProductsPage() {
                   {/* Edit form */}
                   {editMode && (
                     <form onSubmit={handleEditProduct} className="space-y-4">
+                      {editError && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                          <div className="text-red-600 text-sm font-medium tracking-wide">{editError}</div>
+                        </div>
+                      )}
                       <div>
                         <label className="block mb-2 font-medium text-gray-700 tracking-wide">{t('productName')}</label>
                         <input
@@ -634,26 +778,107 @@ export default function MyProductsPage() {
                           value={name}
                           onChange={e => setName(e.target.value)}
                           className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 placeholder-gray-500"
-                          required
                         />
                       </div>
                       <div>
-                        <label className="block mb-2 font-medium text-gray-700 tracking-wide">{t('addFile')}</label>
+                        <label className="block mb-2 font-medium text-gray-700 tracking-wide">SKU</label>
+                        <input
+                          type="text"
+                          value={sku}
+                          onChange={e => setSku(e.target.value)}
+                          className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 placeholder-gray-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block mb-2 font-medium text-gray-700 tracking-wide">TRL Level</label>
+                        <input
+                          type="text"
+                          value={trlLevel}
+                          onChange={e => setTrlLevel(e.target.value)}
+                          className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 placeholder-gray-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block mb-2 font-medium text-gray-700 tracking-wide">Description</label>
+                        <textarea
+                          value={description}
+                          onChange={e => setDescription(e.target.value)}
+                          className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 resize-none font-light tracking-wide leading-relaxed text-gray-800 placeholder-gray-500"
+                          rows={3}
+                        />
+                      </div>
+                      
+                      {/* Existing Files Display */}
+                      {modalProduct.files && Object.keys(modalProduct.files).some(key => Array.isArray(modalProduct.files[key]) && modalProduct.files[key].length > 0) && (
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-medium text-gray-800 tracking-wide border-b border-gray-200 pb-2">Current Files</h3>
+                          {Object.entries(modalProduct.files).map(([category, fileList]) => {
+                            if (!Array.isArray(fileList) || fileList.length === 0) return null;
+                            
+                            const categoryLabels = {
+                              general: 'General Files',
+                              sds: 'SDS/TDS/MSDS',
+                              coa: 'COA (Certificate of Analysis)',
+                              lab_reports: 'Lab Test Reports',
+                              analyzer_logs: 'Analyzer Logs',
+                              calibration_docs: 'Calibration Certificates & SOPs'
+                            };
+                            
+                            return (
+                              <div key={category} className="space-y-2">
+                                <h5 className="text-sm font-medium text-gray-700 tracking-wide">
+                                  {categoryLabels[category as keyof typeof categoryLabels] || category}
+                                </h5>
+                                <div className="space-y-1">
+                                  {fileList.map((file) => (
+                                    <div key={file.id} className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                                      <div className="flex items-center space-x-2 flex-1 min-w-0">
+                                        <FileText className="w-3 h-3 text-gray-500 flex-shrink-0" />
+                                        <span className="text-xs text-gray-700 truncate">{file.original_filename}</span>
+                                      </div>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 w-6 p-0 hover:bg-red-50 hover:text-red-600"
+                                        onClick={() => handleDeleteFile(file.id)}
+                                        disabled={deletingFileId === file.id}
+                                        title="Delete file"
+                                      >
+                                        {deletingFileId === file.id ? (
+                                          <div className="w-3 h-3 border border-red-600 border-t-transparent rounded-full animate-spin" />
+                                        ) : (
+                                          <Trash2 className="w-3 h-3 text-red-500" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* File Upload Categories for Editing */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-medium text-gray-800 tracking-wide border-b border-gray-200 pb-2">Add New Files</h3>
+                        
+                        {/* General Product Files */}
+                        <div>
+                          <label className="block mb-2 font-medium text-gray-700 tracking-wide">General Product Files (max 10MB per file)</label>
                         <input
                           type="file"
-                          accept="application/pdf"
+                            accept=".pdf,.doc,.docx,.xls,.xlsx" 
                           multiple
-                          ref={fileInputRef}
                           onChange={e => {
-                            const files = Array.from(e.target.files || [])
-                            setSelectedFiles(files)
-                            setTechSheetFile(files[0])
+                              const newFiles = Array.from(e.target.files || [])
+                              setFiles(prev => ({ ...prev, general: [...prev.general, ...newFiles] }))
                           }}
                           className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
                         />
-                        {selectedFiles.length > 0 && (
+                          {files.general.length > 0 && (
                           <div className="mt-2 space-y-1">
-                            {selectedFiles.map((file, index) => (
+                              {files.general.map((file, index) => (
                               <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
                                 <FileText className="w-3 h-3 mr-1" />
                                 {file.name}
@@ -662,15 +887,133 @@ export default function MyProductsPage() {
                           </div>
                         )}
                       </div>
+
+                        {/* SDS/TDS/MSDS */}
                       <div>
-                        <label className="block mb-2 font-medium text-gray-700 tracking-wide">{t('description')}</label>
-                        <textarea
-                          value={description}
-                          onChange={e => setDescription(e.target.value)}
-                          className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 resize-none font-light tracking-wide leading-relaxed text-gray-800 placeholder-gray-500"
-                          rows={3}
-                        />
+                          <label className="block mb-2 font-medium text-gray-700 tracking-wide">SDS/TDS/MSDS Files (max 10MB per file)</label>
+                          <input 
+                            type="file" 
+                            accept=".pdf,.doc,.docx" 
+                            multiple
+                            onChange={e => {
+                              const newFiles = Array.from(e.target.files || [])
+                              setFiles(prev => ({ ...prev, sds: [...prev.sds, ...newFiles] }))
+                            }}
+                            className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
+                          />
+                          {files.sds.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              {files.sds.map((file, index) => (
+                                <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
+                                  <FileText className="w-3 h-3 mr-1" />
+                                  {file.name}
                       </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* COA (Certificate of Analysis) */}
+                        <div>
+                          <label className="block mb-2 font-medium text-gray-700 tracking-wide">COA (Certificate of Analysis) per lot/batch (max 10MB per file)</label>
+                          <input 
+                            type="file" 
+                            accept=".pdf,.doc,.docx" 
+                            multiple
+                            onChange={e => {
+                              const newFiles = Array.from(e.target.files || [])
+                              setFiles(prev => ({ ...prev, coa: [...prev.coa, ...newFiles] }))
+                            }}
+                            className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
+                          />
+                          {files.coa.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              {files.coa.map((file, index) => (
+                                <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
+                                  <FileText className="w-3 h-3 mr-1" />
+                                  {file.name}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Lab Test Reports */}
+                        <div>
+                          <label className="block mb-2 font-medium text-gray-700 tracking-wide">Lab Test Reports (PDF/CSV) from LIMS (max 10MB per file)</label>
+                          <input 
+                            type="file" 
+                            accept=".pdf,.csv,.xls,.xlsx" 
+                            multiple
+                            onChange={e => {
+                              const newFiles = Array.from(e.target.files || [])
+                              setFiles(prev => ({ ...prev, lab: [...prev.lab, ...newFiles] }))
+                            }}
+                            className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
+                          />
+                          {files.lab.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              {files.lab.map((file, index) => (
+                                <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
+                                  <FileText className="w-3 h-3 mr-1" />
+                                  {file.name}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Analyzer Logs */}
+                        <div>
+                          <label className="block mb-2 font-medium text-gray-700 tracking-wide">On-line Analyzer Logs from DCS/SCADA or Historians (e.g., PI) (max 10MB per file)</label>
+                          <input 
+                            type="file" 
+                            accept=".csv,.txt,.log,.pdf,.xls,.xlsx" 
+                            multiple
+                            onChange={e => {
+                              const newFiles = Array.from(e.target.files || [])
+                              setFiles(prev => ({ ...prev, logs: [...prev.logs, ...newFiles] }))
+                            }}
+                            className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
+                          />
+                          {files.logs.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              {files.logs.map((file, index) => (
+                                <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
+                                  <FileText className="w-3 h-3 mr-1" />
+                                  {file.name}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Calibration Certificates and SOPs */}
+                        <div>
+                          <label className="block mb-2 font-medium text-gray-700 tracking-wide">Calibration Certificates and SOPs (Standard Operating Procedures) (max 10MB per file)</label>
+                          <input 
+                            type="file" 
+                            accept=".pdf,.doc,.docx" 
+                            multiple
+                            onChange={e => {
+                              const newFiles = Array.from(e.target.files || [])
+                              setFiles(prev => ({ ...prev, calibration: [...prev.calibration, ...newFiles] }))
+                            }}
+                            className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
+                          />
+                          {files.calibration.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              {files.calibration.map((file, index) => (
+                                <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
+                                  <FileText className="w-3 h-3 mr-1" />
+                                  {file.name}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
                       <div className="flex flex-col sm:flex-row gap-2">
                         <Button type="submit" className="flex-1 bg-tn-primary-blue hover:bg-tn-primary-blue/90 text-white font-medium tracking-wide transition-all duration-200 text-xs sm:text-sm" disabled={editing}>
                           {editing ? t('saving') : t('save')}
@@ -688,7 +1031,11 @@ export default function MyProductsPage() {
                 </div>
               ) : (
                 <form onSubmit={handleAddProduct} className="space-y-4">
-                  {addError && <div className="text-red-600 text-sm font-light tracking-wide">{addError}</div>}
+                  {addError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                      <div className="text-red-600 text-sm font-medium tracking-wide">{addError}</div>
+                    </div>
+                  )}
                   <div>
                     <label className="block mb-2 font-medium text-gray-700 tracking-wide">{t('productName')}</label>
                     <input
@@ -697,41 +1044,59 @@ export default function MyProductsPage() {
                       onChange={(e) => setName(e.target.value)}
                       placeholder={t('productName')}
                       className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 placeholder-gray-500"
-                      required
                     />
                   </div>
                   <div>
-                    <label className="block mb-2 font-medium text-gray-700 tracking-wide">{t('description')}</label>
+                    <label className="block mb-2 font-medium text-gray-700 tracking-wide">SKU</label>
+                    <input
+                      type="text"
+                      value={sku}
+                      onChange={(e) => setSku(e.target.value)}
+                      placeholder="Product SKU"
+                      className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 placeholder-gray-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2 font-medium text-gray-700 tracking-wide">TRL Level</label>
+                    <input
+                      type="text"
+                      value={trlLevel}
+                      onChange={(e) => setTrlLevel(e.target.value)}
+                      placeholder="Technology Readiness Level"
+                      className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 placeholder-gray-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2 font-medium text-gray-700 tracking-wide">Description</label>
                     <textarea
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      placeholder={t('description')}
+                      placeholder="Product description"
                       className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 resize-none font-light tracking-wide leading-relaxed text-gray-800 placeholder-gray-500"
                       rows={3}
                     />
                   </div>
+                  
                   {/* File Upload Categories */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-medium text-gray-800 tracking-wide border-b border-gray-200 pb-2">Document Uploads</h3>
                     
                     {/* General Product Files */}
                     <div>
-                      <label className="block mb-2 font-medium text-gray-700 tracking-wide">General Product Files</label>
+                      <label className="block mb-2 font-medium text-gray-700 tracking-wide">General Product Files (max 10MB per file)</label>
                       <input 
                         type="file" 
                         accept=".pdf,.doc,.docx,.xls,.xlsx" 
                         multiple
-                        ref={fileInputRef} 
                         onChange={e => {
-                          const files = Array.from(e.target.files || [])
-                          setSelectedFiles(files)
-                          setTechSheetFile(files[0])
+                          const newFiles = Array.from(e.target.files || [])
+                          setFiles(prev => ({ ...prev, general: [...prev.general, ...newFiles] }))
                         }}
                         className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
                       />
-                      {selectedFiles.length > 0 && (
+                      {files.general.length > 0 && (
                         <div className="mt-2 space-y-1">
-                          {selectedFiles.map((file, index) => (
+                          {files.general.map((file, index) => (
                             <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
                               <FileText className="w-3 h-3 mr-1" />
                               {file.name}
@@ -743,20 +1108,20 @@ export default function MyProductsPage() {
 
                     {/* SDS/TDS/MSDS */}
                     <div>
-                      <label className="block mb-2 font-medium text-gray-700 tracking-wide">SDS/TDS/MSDS Files</label>
+                      <label className="block mb-2 font-medium text-gray-700 tracking-wide">SDS/TDS/MSDS Files (max 10MB per file)</label>
                       <input 
                         type="file" 
                         accept=".pdf,.doc,.docx" 
                         multiple
                         onChange={e => {
-                          const files = Array.from(e.target.files || [])
-                          setSdsFiles(files)
+                          const newFiles = Array.from(e.target.files || [])
+                          setFiles(prev => ({ ...prev, sds: [...prev.sds, ...newFiles] }))
                         }}
                         className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
                       />
-                      {sdsFiles.length > 0 && (
+                      {files.sds.length > 0 && (
                         <div className="mt-2 space-y-1">
-                          {sdsFiles.map((file, index) => (
+                          {files.sds.map((file, index) => (
                             <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
                               <FileText className="w-3 h-3 mr-1" />
                               {file.name}
@@ -768,20 +1133,20 @@ export default function MyProductsPage() {
 
                     {/* COA (Certificate of Analysis) */}
                     <div>
-                      <label className="block mb-2 font-medium text-gray-700 tracking-wide">COA (Certificate of Analysis) per lot/batch</label>
+                      <label className="block mb-2 font-medium text-gray-700 tracking-wide">COA (Certificate of Analysis) per lot/batch (max 10MB per file)</label>
                       <input 
                         type="file" 
                         accept=".pdf,.doc,.docx" 
                         multiple
                         onChange={e => {
-                          const files = Array.from(e.target.files || [])
-                          setCoaFiles(files)
+                          const newFiles = Array.from(e.target.files || [])
+                          setFiles(prev => ({ ...prev, coa: [...prev.coa, ...newFiles] }))
                         }}
                         className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
                       />
-                      {coaFiles.length > 0 && (
+                      {files.coa.length > 0 && (
                         <div className="mt-2 space-y-1">
-                          {coaFiles.map((file, index) => (
+                          {files.coa.map((file, index) => (
                             <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
                               <FileText className="w-3 h-3 mr-1" />
                               {file.name}
@@ -793,20 +1158,20 @@ export default function MyProductsPage() {
 
                     {/* Lab Test Reports */}
                     <div>
-                      <label className="block mb-2 font-medium text-gray-700 tracking-wide">Lab Test Reports (PDF/CSV) from LIMS</label>
+                      <label className="block mb-2 font-medium text-gray-700 tracking-wide">Lab Test Reports (PDF/CSV) from LIMS (max 10MB per file)</label>
                       <input 
                         type="file" 
                         accept=".pdf,.csv,.xls,.xlsx" 
                         multiple
                         onChange={e => {
-                          const files = Array.from(e.target.files || [])
-                          setLabTestFiles(files)
+                          const newFiles = Array.from(e.target.files || [])
+                          setFiles(prev => ({ ...prev, lab: [...prev.lab, ...newFiles] }))
                         }}
                         className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
                       />
-                      {labTestFiles.length > 0 && (
+                      {files.lab.length > 0 && (
                         <div className="mt-2 space-y-1">
-                          {labTestFiles.map((file, index) => (
+                          {files.lab.map((file, index) => (
                             <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
                               <FileText className="w-3 h-3 mr-1" />
                               {file.name}
@@ -818,20 +1183,20 @@ export default function MyProductsPage() {
 
                     {/* Analyzer Logs */}
                     <div>
-                      <label className="block mb-2 font-medium text-gray-700 tracking-wide">On-line Analyzer Logs from DCS/SCADA or Historians (e.g., PI)</label>
+                      <label className="block mb-2 font-medium text-gray-700 tracking-wide">On-line Analyzer Logs from DCS/SCADA or Historians (e.g., PI) (max 10MB per file)</label>
                       <input 
                         type="file" 
                         accept=".csv,.txt,.log,.pdf,.xls,.xlsx" 
                         multiple
                         onChange={e => {
-                          const files = Array.from(e.target.files || [])
-                          setAnalyzerLogFiles(files)
+                          const newFiles = Array.from(e.target.files || [])
+                          setFiles(prev => ({ ...prev, logs: [...prev.logs, ...newFiles] }))
                         }}
                         className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
                       />
-                      {analyzerLogFiles.length > 0 && (
+                      {files.logs.length > 0 && (
                         <div className="mt-2 space-y-1">
-                          {analyzerLogFiles.map((file, index) => (
+                          {files.logs.map((file, index) => (
                             <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
                               <FileText className="w-3 h-3 mr-1" />
                               {file.name}
@@ -843,20 +1208,20 @@ export default function MyProductsPage() {
 
                     {/* Calibration Certificates and SOPs */}
                     <div>
-                      <label className="block mb-2 font-medium text-gray-700 tracking-wide">Calibration Certificates and SOPs (Standard Operating Procedures)</label>
+                      <label className="block mb-2 font-medium text-gray-700 tracking-wide">Calibration Certificates and SOPs (Standard Operating Procedures) (max 10MB per file)</label>
                       <input 
                         type="file" 
                         accept=".pdf,.doc,.docx" 
                         multiple
                         onChange={e => {
-                          const files = Array.from(e.target.files || [])
-                          setCalibrationFiles(files)
+                          const newFiles = Array.from(e.target.files || [])
+                          setFiles(prev => ({ ...prev, calibration: [...prev.calibration, ...newFiles] }))
                         }}
                         className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
                       />
-                      {calibrationFiles.length > 0 && (
+                      {files.calibration.length > 0 && (
                         <div className="mt-2 space-y-1">
-                          {calibrationFiles.map((file, index) => (
+                          {files.calibration.map((file, index) => (
                             <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
                               <FileText className="w-3 h-3 mr-1" />
                               {file.name}

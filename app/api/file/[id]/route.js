@@ -17,7 +17,7 @@ export async function DELETE(request, { params }) {
     }
 
     // Forward the request to the external API
-    const response = await fetch(`https://upload-file-194429268019.northamerica-northeast2.run.app/file/${fileId}`, {
+    const response = await fetch(`https://northstar-backend-194429268019.us-central1.run.app/file/${fileId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': authHeader,

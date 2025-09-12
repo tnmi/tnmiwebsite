@@ -16,7 +16,7 @@ export async function GET(request, { params }) {
     console.log('Single file download request for file ID:', id)
 
     // Forward the download request to the external API
-    const response = await fetch(`https://upload-file-194429268019.northamerica-northeast2.run.app/file/${id}/download`, {
+    const response = await fetch(`https://northstar-backend-194429268019.us-central1.run.app/file/${id}/download`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

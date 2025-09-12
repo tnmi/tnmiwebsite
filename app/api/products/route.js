@@ -11,12 +11,13 @@ export async function GET(request) {
     }
     
     // Forward the request to the external endpoint
-    const response = await fetch('https://upload-file-194429268019.northamerica-northeast2.run.app/products', {
+    const response = await fetch('https://northstar-backend-194429268019.us-central1.run.app/products', {
       method: 'GET',
       headers: {
         'Authorization': authHeader
       }
     })
+    
     
     if (!response.ok) {
       const errorText = await response.text()
@@ -32,7 +33,6 @@ export async function GET(request) {
     
     const products = await response.json()
 
-    
     return new Response(JSON.stringify(products), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },

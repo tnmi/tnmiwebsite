@@ -11,7 +11,7 @@ export async function GET(request) {
     }
 
     // Call the external API to export user data
-    const response = await fetch('https://upload-file-194429268019.northamerica-northeast2.run.app/user/export', {
+    const response = await fetch('https://northstar-backend-194429268019.us-central1.run.app/user/export', {
       method: 'GET',
       headers: {
         'Authorization': authHeader
