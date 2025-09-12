@@ -28,7 +28,6 @@ interface Product {
   id: string;
   product_name?: string;
   description?: string;
-  sku?: string;
   trl_level?: string;
   files_by_category: Record<"general"|"sds"|"coa"|"lab_reports"|"analyzer_logs"|"calibration_docs", string[]>;
   files: Record<string, ProductFile[]>;
@@ -44,7 +43,6 @@ export default function MyProductsPage() {
 
   const [modalProduct, setModalProduct] = useState<Product | null>(null)
   const [name, setName] = useState("")
-  const [sku, setSku] = useState("")
   const [trlLevel, setTrlLevel] = useState("")
   const [description, setDescription] = useState("")
   
@@ -190,10 +188,9 @@ export default function MyProductsPage() {
       const formData = new FormData()
       
       // Add text fields
-      if (name.trim()) formData.append('product_name', name.trim())
-      if (description.trim()) formData.append('description', description.trim())
-      if (sku.trim()) formData.append('sku', sku.trim())
-      if (trlLevel.trim()) formData.append('trl_level', trlLevel.trim())
+        if (name.trim()) formData.append('product_name', name.trim())
+        if (description.trim()) formData.append('description', description.trim())
+        if (trlLevel.trim()) formData.append('trl_level', trlLevel.trim())
       
       // Add files by category with new naming convention
       files.general.forEach(file => formData.append('general_files[]', file))
@@ -230,7 +227,6 @@ export default function MyProductsPage() {
       
       // Reset form
       setName("")
-      setSku("")
       setTrlLevel("")
       setDescription("")
       setFiles({
@@ -307,7 +303,6 @@ export default function MyProductsPage() {
         // Add product metadata
         if (name.trim()) formData.append('product_name', name.trim())
         if (description.trim()) formData.append('description', description.trim())
-        if (sku.trim()) formData.append('sku', sku.trim())
         if (trlLevel.trim()) formData.append('trl_level', trlLevel.trim())
         
         // Add files by category with new naming convention
@@ -331,7 +326,6 @@ export default function MyProductsPage() {
         const updateData: any = {}
         if (name.trim()) updateData.product_name = name.trim()
         if (description.trim()) updateData.description = description.trim()
-        if (sku.trim()) updateData.sku = sku.trim()
         if (trlLevel.trim()) updateData.trl_level = trlLevel.trim()
         
         response = await fetch(`/api/product/${modalProduct.id}`, {
@@ -435,7 +429,6 @@ export default function MyProductsPage() {
 
   const openAddModal = () => {
     setName("")
-    setSku("")
     setTrlLevel("")
     setDescription("")
     setFiles({
@@ -609,7 +602,6 @@ export default function MyProductsPage() {
                 </h3>
                 <p className="text-xs sm:text-sm text-gray-700 mb-1 sm:mb-2 font-light tracking-wide drop-shadow-sm">
                     {prod.trl_level && `TRL Level: ${prod.trl_level}`}
-                    {prod.sku && ` • SKU: ${prod.sku}`}
                 </p>
                 <p className="text-xs text-gray-600 line-clamp-2 sm:line-clamp-3 font-light tracking-wide leading-relaxed drop-shadow-sm">
                   {prod.description || t('noDescription')}
@@ -630,7 +622,7 @@ export default function MyProductsPage() {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4">
-          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-2xl border border-white/30 shadow-2xl font-satoshi relative z-[999999]">
+          <Card className="w-full max-w-[80vw] max-h-[80vh] overflow-y-auto bg-white/95 backdrop-blur-2xl border border-white/30 shadow-2xl font-satoshi relative z-[999999]">
             <CardHeader className="relative p-4 sm:p-6 border-b-0">
               <button onClick={closeModal} className="absolute top-3 sm:top-4 right-3 sm:right-4 text-gray-500 hover:text-gray-700 text-xl transition-colors duration-200">
                 &times;
@@ -640,7 +632,6 @@ export default function MyProductsPage() {
                   <CardTitle className="text-lg sm:text-xl mb-2 font-medium text-gray-800 tracking-wide pr-8">{modalProduct.product_name || 'Unnamed Product'}</CardTitle>
                   <CardDescription className="text-gray-600 font-light tracking-wide text-sm sm:text-base">
                     {modalProduct.trl_level && `TRL Level: ${modalProduct.trl_level}`}
-                    {modalProduct.sku && ` • SKU: ${modalProduct.sku}`}
               </CardDescription>
                 </div>
               ) : (
@@ -649,10 +640,17 @@ export default function MyProductsPage() {
             </CardHeader>
             <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 pt-0">
               {modalProduct ? (
-                <div className={editMode ? "space-y-2" : "space-y-4"}>
+                <div className={editMode ? "space-y-6" : "space-y-6"}>
                   {!editMode && (
+                    <div className="space-y-4">
                     <div className="text-gray-700 font-light tracking-wide leading-relaxed">
                       {modalProduct.description || t('noDescription')}
+                      </div>
+                      {modalProduct.trl_level && (
+                        <div className="inline-flex items-center px-3 py-1 bg-tn-primary-blue/10 text-tn-primary-blue rounded-full text-sm font-medium">
+                          TRL Level {modalProduct.trl_level}
+                    </div>
+                  )}
                     </div>
                   )}
                   
@@ -682,35 +680,41 @@ export default function MyProductsPage() {
                           }
                           
                           return (
-                            <div className="space-y-4">
+                            <div className="space-y-6">
                               {categoriesWithFiles.map(([category, fileList]) => (
-                                <div key={category} className="space-y-2">
-                                  <h5 className="text-xs font-medium text-gray-700 tracking-wide uppercase">
+                                <div key={category} className="space-y-3">
+                                  <h5 className="text-base font-semibold text-gray-800 tracking-wide flex items-center">
+                                    <div className="w-2 h-2 bg-tn-primary-blue rounded-full mr-3"></div>
                                     {categoryLabels[category as keyof typeof categoryLabels] || category}
+                                    <span className="ml-2 text-sm font-normal text-gray-500">({fileList.length})</span>
                                   </h5>
-                        <div className="space-y-2">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                     {fileList.map((file) => (
-                            <div key={file.id} className="flex items-center justify-between p-3 bg-white/60 backdrop-blur-sm rounded-lg border border-gray-200">
-                              <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                <FileText className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                      <div key={file.id} className="group bg-white rounded-lg border border-gray-200 hover:border-tn-primary-blue/30 hover:shadow-md transition-all duration-200 p-4">
+                                        <div className="flex items-start justify-between mb-3">
+                                          <div className="flex items-center space-x-2 flex-1 min-w-0">
+                                            <div className="w-8 h-8 bg-tn-primary-blue/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                              <FileText className="w-4 h-4 text-tn-primary-blue" />
+                                            </div>
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-sm font-medium text-gray-900 truncate">
+                                              <p className="text-sm font-medium text-gray-900 truncate" title={file.original_filename}>
                                     {file.original_filename}
                                   </p>
-                                  <p className="text-xs text-gray-500">
-                                    {t('uploadedAt')}: {new Date(file.uploaded_at).toLocaleDateString()}
+                                              <p className="text-xs text-gray-500 mt-1">
+                                                {new Date(file.uploaded_at).toLocaleDateString()}
                                   </p>
                                 </div>
                               </div>
-                              <div className="flex items-center space-x-2 flex-shrink-0">
+                                        </div>
+                                        <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-8 w-8 p-0 hover:bg-gray-100"
+                                            className="h-8 w-8 p-0 hover:bg-tn-primary-blue/10 hover:text-tn-primary-blue"
                                             onClick={() => handleDownloadFile(file)}
                                   title={`Download ${file.original_filename}`}
                                 >
-                                  <Download className="w-4 h-4 text-gray-600" />
+                                            <Download className="w-4 h-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
@@ -722,7 +726,7 @@ export default function MyProductsPage() {
                                   {deletingFileId === file.id ? (
                                     <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
                                   ) : (
-                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                              <Trash2 className="w-4 h-4" />
                                   )}
                                 </Button>
                               </div>
@@ -741,11 +745,10 @@ export default function MyProductsPage() {
                   )}
                   
                   {!editMode && (
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="border-gray-300 text-white font-light tracking-wide transition-all duration-200 text-xs sm:text-sm" onClick={() => {
+                    <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                      <Button variant="outline" size="sm" className="border-gray-300 text-gray-700 font-light tracking-wide transition-all duration-200 text-xs sm:text-sm hover:bg-gray-50" onClick={() => {
                         setEditMode(true)
                         setName(modalProduct.product_name || '')
-                        setSku(modalProduct.sku || '')
                         setTrlLevel(modalProduct.trl_level || '')
                         setDescription(modalProduct.description || '')
                         setFiles({
@@ -757,17 +760,21 @@ export default function MyProductsPage() {
                           calibration: [],
                         })
                       }}>
-                        <Pencil className="w-3 sm:w-4 h-3 sm:h-4 mr-1 text-white" />
+                        <Pencil className="w-3 sm:w-4 h-3 sm:h-4 mr-1" />
                         {t('edit')}
+                </Button>
+                      <Button variant="destructive" size="sm" className="bg-red-500 hover:bg-red-600 text-white font-light tracking-wide transition-all duration-200 text-xs sm:text-sm" onClick={handleDeleteProduct} disabled={deleting}>
+                        {deleting ? t('deleting') : t('delete')}
                 </Button>
               </div>
                   )}
                   
                   {/* Edit form */}
                   {editMode && (
-                    <form onSubmit={handleEditProduct} className="space-y-4">
+                    <form onSubmit={handleEditProduct} className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {editError && (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 col-span-full">
                           <div className="text-red-600 text-sm font-medium tracking-wide">{editError}</div>
                         </div>
                       )}
@@ -781,22 +788,24 @@ export default function MyProductsPage() {
                         />
                       </div>
                       <div>
-                        <label className="block mb-2 font-medium text-gray-700 tracking-wide">SKU</label>
-                        <input
-                          type="text"
-                          value={sku}
-                          onChange={e => setSku(e.target.value)}
-                          className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 placeholder-gray-500"
-                        />
-                      </div>
-                      <div>
                         <label className="block mb-2 font-medium text-gray-700 tracking-wide">TRL Level</label>
-                        <input
-                          type="text"
-                          value={trlLevel}
-                          onChange={e => setTrlLevel(e.target.value)}
-                          className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 placeholder-gray-500"
-                        />
+                        <div className="relative">
+                          <select
+                            value={trlLevel}
+                            onChange={e => setTrlLevel(e.target.value)}
+                            className="w-full p-3 pr-10 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 appearance-none cursor-pointer hover:bg-white/80 hover:border-tn-primary-blue/30"
+                          >
+                            <option value="">Select TRL Level</option>
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(level => (
+                              <option key={level} value={level}>TRL {level}</option>
+                            ))}
+                          </select>
+                          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
+                        </div>
                       </div>
                       <div>
                         <label className="block mb-2 font-medium text-gray-700 tracking-wide">Description</label>
@@ -806,6 +815,7 @@ export default function MyProductsPage() {
                           className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 resize-none font-light tracking-wide leading-relaxed text-gray-800 placeholder-gray-500"
                           rows={3}
                         />
+                      </div>
                       </div>
                       
                       {/* Existing Files Display */}
@@ -860,8 +870,9 @@ export default function MyProductsPage() {
                       )}
 
                       {/* File Upload Categories for Editing */}
-                      <div className="space-y-4">
+                      <div className="space-y-6">
                         <h3 className="text-lg font-medium text-gray-800 tracking-wide border-b border-gray-200 pb-2">Add New Files</h3>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         
                         {/* General Product Files */}
                         <div>
@@ -1012,6 +1023,7 @@ export default function MyProductsPage() {
                             </div>
                           )}
                         </div>
+                        </div>
                       </div>
                       
                       <div className="flex flex-col sm:flex-row gap-2">
@@ -1030,12 +1042,14 @@ export default function MyProductsPage() {
                   )}
                 </div>
               ) : (
-                <form onSubmit={handleAddProduct} className="space-y-4">
+                <form onSubmit={handleAddProduct} className="space-y-6">
                   {addError && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
                       <div className="text-red-600 text-sm font-medium tracking-wide">{addError}</div>
                     </div>
                   )}
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block mb-2 font-medium text-gray-700 tracking-wide">{t('productName')}</label>
                     <input
@@ -1047,39 +1061,41 @@ export default function MyProductsPage() {
                     />
                   </div>
                   <div>
-                    <label className="block mb-2 font-medium text-gray-700 tracking-wide">SKU</label>
-                    <input
-                      type="text"
-                      value={sku}
-                      onChange={(e) => setSku(e.target.value)}
-                      placeholder="Product SKU"
-                      className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 placeholder-gray-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block mb-2 font-medium text-gray-700 tracking-wide">TRL Level</label>
-                    <input
-                      type="text"
-                      value={trlLevel}
-                      onChange={(e) => setTrlLevel(e.target.value)}
-                      placeholder="Technology Readiness Level"
-                      className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 placeholder-gray-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block mb-2 font-medium text-gray-700 tracking-wide">Description</label>
+                      <label className="block mb-2 font-medium text-gray-700 tracking-wide">TRL Level</label>
+                      <div className="relative">
+                        <select
+                          value={trlLevel}
+                          onChange={(e) => setTrlLevel(e.target.value)}
+                          className="w-full p-3 pr-10 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 appearance-none cursor-pointer hover:bg-white/80 hover:border-tn-primary-blue/30"
+                        >
+                          <option value="">Select TRL Level</option>
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(level => (
+                            <option key={level} value={level}>TRL {level}</option>
+                          ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block mb-2 font-medium text-gray-700 tracking-wide">Description</label>
                     <textarea
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Product description"
+                        placeholder="Product description"
                       className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 resize-none font-light tracking-wide leading-relaxed text-gray-800 placeholder-gray-500"
                       rows={3}
                     />
                   </div>
+                  </div>
                   
                   {/* File Upload Categories */}
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     <h3 className="text-lg font-medium text-gray-800 tracking-wide border-b border-gray-200 pb-2">Document Uploads</h3>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     
                     {/* General Product Files */}
                     <div>
@@ -1229,6 +1245,7 @@ export default function MyProductsPage() {
                           ))}
                         </div>
                       )}
+                    </div>
                     </div>
                   </div>
                   <Button type="submit" className="w-full bg-tn-primary-blue hover:bg-tn-primary-blue/90 text-white font-medium tracking-wide transition-all duration-200 text-sm sm:text-base" disabled={adding}>

@@ -66,12 +66,10 @@ export async function PATCH(request, { params }) {
       // Add text fields
       const product_name = formData.get('product_name');
       const description = formData.get('description');
-      const sku = formData.get('sku');
       const trl_level = formData.get('trl_level');
       
       if (product_name) externalFormData.append('product_name', product_name);
       if (description) externalFormData.append('description', description);
-      if (sku) externalFormData.append('sku', sku);
       if (trl_level) externalFormData.append('trl_level', trl_level);
       
       // Add file arrays with new naming convention
