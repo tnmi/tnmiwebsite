@@ -66,6 +66,14 @@ export default function MyProductsPage() {
   const [deletingFileId, setDeletingFileId] = useState<string | null>(null)
   const user = useAuthStore((state) => state.user)
 
+  // Function to remove a file from a specific category
+  const removeFileFromCategory = (category: keyof typeof files, fileIndex: number) => {
+    setFiles(prev => ({
+      ...prev,
+      [category]: prev[category].filter((_, index) => index !== fileIndex)
+    }))
+  }
+
   const fetchProducts = async () => {
     if (!user) return;
     
@@ -890,9 +898,18 @@ export default function MyProductsPage() {
                           {files.general.length > 0 && (
                           <div className="mt-2 space-y-1">
                               {files.general.map((file, index) => (
-                              <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
-                                <FileText className="w-3 h-3 mr-1" />
-                                {file.name}
+                              <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                                <div className="flex items-center flex-1 min-w-0">
+                                  <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
+                                  <span className="truncate">{file.name}</span>
+                                </div>
+                                <button
+                                  onClick={() => removeFileFromCategory('general', index)}
+                                  className="ml-2 p-1 hover:bg-red-100 rounded-full transition-colors flex-shrink-0"
+                                  title="Remove file"
+                                >
+                                  <X className="w-3 h-3 text-red-500" />
+                                </button>
                               </div>
                             ))}
                           </div>
@@ -915,17 +932,26 @@ export default function MyProductsPage() {
                           {files.sds.length > 0 && (
                             <div className="mt-2 space-y-1">
                               {files.sds.map((file, index) => (
-                                <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
-                                  <FileText className="w-3 h-3 mr-1" />
-                                  {file.name}
+                              <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                                <div className="flex items-center flex-1 min-w-0">
+                                  <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
+                                  <span className="truncate">{file.name}</span>
                       </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                                <button
+                                  onClick={() => removeFileFromCategory('sds', index)}
+                                  className="ml-2 p-1 hover:bg-red-100 rounded-full transition-colors flex-shrink-0"
+                                  title="Remove file"
+                                >
+                                  <X className="w-3 h-3 text-red-500" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
 
                         {/* COA (Certificate of Analysis) */}
-                        <div>
+                      <div>
                           <label className="block mb-2 font-medium text-gray-700 tracking-wide">COA (Certificate of Analysis) per lot/batch (max 10MB per file)</label>
                           <input 
                             type="file" 
@@ -940,17 +966,26 @@ export default function MyProductsPage() {
                           {files.coa.length > 0 && (
                             <div className="mt-2 space-y-1">
                               {files.coa.map((file, index) => (
-                                <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
-                                  <FileText className="w-3 h-3 mr-1" />
-                                  {file.name}
+                              <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                                <div className="flex items-center flex-1 min-w-0">
+                                  <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
+                                  <span className="truncate">{file.name}</span>
                                 </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                                <button
+                                  onClick={() => removeFileFromCategory('coa', index)}
+                                  className="ml-2 p-1 hover:bg-red-100 rounded-full transition-colors flex-shrink-0"
+                                  title="Remove file"
+                                >
+                                  <X className="w-3 h-3 text-red-500" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
 
                         {/* Lab Test Reports */}
-                        <div>
+                      <div>
                           <label className="block mb-2 font-medium text-gray-700 tracking-wide">Lab Test Reports (PDF/CSV) from LIMS (max 10MB per file)</label>
                           <input 
                             type="file" 
@@ -965,17 +1000,26 @@ export default function MyProductsPage() {
                           {files.lab.length > 0 && (
                             <div className="mt-2 space-y-1">
                               {files.lab.map((file, index) => (
-                                <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
-                                  <FileText className="w-3 h-3 mr-1" />
-                                  {file.name}
+                              <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                                <div className="flex items-center flex-1 min-w-0">
+                                  <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
+                                  <span className="truncate">{file.name}</span>
                                 </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                                <button
+                                  onClick={() => removeFileFromCategory('lab', index)}
+                                  className="ml-2 p-1 hover:bg-red-100 rounded-full transition-colors flex-shrink-0"
+                                  title="Remove file"
+                                >
+                                  <X className="w-3 h-3 text-red-500" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
 
                         {/* Analyzer Logs */}
-                        <div>
+                      <div>
                           <label className="block mb-2 font-medium text-gray-700 tracking-wide">On-line Analyzer Logs from DCS/SCADA or Historians (e.g., PI) (max 10MB per file)</label>
                           <input 
                             type="file" 
@@ -990,17 +1034,26 @@ export default function MyProductsPage() {
                           {files.logs.length > 0 && (
                             <div className="mt-2 space-y-1">
                               {files.logs.map((file, index) => (
-                                <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
-                                  <FileText className="w-3 h-3 mr-1" />
-                                  {file.name}
+                              <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                                <div className="flex items-center flex-1 min-w-0">
+                                  <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
+                                  <span className="truncate">{file.name}</span>
                                 </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                                <button
+                                  onClick={() => removeFileFromCategory('logs', index)}
+                                  className="ml-2 p-1 hover:bg-red-100 rounded-full transition-colors flex-shrink-0"
+                                  title="Remove file"
+                                >
+                                  <X className="w-3 h-3 text-red-500" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
 
                         {/* Calibration Certificates and SOPs */}
-                        <div>
+                      <div>
                           <label className="block mb-2 font-medium text-gray-700 tracking-wide">Calibration Certificates and SOPs (Standard Operating Procedures) (max 10MB per file)</label>
                           <input 
                             type="file" 
@@ -1015,15 +1068,24 @@ export default function MyProductsPage() {
                           {files.calibration.length > 0 && (
                             <div className="mt-2 space-y-1">
                               {files.calibration.map((file, index) => (
-                                <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
-                                  <FileText className="w-3 h-3 mr-1" />
-                                  {file.name}
+                              <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                                <div className="flex items-center flex-1 min-w-0">
+                                  <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
+                                  <span className="truncate">{file.name}</span>
                                 </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        </div>
+                                <button
+                                  onClick={() => removeFileFromCategory('calibration', index)}
+                                  className="ml-2 p-1 hover:bg-red-100 rounded-full transition-colors flex-shrink-0"
+                                  title="Remove file"
+                                >
+                                  <X className="w-3 h-3 text-red-500" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      </div>
                       </div>
                       
                       <div className="flex flex-col sm:flex-row gap-2">
@@ -1113,9 +1175,18 @@ export default function MyProductsPage() {
                       {files.general.length > 0 && (
                         <div className="mt-2 space-y-1">
                           {files.general.map((file, index) => (
-                            <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
-                              <FileText className="w-3 h-3 mr-1" />
-                              {file.name}
+                            <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                              <div className="flex items-center flex-1 min-w-0">
+                                <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
+                                <span className="truncate">{file.name}</span>
+                              </div>
+                              <button
+                                onClick={() => removeFileFromCategory('general', index)}
+                                className="ml-2 p-1 hover:bg-red-100 rounded-full transition-colors flex-shrink-0"
+                                title="Remove file"
+                              >
+                                <X className="w-3 h-3 text-red-500" />
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -1138,9 +1209,18 @@ export default function MyProductsPage() {
                       {files.sds.length > 0 && (
                         <div className="mt-2 space-y-1">
                           {files.sds.map((file, index) => (
-                            <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
-                              <FileText className="w-3 h-3 mr-1" />
-                              {file.name}
+                            <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                              <div className="flex items-center flex-1 min-w-0">
+                                <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
+                                <span className="truncate">{file.name}</span>
+                              </div>
+                              <button
+                                onClick={() => removeFileFromCategory('sds', index)}
+                                className="ml-2 p-1 hover:bg-red-100 rounded-full transition-colors flex-shrink-0"
+                                title="Remove file"
+                              >
+                                <X className="w-3 h-3 text-red-500" />
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -1163,9 +1243,18 @@ export default function MyProductsPage() {
                       {files.coa.length > 0 && (
                         <div className="mt-2 space-y-1">
                           {files.coa.map((file, index) => (
-                            <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
-                              <FileText className="w-3 h-3 mr-1" />
-                              {file.name}
+                            <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                              <div className="flex items-center flex-1 min-w-0">
+                                <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
+                                <span className="truncate">{file.name}</span>
+                              </div>
+                              <button
+                                onClick={() => removeFileFromCategory('coa', index)}
+                                className="ml-2 p-1 hover:bg-red-100 rounded-full transition-colors flex-shrink-0"
+                                title="Remove file"
+                              >
+                                <X className="w-3 h-3 text-red-500" />
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -1188,9 +1277,18 @@ export default function MyProductsPage() {
                       {files.lab.length > 0 && (
                         <div className="mt-2 space-y-1">
                           {files.lab.map((file, index) => (
-                            <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
-                              <FileText className="w-3 h-3 mr-1" />
-                              {file.name}
+                            <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                              <div className="flex items-center flex-1 min-w-0">
+                                <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
+                                <span className="truncate">{file.name}</span>
+                              </div>
+                              <button
+                                onClick={() => removeFileFromCategory('lab', index)}
+                                className="ml-2 p-1 hover:bg-red-100 rounded-full transition-colors flex-shrink-0"
+                                title="Remove file"
+                              >
+                                <X className="w-3 h-3 text-red-500" />
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -1213,9 +1311,18 @@ export default function MyProductsPage() {
                       {files.logs.length > 0 && (
                         <div className="mt-2 space-y-1">
                           {files.logs.map((file, index) => (
-                            <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
-                              <FileText className="w-3 h-3 mr-1" />
-                              {file.name}
+                            <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                              <div className="flex items-center flex-1 min-w-0">
+                                <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
+                                <span className="truncate">{file.name}</span>
+                              </div>
+                              <button
+                                onClick={() => removeFileFromCategory('logs', index)}
+                                className="ml-2 p-1 hover:bg-red-100 rounded-full transition-colors flex-shrink-0"
+                                title="Remove file"
+                              >
+                                <X className="w-3 h-3 text-red-500" />
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -1238,9 +1345,18 @@ export default function MyProductsPage() {
                       {files.calibration.length > 0 && (
                         <div className="mt-2 space-y-1">
                           {files.calibration.map((file, index) => (
-                            <div key={index} className="text-xs text-gray-500 flex items-center font-light tracking-wide">
-                              <FileText className="w-3 h-3 mr-1" />
-                              {file.name}
+                            <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                              <div className="flex items-center flex-1 min-w-0">
+                                <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
+                                <span className="truncate">{file.name}</span>
+                              </div>
+                              <button
+                                onClick={() => removeFileFromCategory('calibration', index)}
+                                className="ml-2 p-1 hover:bg-red-100 rounded-full transition-colors flex-shrink-0"
+                                title="Remove file"
+                              >
+                                <X className="w-3 h-3 text-red-500" />
+                              </button>
                             </div>
                           ))}
                         </div>

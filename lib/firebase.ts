@@ -8,13 +8,14 @@ import { useAuthStore } from "@/lib/store";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCGNOttjl5rhi6_G-ZFf0YNKODE7uxP5Ps",
-  authDomain: "tnmi-8d8f5.firebaseapp.com",
-  projectId: "tnmi-8d8f5",
-  storageBucket: "tnmi-8d8f5.firebasestorage.app",
-  messagingSenderId: "194429268019",
-  appId: "1:194429268019:web:608d250889c8c3e3deb346"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE,
+  authDomain: process.env.NEXT_PUBLIC_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_APP_ID
 };
+
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp()
 export const auth = getAuth(app)

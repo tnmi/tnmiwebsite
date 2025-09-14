@@ -66,13 +66,11 @@ export default function StepOne({ onComplete, setParentLoading, geminiData, pars
         setParentLoading(false);
         setIsUploading(false);
       } catch (e) {
-        console.error("Failed to parse Gemini response as JSON:", e);
         setErrorMessage("Something went wrong while processing the file. Please try again.");
         setParentLoading(false);
         setIsUploading(false);
       }
     } catch (error) {
-      console.error("Gemini API Error:", error);
       if (error.response?.status === 429 || error.response?.status >= 500) {
         setErrorMessage("Server is currently unavailable or too many requests. Please try again later.");
       } else {

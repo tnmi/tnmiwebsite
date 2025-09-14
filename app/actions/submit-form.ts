@@ -141,7 +141,7 @@ export async function submitForm(
   }
 
   // 2) Business logic (e-mail)
-  console.log("✅ Valid submission:", formType, parsed.data);
+  // Log successful submission (without sensitive data)
 
   if (process.env.RESEND_API_KEY) {
     try {

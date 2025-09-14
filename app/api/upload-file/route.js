@@ -33,6 +33,42 @@ export async function POST(request) {
     const analyzerLogs = formData.getAll('analyzer_logs[]')
     const calibrationDocs = formData.getAll('calibration_docs[]')
     
+    // Security: Validate file types and sizes
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'text/csv',
+      'text/plain'
+    ]
+    const maxFileSize = 10 * 1024 * 1024 // 10MB
+    
+    const allFilesToValidate = [...generalFiles, ...sdsFiles, ...coaFiles, ...labReports, ...analyzerLogs, ...calibrationDocs]
+      .filter(file => file && file.size > 0)
+    
+    // Validate each file
+    for (const file of allFilesToValidate) {
+      if (!allowedTypes.includes(file.type)) {
+        return new Response(JSON.stringify({ 
+          error: 'Invalid file type. Only PDF, DOC, DOCX, XLS, XLSX, CSV, and TXT files are allowed.' 
+        }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+      
+      if (file.size > maxFileSize) {
+        return new Response(JSON.stringify({ 
+          error: 'File too large. Maximum file size is 10MB.' 
+        }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+    }
+    
     // Append each file to the appropriate array (exact API specification)
     generalFiles.forEach(file => {
       if (file && file.size > 0) {
@@ -105,11 +141,10 @@ export async function POST(request) {
     }
     
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error('External API error:', response.status, errorText)
+      // Don't expose internal error details
+      console.error('External API error:', response.status)
       return new Response(JSON.stringify({ 
-        error: `Upload failed: ${response.status} ${response.statusText}`,
-        details: errorText
+        error: 'Upload failed. Please try again.'
       }), {
         status: response.status,
         headers: { 'Content-Type': 'application/json' },
@@ -126,8 +161,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('Upload proxy error:', error)
     return new Response(JSON.stringify({ 
-      error: 'Internal server error',
-      details: error.message 
+      error: 'Internal server error'
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

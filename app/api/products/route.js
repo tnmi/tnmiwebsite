@@ -20,11 +20,9 @@ export async function GET(request) {
     
     
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error('External API error:', response.status, errorText)
+      console.error('External API error:', response.status)
       return new Response(JSON.stringify({ 
-        error: `Failed to fetch products: ${response.status} ${response.statusText}`,
-        details: errorText
+        error: 'Failed to fetch products'
       }), {
         status: response.status,
         headers: { 'Content-Type': 'application/json' },
@@ -41,8 +39,7 @@ export async function GET(request) {
   } catch (error) {
     console.error('Proxy products fetch error:', error)
     return new Response(JSON.stringify({ 
-      error: 'Internal server error',
-      details: error.message 
+      error: 'Internal server error'
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

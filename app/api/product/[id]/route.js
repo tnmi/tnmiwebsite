@@ -28,7 +28,7 @@ export async function GET(request, { params }) {
     })
   } catch (error) {
     console.error('Error fetching product:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     })
@@ -142,9 +142,8 @@ export async function PATCH(request, { params }) {
     }
 
     if (!updateResponse.ok) {
-      const errorText = await updateResponse.text();
-      console.error('Product update failed:', updateResponse.status, errorText);
-      throw new Error(`Failed to update product: ${updateResponse.status} ${updateResponse.statusText} - ${errorText}`);
+      console.error('Product update failed:', updateResponse.status);
+      throw new Error('Failed to update product');
     }
 
     const finalData = await updateResponse.json();
@@ -158,8 +157,7 @@ export async function PATCH(request, { params }) {
     console.error('PATCH error:', error);
     
     return new Response(JSON.stringify({ 
-      error: 'Failed to update product',
-      details: error.message
+      error: 'Failed to update product'
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -197,7 +195,7 @@ export async function DELETE(request, { params }) {
     })
   } catch (error) {
     console.error('Error deleting product:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     })

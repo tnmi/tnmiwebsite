@@ -2,15 +2,12 @@ import { Resend } from 'resend'
 
 export async function POST(request) {
   try {
-    console.log('Support email API called')
     const body = await request.json()
-    console.log('Request body:', body)
     
     const { name, email, subject, message } = body
 
     // Validate required fields
     if (!name || !email || !subject || !message) {
-      console.error('Missing required fields:', { name: !!name, email: !!email, subject: !!subject, message: !!message })
       return new Response(JSON.stringify({ error: 'All fields are required' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
@@ -65,8 +62,6 @@ export async function POST(request) {
       </div>
     `
 
-    console.log('Attempting to send email via Resend...')
-    
     try {
       const { data, error } = await resend.emails.send({
         from: "NorthStar Support <tobias@truenorthmaterials.com>",
@@ -88,7 +83,6 @@ export async function POST(request) {
         })
       }
 
-      console.log('Email sent successfully:', data)
       return new Response(JSON.stringify({
         success: true,
         message: 'Support email sent successfully',
