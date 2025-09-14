@@ -2,6 +2,15 @@ import { Resend } from 'resend'
 
 export async function POST(request) {
   try {
+    // Validate authentication
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Authorization required' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     const body = await request.json()
     
     const { name, email, subject, message } = body
