@@ -43,12 +43,10 @@ export default function StepTwo({ geminiData,  setGeminiData, parsedPdfText, set
         onComplete(parsedJson);
         setParentLoading(false);
       } catch (e) {
-        console.error("Failed to parse Gemini new markets response as JSON:", e);
         setErrorMessage("Something went wrong while fetching new markets. Please try again.");
         setParentLoading(false);
       }
     } catch (error) {
-      console.error("Gemini process step two API error:", error);
       setErrorMessage("Something went wrong while fetching new markets. Please try again.");
       setParentLoading(false);
     }

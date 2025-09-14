@@ -39,7 +39,6 @@ export default function StepThree({ cleanJsonText, parsedPdfText, geminiData, on
           }),
         });
         if (!response.data?.text) {
-          console.error("Empty response from Gemini.");
           return;
         }
 
@@ -52,7 +51,7 @@ export default function StepThree({ cleanJsonText, parsedPdfText, geminiData, on
         const parsedJson = JSON.parse(cleanText);
         setMarketCompanies(prev => ({ ...prev, ...parsedJson }));
       } catch (error) {
-        console.error(`Error fetching companies for ${market}:`, error);
+        // Error handled silently
       }
     };
 
@@ -89,7 +88,6 @@ Only return a valid JSON object, nothing else.`,
         setMarketAnalysis(prev => ({ ...prev, ...parsedJson.markets }));
         setMarketAnalysisErrors(prev => ({ ...prev, [market]: null }));
       } catch (error) {
-        console.error(`Error fetching market report for ${market}:`, error);
         setMarketAnalysisErrors(prev => ({ ...prev, [market]: "Error: Market report not available." }));
       }
     };
