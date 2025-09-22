@@ -2,8 +2,8 @@
 
 import { auth } from "@/lib/firebase"
 
-// Live API Base URL
-const API_BASE_URL = "https://market-research-api-26pkzuizfq-uc.a.run.app"
+// Using local Next.js API proxy to avoid CORS issues
+const API_BASE_URL = "/api/market-research"
 
 // Data types based on the market research API
 export interface Order {
