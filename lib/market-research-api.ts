@@ -123,6 +123,28 @@ class MarketResearchAPI {
     const response = await fetch(`${this.baseURL}/health`)
     return this.handleResponse<{ status: string }>(response)
   }
+
+  // Create new market research order (POST /api/v1/orders/)
+  async startResearch(userId: string, productId: string): Promise<{ order_id: string }> {
+    const headers = await this.getAuthHeaders(userId)
+    const response = await fetch(`${this.baseURL}/orders`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        user_id: userId, // Included for proxy to extract to X-User-ID header
+        product_id: productId,
+        requirements: {
+          target_company_count: 20,
+          include_competitor_analysis: true,
+          deep_market_analysis: true
+        },
+        priority: "high"
+      })
+    })
+    
+    const result = await this.handleResponse<any>(response)
+    return { order_id: result.data.order_id }
+  }
 }
 
 export const marketResearchAPI = new MarketResearchAPI()

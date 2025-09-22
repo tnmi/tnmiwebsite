@@ -112,7 +112,7 @@ export default function MarketInsightsPage() {
     } catch (error) {
       toast({
         title: "Failed to Start Research",
-        description: error instanceof Error ? error.message : "An unexpected error occurred.",
+        description: error instanceof Error ? error.message : "An unexpected error occurred while creating the research order.",
         variant: "destructive"
       })
     }
