@@ -60,19 +60,28 @@ export default function MarketInsightsPage() {
       }
       
       try {
+        console.log('Fetching products for user:', user.uid)
         const token = await user.getIdToken()
-        const response = await fetch('https://www.truenorthmaterials.com/api/products', {
+        console.log('Token length:', token?.length || 0)
+        
+        const response = await fetch('/api/products', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         })
         
+        console.log('Products API response status:', response.status)
+        
         if (response.ok) {
-          const products = await response.json()
-          setAvailableProducts(Array.isArray(products) ? products : [])
+          const data = await response.json()
+          console.log('Products received:', data)
+          // Ensure products is always an array (same logic as main dashboard)
+          const productsArray = Array.isArray(data) ? data : (data.products || data.data || [])
+          setAvailableProducts(productsArray)
         } else {
-          console.error('Failed to fetch products:', response.status)
+          const errorText = await response.text()
+          console.error('Failed to fetch products:', response.status, errorText)
           setAvailableProducts([])
         }
       } catch (err) {
@@ -81,9 +90,8 @@ export default function MarketInsightsPage() {
       }
     }
 
-    // Add a small delay to ensure user is fully authenticated
-    if (user && !user.isAnonymous) {
-      setTimeout(fetchProducts, 500)
+    if (user) {
+      fetchProducts()
     }
   }, [user])
 
