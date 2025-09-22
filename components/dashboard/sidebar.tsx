@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Users, FileText, Settings, LifeBuoy, Box, ChevronLeft, ChevronRight, LayoutDashboard, Package } from "lucide-react"
+import { Home, Users, FileText, Settings, LifeBuoy, Box, ChevronLeft, ChevronRight, LayoutDashboard, Package, BarChart3 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
 import { useLanguage } from "@/lib/i18n"
@@ -15,6 +15,7 @@ export default function Sidebar() {
 
   const navigation = [
     { name: t('overview'), href: "/dashboard", icon: Package },
+    { name: "Market Insights", href: "/dashboard/market-insights", icon: BarChart3 },
   ]
 
   const secondaryNavigation = [
