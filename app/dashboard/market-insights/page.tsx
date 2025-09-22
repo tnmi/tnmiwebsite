@@ -60,10 +60,7 @@ export default function MarketInsightsPage() {
       }
       
       try {
-        console.log('Fetching products for user:', user.uid)
         const token = await user.getIdToken()
-        console.log('Token length:', token?.length || 0)
-        
         const response = await fetch('/api/products', {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -71,11 +68,8 @@ export default function MarketInsightsPage() {
           }
         })
         
-        console.log('Products API response status:', response.status)
-        
         if (response.ok) {
           const data = await response.json()
-          console.log('Products received:', data)
           // Ensure products is always an array (same logic as main dashboard)
           const productsArray = Array.isArray(data) ? data : (data.products || data.data || [])
           setAvailableProducts(productsArray)

@@ -2,8 +2,8 @@
 
 import { auth } from "@/lib/firebase"
 
-// Using local Next.js API proxy to avoid CORS issues
-const API_BASE_URL = "/api/market-research"
+// Using production Market Research API directly
+const API_BASE_URL = "https://market-research-api-26pkzuizfq-uc.a.run.app/api/v1"
 
 // Data types based on the market research API
 export interface Order {
@@ -120,7 +120,7 @@ class MarketResearchAPI {
 
   // Health check
   async healthCheck(): Promise<{ status: string }> {
-    const response = await fetch(`${this.baseURL}/health`)
+    const response = await fetch(`https://market-research-api-26pkzuizfq-uc.a.run.app/health`)
     return this.handleResponse<{ status: string }>(response)
   }
 
@@ -131,7 +131,6 @@ class MarketResearchAPI {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        user_id: userId, // Included for proxy to extract to X-User-ID header
         product_id: productId,
         requirements: {
           target_company_count: 20,
