@@ -56,31 +56,23 @@ export default function MarketInsightsPage() {
   useEffect(() => {
     const fetchProducts = async () => {
       if (!user?.uid) {
-        console.log('No user UID available for products fetch')
         return
       }
       
       try {
-        console.log('Fetching products for user:', user.uid)
         const token = await user.getIdToken()
-        console.log('Got token, making products request...')
-        
-        const response = await fetch('/api/products', {
+        const response = await fetch('https://www.truenorthmaterials.com/api/products', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         })
         
-        console.log('Products response status:', response.status)
-        
         if (response.ok) {
           const products = await response.json()
-          console.log('Products received:', products)
           setAvailableProducts(Array.isArray(products) ? products : [])
         } else {
-          const errorText = await response.text()
-          console.error('Failed to fetch products:', response.status, errorText)
+          console.error('Failed to fetch products:', response.status)
           setAvailableProducts([])
         }
       } catch (err) {

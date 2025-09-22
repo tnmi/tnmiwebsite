@@ -2,8 +2,8 @@
 
 import { auth } from "@/lib/firebase"
 
-// Using local Next.js API proxy to avoid CORS issues
-const API_BASE_URL = "/api/market-research"
+// Using production API directly
+const API_BASE_URL = "https://market-research-api-26pkzuizfq-uc.a.run.app/api/v1"
 
 // Data types based on the market research API
 export interface Order {
@@ -67,18 +67,18 @@ class MarketResearchAPI {
   }
 
   // 1. List user orders (GET /api/v1/users/{user_id}/orders)
-  async getUserOrders(userId: string): Promise<Order[]> {
+  async getUserOrders(userId: string): Promise<any> {
     const headers = await this.getAuthHeaders(userId)
-    const response = await fetch(`${this.baseURL}/user/${userId}/orders`, {
+    const response = await fetch(`${this.baseURL}/users/${userId}/orders`, {
       headers
     })
-    return this.handleResponse<Order[]>(response)
+    return this.handleResponse<any>(response)
   }
 
   // 2. Get user analytics (GET /api/v1/users/{user_id}/analytics)
   async getUserAnalytics(userId: string): Promise<any> {
     const headers = await this.getAuthHeaders(userId)
-    const response = await fetch(`${this.baseURL}/user/${userId}/analytics`, {
+    const response = await fetch(`${this.baseURL}/users/${userId}/analytics`, {
       headers
     })
     return this.handleResponse<any>(response)
@@ -87,7 +87,7 @@ class MarketResearchAPI {
   // 3. Get order full report (GET /api/v1/orders/{order_id}/full-report)
   async getOrderReport(orderId: string, userId: string): Promise<any> {
     const headers = await this.getAuthHeaders(userId)
-    const response = await fetch(`${this.baseURL}/order/${orderId}/full-report`, {
+    const response = await fetch(`${this.baseURL}/orders/${orderId}/full-report`, {
       headers
     })
     return this.handleResponse<any>(response)
@@ -120,7 +120,7 @@ class MarketResearchAPI {
 
   // Health check
   async healthCheck(): Promise<{ status: string }> {
-    const response = await fetch(`${this.baseURL}/health`)
+    const response = await fetch(`https://market-research-api-26pkzuizfq-uc.a.run.app/health`)
     return this.handleResponse<{ status: string }>(response)
   }
 
@@ -131,7 +131,6 @@ class MarketResearchAPI {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        user_id: userId, // Included for proxy to extract to X-User-ID header
         product_id: productId,
         requirements: {
           target_company_count: 20,
