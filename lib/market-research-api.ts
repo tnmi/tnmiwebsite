@@ -127,7 +127,7 @@ class MarketResearchAPI {
   // Create new market research order (POST /api/v1/orders/)
   async startResearch(userId: string, productId: string): Promise<{ order_id: string }> {
     const headers = await this.getAuthHeaders(userId)
-    const response = await fetch(`${this.baseURL}/orders`, {
+    const response = await fetch(`${this.baseURL}/orders/`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
