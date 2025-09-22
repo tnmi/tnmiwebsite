@@ -35,18 +35,19 @@ class MarketResearchAPI {
     this.baseURL = API_BASE_URL
   }
 
-  private async getAuthHeaders(): Promise<Record<string, string>> {
+  private async getAuthHeaders(userId?: string): Promise<Record<string, string>> {
     try {
       const user = auth.currentUser
-      if (user) {
-        const token = await user.getIdToken()
+      const effectiveUserId = userId || user?.uid
+      
+      if (effectiveUserId) {
         return {
-          'Authorization': `Bearer ${token}`,
+          'X-User-ID': effectiveUserId,
           'Content-Type': 'application/json'
         }
       }
     } catch (error) {
-      console.error('Failed to get auth token:', error)
+      console.error('Failed to get user ID:', error)
     }
     
     // Return basic headers if no auth
@@ -65,36 +66,56 @@ class MarketResearchAPI {
     return data
   }
 
-  // 1. Start market research (POST /invoke)
-  async startResearch(userId: string, productId: string): Promise<{ order_id: string }> {
-    const headers = await this.getAuthHeaders()
-    const response = await fetch(`${this.baseURL}/invoke`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        user_id: userId,
-        product_id: productId
-      })
-    })
-    return this.handleResponse<{ order_id: string }>(response)
-  }
-
-  // 2. Check order status (GET /order/{order_id}/status)
-  async getOrderStatus(orderId: string): Promise<OrderStatus> {
-    const headers = await this.getAuthHeaders()
-    const response = await fetch(`${this.baseURL}/order/${orderId}/status`, {
-      headers
-    })
-    return this.handleResponse<OrderStatus>(response)
-  }
-
-  // 3. List user orders (GET /user/{user_id}/orders)
+  // 1. List user orders (GET /api/v1/users/{user_id}/orders)
   async getUserOrders(userId: string): Promise<Order[]> {
-    const headers = await this.getAuthHeaders()
+    const headers = await this.getAuthHeaders(userId)
     const response = await fetch(`${this.baseURL}/user/${userId}/orders`, {
       headers
     })
     return this.handleResponse<Order[]>(response)
+  }
+
+  // 2. Get user analytics (GET /api/v1/users/{user_id}/analytics)
+  async getUserAnalytics(userId: string): Promise<any> {
+    const headers = await this.getAuthHeaders(userId)
+    const response = await fetch(`${this.baseURL}/user/${userId}/analytics`, {
+      headers
+    })
+    return this.handleResponse<any>(response)
+  }
+
+  // 3. Get order full report (GET /api/v1/orders/{order_id}/full-report)
+  async getOrderReport(orderId: string, userId: string): Promise<any> {
+    const headers = await this.getAuthHeaders(userId)
+    const response = await fetch(`${this.baseURL}/order/${orderId}/full-report`, {
+      headers
+    })
+    return this.handleResponse<any>(response)
+  }
+
+  // 4. Search companies (GET /api/v1/search/companies)
+  async searchCompanies(query: string, userId: string): Promise<any> {
+    const headers = await this.getAuthHeaders(userId)
+    const response = await fetch(`${this.baseURL}/search/companies?query=${encodeURIComponent(query)}`, {
+      headers
+    })
+    return this.handleResponse<any>(response)
+  }
+
+  // 5. Export order to PDF (POST /api/v1/export/orders/{order_id}/pdf)
+  async exportOrderPDF(orderId: string, userId: string): Promise<Blob> {
+    const headers = await this.getAuthHeaders(userId)
+    const response = await fetch(`${this.baseURL}/export/orders/${orderId}/pdf`, {
+      method: 'POST',
+      headers
+    })
+    
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`API Error ${response.status}: ${errorText}`)
+    }
+    
+    return response.blob()
   }
 
   // Health check

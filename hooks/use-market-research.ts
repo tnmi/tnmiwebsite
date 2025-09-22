@@ -27,7 +27,9 @@ export function useUserOrders(userId?: string) {
       try {
         setLoading(true)
         setError(null)
-        const orders = await marketResearchAPI.getUserOrders(effectiveUserId)
+        const response = await marketResearchAPI.getUserOrders(effectiveUserId)
+        // Extract the items array from the API response
+        const orders = response?.data?.items || []
         setData(orders)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch orders')
@@ -44,7 +46,8 @@ export function useUserOrders(userId?: string) {
     if (effectiveUserId) {
       setLoading(true)
       try {
-        const orders = await marketResearchAPI.getUserOrders(effectiveUserId)
+        const response = await marketResearchAPI.getUserOrders(effectiveUserId)
+        const orders = response?.data?.items || []
         setData(orders)
         setError(null)
       } catch (err) {

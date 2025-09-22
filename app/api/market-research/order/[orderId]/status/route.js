@@ -3,7 +3,7 @@ export async function GET(request, { params }) {
     const authHeader = request.headers.get('authorization');
     const { orderId } = await params;
     
-    const response = await fetch(`https://market-research-api-26pkzuizfq-uc.a.run.app/order/${orderId}/status`, {
+    const response = await fetch(`https://market-research-api-194429268019.us-central1.run.app/order/${orderId}/status`, {
       method: 'GET',
       headers: {
         'Authorization': authHeader || '',
