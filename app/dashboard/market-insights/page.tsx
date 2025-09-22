@@ -55,10 +55,16 @@ export default function MarketInsightsPage() {
   // Fetch available products from the existing /api/products endpoint
   useEffect(() => {
     const fetchProducts = async () => {
-      if (!user?.uid) return
+      if (!user?.uid) {
+        console.log('No user UID available for products fetch')
+        return
+      }
       
       try {
+        console.log('Fetching products for user:', user.uid)
         const token = await user.getIdToken()
+        console.log('Got token, making products request...')
+        
         const response = await fetch('/api/products', {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -66,11 +72,15 @@ export default function MarketInsightsPage() {
           }
         })
         
+        console.log('Products response status:', response.status)
+        
         if (response.ok) {
           const products = await response.json()
+          console.log('Products received:', products)
           setAvailableProducts(Array.isArray(products) ? products : [])
         } else {
-          console.error('Failed to fetch products:', response.status)
+          const errorText = await response.text()
+          console.error('Failed to fetch products:', response.status, errorText)
           setAvailableProducts([])
         }
       } catch (err) {
@@ -79,7 +89,10 @@ export default function MarketInsightsPage() {
       }
     }
 
-    fetchProducts()
+    // Add a small delay to ensure user is fully authenticated
+    if (user && !user.isAnonymous) {
+      setTimeout(fetchProducts, 500)
+    }
   }, [user])
 
   const handleStartResearch = async () => {
