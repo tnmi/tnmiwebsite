@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { 
-  BarChart3, 
   FileText,
   RefreshCw,
   Plus,
@@ -172,14 +171,9 @@ export default function MarketInsightsPage() {
       {/* Header */}
       <Card className="bg-gradient-to-r from-tn-primary-blue/20 via-tn-deep-blue/20 to-tn-dark-bg/20 text-white backdrop-blur-xl border border-white/20 shadow-2xl">
         <CardHeader className="p-4 sm:p-6">
-          <div className="flex items-center space-x-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
-              <BarChart3 className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <CardTitle className="text-2xl sm:text-3xl font-light tracking-wide text-white">Market Insights</CardTitle>
-              <p className="text-white/80 font-light tracking-wide text-sm sm:text-base">Comprehensive market research analytics</p>
-            </div>
+          <div>
+            <CardTitle className="text-2xl sm:text-3xl font-light tracking-wide text-white">Market Insights</CardTitle>
+            <p className="text-white/80 font-light tracking-wide text-sm sm:text-base">Comprehensive market research analytics</p>
           </div>
         </CardHeader>
       </Card>
@@ -215,23 +209,45 @@ export default function MarketInsightsPage() {
                       {currentOrders.map((order) => (
                         <div 
                           key={order.order_id} 
-                          className="flex items-center justify-between p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10 hover:bg-white/30 transition-all duration-200 cursor-pointer"
+                          className="p-3 sm:p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10 hover:bg-white/30 transition-all duration-200 cursor-pointer"
                           onClick={() => handleOrderClick(order)}
                         >
-                          <div className="flex items-center space-x-3">
-                            {getStatusIcon(order.status)}
+                          {/* Mobile Layout */}
+                          <div className="flex flex-col space-y-3 sm:hidden">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                {getStatusIcon(order.status)}
+                                <Badge className={getStatusColor(order.status)}>
+                                  {order.status}
+                                </Badge>
+                              </div>
+                              <span className="text-xs text-gray-700 font-light">
+                                {new Date(order.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
                             <div>
-                              <p className="font-medium text-gray-900 tracking-wide drop-shadow-sm">{order.product_id}</p>
-                              <p className="text-sm text-gray-700 font-light tracking-wide drop-shadow-sm">Request ID: {order.order_id}</p>
+                              <p className="font-medium text-gray-900 tracking-wide drop-shadow-sm text-sm">{order.product_id}</p>
+                              <p className="text-xs text-gray-700 font-light tracking-wide drop-shadow-sm mt-1">Request ID: {order.order_id}</p>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <Badge className={getStatusColor(order.status)}>
-                              {order.status}
-                            </Badge>
-                            <span className="text-sm text-gray-700 font-light tracking-wide drop-shadow-sm">
-                              {new Date(order.created_at).toLocaleDateString()}
-                            </span>
+                          
+                          {/* Desktop Layout */}
+                          <div className="hidden sm:flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              {getStatusIcon(order.status)}
+                              <div>
+                                <p className="font-medium text-gray-900 tracking-wide drop-shadow-sm">{order.product_id}</p>
+                                <p className="text-sm text-gray-700 font-light tracking-wide drop-shadow-sm">Request ID: {order.order_id}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Badge className={getStatusColor(order.status)}>
+                                {order.status}
+                              </Badge>
+                              <span className="text-sm text-gray-700 font-light tracking-wide drop-shadow-sm">
+                                {new Date(order.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -239,43 +255,88 @@ export default function MarketInsightsPage() {
                     
                     {/* Pagination */}
                     {totalPages > 1 && (
-                      <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                        <div className="text-sm text-gray-700">
-                          Showing {indexOfFirstOrder + 1}-{Math.min(indexOfLastOrder, orders.length)} of {orders.length} requests
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                            className="bg-white/10 border-white/20 text-gray-700 hover:bg-white/20"
-                          >
-                            Previous
-                          </Button>
-                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <div className="pt-4 border-t border-white/10 space-y-3">
+                        {/* Mobile Pagination */}
+                        <div className="flex flex-col space-y-3 sm:hidden">
+                          <div className="text-xs text-gray-700 text-center">
+                            Page {currentPage} of {totalPages} ({orders.length} total)
+                          </div>
+                          <div className="flex items-center justify-center space-x-2">
                             <Button
-                              key={page}
-                              variant={page === currentPage ? "default" : "outline"}
+                              variant="outline"
                               size="sm"
-                              onClick={() => handlePageChange(page)}
-                              className={page === currentPage 
-                                ? "bg-blue-600 text-white" 
-                                : "bg-white/10 border-white/20 text-gray-700 hover:bg-white/20"
-                              }
+                              onClick={() => handlePageChange(currentPage - 1)}
+                              disabled={currentPage === 1}
+                              className="bg-white/10 border-white/20 text-gray-700 hover:bg-white/20 text-xs px-3"
                             >
-                              {page}
+                              Prev
                             </Button>
-                          ))}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                            className="bg-white/10 border-white/20 text-gray-700 hover:bg-white/20"
-                          >
-                            Next
-                          </Button>
+                            <span className="text-xs text-gray-700 px-2">
+                              {currentPage} / {totalPages}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handlePageChange(currentPage + 1)}
+                              disabled={currentPage === totalPages}
+                              className="bg-white/10 border-white/20 text-gray-700 hover:bg-white/20 text-xs px-3"
+                            >
+                              Next
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        {/* Desktop Pagination */}
+                        <div className="hidden sm:flex items-center justify-between">
+                          <div className="text-sm text-gray-700">
+                            Showing {indexOfFirstOrder + 1}-{Math.min(indexOfLastOrder, orders.length)} of {orders.length} requests
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handlePageChange(currentPage - 1)}
+                              disabled={currentPage === 1}
+                              className="bg-white/10 border-white/20 text-gray-700 hover:bg-white/20"
+                            >
+                              Previous
+                            </Button>
+                            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                              let pageNumber;
+                              if (totalPages <= 5) {
+                                pageNumber = i + 1;
+                              } else if (currentPage <= 3) {
+                                pageNumber = i + 1;
+                              } else if (currentPage >= totalPages - 2) {
+                                pageNumber = totalPages - 4 + i;
+                              } else {
+                                pageNumber = currentPage - 2 + i;
+                              }
+                              return (
+                                <Button
+                                  key={pageNumber}
+                                  variant={pageNumber === currentPage ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => handlePageChange(pageNumber)}
+                                  className={pageNumber === currentPage 
+                                    ? "bg-blue-600 text-white" 
+                                    : "bg-white/10 border-white/20 text-gray-700 hover:bg-white/20"
+                                  }
+                                >
+                                  {pageNumber}
+                                </Button>
+                              );
+                            })}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handlePageChange(currentPage + 1)}
+                              disabled={currentPage === totalPages}
+                              className="bg-white/10 border-white/20 text-gray-700 hover:bg-white/20"
+                            >
+                              Next
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -349,9 +410,9 @@ export default function MarketInsightsPage() {
 
         {/* Order Details Dialog */}
         <Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-white/95 backdrop-blur-xl border-white/20">
+          <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] sm:max-h-[80vh] overflow-y-auto bg-white/95 backdrop-blur-xl border-white/20 mx-auto">
             <DialogHeader>
-              <DialogTitle className="text-gray-900 font-medium tracking-wide">
+              <DialogTitle className="text-gray-900 font-medium tracking-wide text-lg sm:text-xl">
                 Research Request Details
               </DialogTitle>
             </DialogHeader>
@@ -359,16 +420,16 @@ export default function MarketInsightsPage() {
             {selectedOrder && (
               <div className="space-y-6">
                 {/* Order Summary */}
-                <div className="p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10">
-                  <h3 className="font-medium text-gray-900 mb-3">Order Summary</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="p-3 sm:p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10">
+                  <h3 className="font-medium text-gray-900 mb-3 text-sm sm:text-base">Order Summary</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
                     <div>
                       <span className="font-medium text-gray-700">Order ID:</span>
-                      <p className="text-gray-900">{selectedOrder.order_id}</p>
+                      <p className="text-gray-900 break-all">{selectedOrder.order_id}</p>
                     </div>
                     <div>
                       <span className="font-medium text-gray-700">Product ID:</span>
-                      <p className="text-gray-900">{selectedOrder.product_id}</p>
+                      <p className="text-gray-900 break-all">{selectedOrder.product_id}</p>
                     </div>
                     <div>
                       <span className="font-medium text-gray-700">Status:</span>
@@ -384,7 +445,7 @@ export default function MarketInsightsPage() {
                       <p className="text-gray-900">{new Date(selectedOrder.created_at).toLocaleString()}</p>
                     </div>
                     {selectedOrder.updated_at && (
-                      <div>
+                      <div className="sm:col-span-2">
                         <span className="font-medium text-gray-700">Last Updated:</span>
                         <p className="text-gray-900">{new Date(selectedOrder.updated_at).toLocaleString()}</p>
                       </div>
@@ -394,8 +455,8 @@ export default function MarketInsightsPage() {
 
                 {/* Progress Information */}
                 {selectedOrder.progress && (
-                  <div className="p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10">
-                    <h3 className="font-medium text-gray-900 mb-3">Progress</h3>
+                  <div className="p-3 sm:p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10">
+                    <h3 className="font-medium text-gray-900 mb-3 text-sm sm:text-base">Progress</h3>
                     <div className="space-y-3">
                       <div>
                         <span className="font-medium text-gray-700">Current Step:</span>
@@ -439,9 +500,9 @@ export default function MarketInsightsPage() {
 
                 {/* Request Parameters */}
                 {selectedOrder.request_params && (
-                  <div className="p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10">
-                    <h3 className="font-medium text-gray-900 mb-3">Request Parameters</h3>
-                    <pre className="text-sm text-gray-800 bg-gray-50 p-3 rounded overflow-x-auto">
+                  <div className="p-3 sm:p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10">
+                    <h3 className="font-medium text-gray-900 mb-3 text-sm sm:text-base">Request Parameters</h3>
+                    <pre className="text-xs sm:text-sm text-gray-800 bg-gray-50 p-2 sm:p-3 rounded overflow-x-auto">
                       {JSON.stringify(selectedOrder.request_params, null, 2)}
                     </pre>
                   </div>
@@ -458,9 +519,9 @@ export default function MarketInsightsPage() {
                     <p className="text-red-700">Failed to load detailed results: {orderDetailsError}</p>
                   </div>
                 ) : orderDetails ? (
-                  <div className="p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10">
-                    <h3 className="font-medium text-gray-900 mb-3">Detailed Results</h3>
-                    <pre className="text-sm text-gray-800 bg-gray-50 p-3 rounded overflow-x-auto max-h-96">
+                  <div className="p-3 sm:p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10">
+                    <h3 className="font-medium text-gray-900 mb-3 text-sm sm:text-base">Detailed Results</h3>
+                    <pre className="text-xs sm:text-sm text-gray-800 bg-gray-50 p-2 sm:p-3 rounded overflow-x-auto max-h-64 sm:max-h-96">
                       {JSON.stringify(orderDetails, null, 2)}
                     </pre>
                   </div>
