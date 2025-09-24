@@ -48,7 +48,7 @@ export default function MarketInsightsPage() {
 
   // API hooks
   const { data: orders, loading: ordersLoading, error: ordersError, refetch: refetchOrders } = useUserOrders(user?.uid)
-  const { data: orderStatus, loading: orderStatusLoading, error: orderStatusError } = useOrderStatus(currentOrderId)
+  const { data: orderStatus, loading: orderStatusLoading, error: orderStatusError } = useOrderStatus(currentOrderId, user?.uid)
   const { startResearch, loading: startResearchLoading, error: startResearchError } = useStartResearch()
   const { isHealthy, loading: healthLoading } = useHealthCheck()
 

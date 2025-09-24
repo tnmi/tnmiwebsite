@@ -62,10 +62,13 @@ export function useUserOrders(userId?: string) {
 }
 
 // Order Status Hook with polling for processing orders
-export function useOrderStatus(orderId: string | null) {
+export function useOrderStatus(orderId: string | null, userId?: string) {
   const [data, setData] = useState<OrderStatus | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { user } = useAuthStore()
+
+  const effectiveUserId = userId || user?.uid
 
   useEffect(() => {
     if (!orderId) {
@@ -78,7 +81,7 @@ export function useOrderStatus(orderId: string | null) {
       try {
         setLoading(true)
         setError(null)
-        const status = await marketResearchAPI.getOrderStatus(orderId)
+        const status = await marketResearchAPI.getOrderStatus(orderId, effectiveUserId)
         setData(status)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch order status')
@@ -94,7 +97,7 @@ export function useOrderStatus(orderId: string | null) {
     const interval = setInterval(async () => {
       if (data?.status === 'processing') {
         try {
-          const status = await marketResearchAPI.getOrderStatus(orderId)
+          const status = await marketResearchAPI.getOrderStatus(orderId, effectiveUserId)
           setData(status)
         } catch (err) {
           console.error('Status polling error:', err)
@@ -103,7 +106,7 @@ export function useOrderStatus(orderId: string | null) {
     }, 5000) // Poll every 5 seconds
 
     return () => clearInterval(interval)
-  }, [orderId, data?.status])
+  }, [orderId, data?.status, effectiveUserId])
 
   return { data, loading, error }
 }
