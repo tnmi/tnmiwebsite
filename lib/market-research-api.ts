@@ -70,11 +70,29 @@ class MarketResearchAPI {
 
   // 1. List user orders (GET /user/{user_id}/orders)
   async getUserOrders(userId: string): Promise<any> {
-    const headers = await this.getAuthHeaders(userId)
-    const response = await fetch(`${this.baseURL.replace('/api/v1', '')}/user/${userId}/orders`, {
-      headers
-    })
-    return this.handleResponse<any>(response)
+    try {
+      const user = auth.currentUser
+      if (!user) {
+        throw new Error('User not authenticated')
+      }
+      
+      const token = await user.getIdToken()
+      const url = `${this.baseURL.replace('/api/v1', '')}/user/${userId}/orders`
+      console.log('Fetching orders from:', url)
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      console.log('Orders response status:', response.status)
+      return this.handleResponse<any>(response)
+    } catch (error) {
+      console.error('Failed to get user orders:', error)
+      throw error
+    }
   }
 
   // 2. Get user analytics (GET /api/v1/users/{user_id}/analytics)
@@ -126,25 +144,33 @@ class MarketResearchAPI {
     return this.handleResponse<{ status: string }>(response)
   }
 
-  // Create new market research order (POST /api/v1/orders/)
+  // Create new market research order (POST /invoke)
   async startResearch(userId: string, productId: string): Promise<{ order_id: string }> {
-    const headers = await this.getAuthHeaders(userId)
-    const response = await fetch(`${this.baseURL}/orders/`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        product_id: productId,
-        requirements: {
-          target_company_count: 20,
-          include_competitor_analysis: true,
-          deep_market_analysis: true
+    try {
+      const user = auth.currentUser
+      if (!user) {
+        throw new Error('User not authenticated')
+      }
+      
+      const token = await user.getIdToken()
+      const response = await fetch(`${this.baseURL.replace('/api/v1', '')}/invoke`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
-        priority: "high"
+        body: JSON.stringify({
+          user_id: userId,
+          product_id: productId
+        })
       })
-    })
-    
-    const result = await this.handleResponse<any>(response)
-    return { order_id: result.data.order_id }
+      
+      const result = await this.handleResponse<any>(response)
+      return { order_id: result.order_id || result.data?.order_id || result.id || 'research-started' }
+    } catch (error) {
+      console.error('Failed to start research:', error)
+      throw error
+    }
   }
 }
 
