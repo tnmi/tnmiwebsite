@@ -3,7 +3,7 @@
 import { auth } from "@/lib/firebase"
 
 // Using production Market Research API directly
-const API_BASE_URL = "https://market-research-api-26pkzuizfq-uc.a.run.app/api/v1"
+const API_BASE_URL = "https://market-finder-agent-194429268019.us-central1.run.app/api/v1"
 
 // Data types based on the market research API
 export interface Order {
@@ -120,7 +120,7 @@ class MarketResearchAPI {
 
   // Health check
   async healthCheck(): Promise<{ status: string }> {
-    const response = await fetch(`https://market-research-api-26pkzuizfq-uc.a.run.app/health`)
+    const response = await fetch(`https://market-finder-agent-194429268019.us-central1.run.app/health`)
     return this.handleResponse<{ status: string }>(response)
   }
 
