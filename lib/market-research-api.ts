@@ -158,7 +158,7 @@ class MarketResearchAPI {
     return this.handleResponse<{ status: string }>(response)
   }
 
-  // Create new market research order (POST /invoke)
+  // Create new market research order (POST /invoke) - using proxy to avoid CORS
   async startResearch(userId: string, productId: string): Promise<{ order_id: string }> {
     try {
       const user = auth.currentUser
@@ -167,16 +167,15 @@ class MarketResearchAPI {
       }
       
       const token = await user.getIdToken()
-      const url = `${AGENT_BASE_URL}/invoke`
       const payload = {
         user_id: userId,
         product_id: productId
       }
       
-      console.log('Starting research with URL:', url)
-      console.log('Payload:', payload)
+      console.log('Starting research via proxy with payload:', payload)
       
-      const response = await fetch(url, {
+      // Use our Next.js API proxy to avoid CORS issues
+      const response = await fetch('/api/market-research/invoke', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -186,7 +185,14 @@ class MarketResearchAPI {
       })
       
       console.log('Start research response status:', response.status)
-      const result = await this.handleResponse<any>(response)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Start research proxy error:', errorText)
+        throw new Error(`Failed to start research: ${response.status} - ${errorText}`)
+      }
+      
+      const result = await response.json()
       console.log('Start research result:', result)
       return { order_id: result.order_id || result.data?.order_id || result.id || 'research-started' }
     } catch (error) {
