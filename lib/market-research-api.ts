@@ -118,15 +118,6 @@ class MarketResearchAPI {
     return response.blob()
   }
 
-  // 6. Get order status (GET /api/v1/orders/{order_id}/status)
-  async getOrderStatus(orderId: string, userId?: string): Promise<OrderStatus> {
-    const headers = await this.getAuthHeaders(userId)
-    const response = await fetch(`${this.baseURL}/orders/${orderId}/status`, {
-      headers
-    })
-    return this.handleResponse<OrderStatus>(response)
-  }
-
   // Health check
   async healthCheck(): Promise<{ status: string }> {
     const response = await fetch(`https://market-research-api-26pkzuizfq-uc.a.run.app/health`)

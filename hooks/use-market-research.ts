@@ -61,7 +61,7 @@ export function useUserOrders(userId?: string) {
   return { data, loading, error, refetch }
 }
 
-// Order Status Hook with polling for processing orders
+// Order Status Hook - gets status from user orders data
 export function useOrderStatus(orderId: string | null, userId?: string) {
   const [data, setData] = useState<OrderStatus | null>(null)
   const [loading, setLoading] = useState(false)
@@ -71,7 +71,7 @@ export function useOrderStatus(orderId: string | null, userId?: string) {
   const effectiveUserId = userId || user?.uid
 
   useEffect(() => {
-    if (!orderId) {
+    if (!orderId || !effectiveUserId) {
       setData(null)
       setLoading(false)
       return
@@ -81,8 +81,25 @@ export function useOrderStatus(orderId: string | null, userId?: string) {
       try {
         setLoading(true)
         setError(null)
-        const status = await marketResearchAPI.getOrderStatus(orderId, effectiveUserId)
-        setData(status)
+        
+        // Get user orders and find the specific order
+        const ordersResponse = await marketResearchAPI.getUserOrders(effectiveUserId)
+        const orders = ordersResponse?.data?.items || []
+        const order = orders.find((o: any) => o.order_id === orderId)
+        
+        if (order) {
+          // Convert order data to OrderStatus format
+          const orderStatus: OrderStatus = {
+            order_id: order.order_id,
+            status: order.status,
+            progress: order.progress,
+            message: order.message,
+            result: order.result
+          }
+          setData(orderStatus)
+        } else {
+          setError('Order not found')
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch order status')
         console.error('Order status fetch error:', err)
@@ -97,8 +114,20 @@ export function useOrderStatus(orderId: string | null, userId?: string) {
     const interval = setInterval(async () => {
       if (data?.status === 'processing') {
         try {
-          const status = await marketResearchAPI.getOrderStatus(orderId, effectiveUserId)
-          setData(status)
+          const ordersResponse = await marketResearchAPI.getUserOrders(effectiveUserId)
+          const orders = ordersResponse?.data?.items || []
+          const order = orders.find((o: any) => o.order_id === orderId)
+          
+          if (order) {
+            const orderStatus: OrderStatus = {
+              order_id: order.order_id,
+              status: order.status,
+              progress: order.progress,
+              message: order.message,
+              result: order.result
+            }
+            setData(orderStatus)
+          }
         } catch (err) {
           console.error('Status polling error:', err)
         }
