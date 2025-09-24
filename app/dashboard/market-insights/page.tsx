@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -133,45 +133,42 @@ export default function MarketInsightsPage() {
 
 
   return (
-    <div className="min-h-screen bg-gray-50/50 backdrop-blur-sm">
+    <div className="space-y-4 sm:space-y-6 font-satoshi px-4 sm:px-6">
       {/* Header */}
-      <div className="border-b border-white/20 bg-white/10 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
-                <BarChart3 className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Market Insights</h1>
-                <p className="text-sm text-gray-500">Comprehensive market research analytics</p>
-              </div>
+      <Card className="bg-gradient-to-r from-tn-primary-blue/20 via-tn-deep-blue/20 to-tn-dark-bg/20 text-white backdrop-blur-xl border border-white/20 shadow-2xl">
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex items-center space-x-4">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
+              <BarChart3 className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <CardTitle className="text-2xl sm:text-3xl font-light tracking-wide text-white">Market Insights</CardTitle>
+              <p className="text-white/80 font-light tracking-wide text-sm sm:text-base">Comprehensive market research analytics</p>
             </div>
           </div>
-        </div>
-      </div>
+        </CardHeader>
+      </Card>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="start-research">Start Research</TabsTrigger>
-          </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 bg-white/10 backdrop-blur-xl border-white/20">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-white/20 data-[state=active]:text-gray-900 text-gray-700">Overview</TabsTrigger>
+          <TabsTrigger value="start-research" className="data-[state=active]:bg-white/20 data-[state=active]:text-gray-900 text-gray-700">Start Research</TabsTrigger>
+        </TabsList>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
 
             {/* Recent Research Requests */}
-            <Card className="bg-white/10 backdrop-blur-md border-white/20">
+            <Card className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-500 shadow-xl hover:shadow-2xl">
               <CardHeader>
-                <CardTitle className="text-gray-900">Recent Research Requests</CardTitle>
+                <CardTitle className="text-gray-900 font-medium tracking-wide">Recent Research Requests</CardTitle>
               </CardHeader>
               <CardContent>
                 {ordersLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <RefreshCw className="w-6 h-6 animate-spin mr-2" />
-                    <span>Loading research requests...</span>
+                    <RefreshCw className="w-6 h-6 animate-spin mr-2 text-gray-700" />
+                    <span className="text-gray-700">Loading research requests...</span>
                   </div>
                 ) : ordersError ? (
                   <div className="text-center py-8 text-red-600">
@@ -180,19 +177,19 @@ export default function MarketInsightsPage() {
                 ) : orders.length > 0 ? (
                   <div className="space-y-3">
                     {orders.slice(0, 5).map((order) => (
-                      <div key={order.order_id} className="flex items-center justify-between p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10">
+                      <div key={order.order_id} className="flex items-center justify-between p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10 hover:bg-white/30 transition-all duration-200">
                         <div className="flex items-center space-x-3">
                           {getStatusIcon(order.status)}
                           <div>
-                            <p className="font-medium text-gray-900">{order.product_id}</p>
-                            <p className="text-sm text-gray-600">Request ID: {order.order_id}</p>
+                            <p className="font-medium text-gray-900 tracking-wide drop-shadow-sm">{order.product_id}</p>
+                            <p className="text-sm text-gray-700 font-light tracking-wide drop-shadow-sm">Request ID: {order.order_id}</p>
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Badge className={getStatusColor(order.status)}>
                             {order.status}
                           </Badge>
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-gray-700 font-light tracking-wide drop-shadow-sm">
                             {new Date(order.created_at).toLocaleDateString()}
                           </span>
                         </div>
@@ -200,9 +197,9 @@ export default function MarketInsightsPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p>No research requests found</p>
+                  <div className="text-center py-8 text-gray-700">
+                    <FileText className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                    <p className="font-light tracking-wide">No research requests found</p>
                   </div>
                 )}
               </CardContent>
@@ -211,33 +208,39 @@ export default function MarketInsightsPage() {
 
           {/* Start Research Tab */}
           <TabsContent value="start-research" className="space-y-6">
-            <Card className="bg-white/10 backdrop-blur-md border-white/20">
+            <Card className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-500 shadow-xl hover:shadow-2xl">
               <CardHeader>
-                <CardTitle className="text-gray-900">Initiate New Market Research</CardTitle>
-                <CardContent className="text-gray-600">
+                <CardTitle className="text-gray-900 font-medium tracking-wide">Initiate New Market Research</CardTitle>
+                <CardDescription className="text-gray-700 font-light tracking-wide">
                   Select a product from your inventory to begin a new market research analysis.
-                </CardContent>
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Product</label>
+                  <label className="block text-sm font-medium text-gray-800 mb-2 tracking-wide">Select Product</label>
                   <Select value={selectedProductId} onValueChange={setSelectedProductId}>
-                    <SelectTrigger className="bg-white/20 border-white/30">
-                      <SelectValue placeholder="Choose a product to research" />
+                    <SelectTrigger className="bg-white/20 border-white/30 text-gray-900 hover:bg-white/30 transition-colors">
+                      <SelectValue placeholder={`Choose a product to research (${availableProducts.length} available)`} className="text-gray-600" />
                     </SelectTrigger>
-                    <SelectContent>
-                      {availableProducts && Array.isArray(availableProducts) && availableProducts.map((product) => (
-                        <SelectItem key={product.id} value={product.id}>
-                          {product.product_name}
+                    <SelectContent className="bg-white/90 backdrop-blur-xl border-white/50">
+                      {availableProducts && Array.isArray(availableProducts) && availableProducts.length > 0 ? (
+                        availableProducts.map((product) => (
+                          <SelectItem key={product.id} value={product.id} className="text-gray-900 hover:bg-white/50">
+                            {product.product_name || 'Unnamed Product'}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-products" disabled className="text-gray-500">
+                          No products available
                         </SelectItem>
-                      ))}
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
                 <Button 
                   onClick={handleStartResearch}
                   disabled={!selectedProductId || startResearchLoading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  className="w-full bg-gradient-to-r from-tn-primary-blue to-tn-deep-blue hover:from-tn-deep-blue hover:to-tn-primary-blue text-white font-medium tracking-wide transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
                   {startResearchLoading ? (
                     <>
@@ -252,14 +255,13 @@ export default function MarketInsightsPage() {
                   )}
                 </Button>
                 {startResearchError && (
-                  <p className="text-red-600 text-sm mt-2">{startResearchError}</p>
+                  <p className="text-red-600 text-sm mt-2 font-light tracking-wide">{startResearchError}</p>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
         </Tabs>
-      </div>
     </div>
   )
 }

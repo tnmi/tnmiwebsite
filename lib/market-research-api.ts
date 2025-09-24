@@ -40,14 +40,16 @@ class MarketResearchAPI {
       const user = auth.currentUser
       const effectiveUserId = userId || user?.uid
       
-      if (effectiveUserId) {
+      if (user && effectiveUserId) {
+        const token = await user.getIdToken()
         return {
+          'Authorization': `Bearer ${token}`,
           'X-User-ID': effectiveUserId,
           'Content-Type': 'application/json'
         }
       }
     } catch (error) {
-      console.error('Failed to get user ID:', error)
+      console.error('Failed to get auth headers:', error)
     }
     
     // Return basic headers if no auth
@@ -66,10 +68,10 @@ class MarketResearchAPI {
     return data
   }
 
-  // 1. List user orders (GET /api/v1/users/{user_id}/orders)
+  // 1. List user orders (GET /user/{user_id}/orders)
   async getUserOrders(userId: string): Promise<any> {
     const headers = await this.getAuthHeaders(userId)
-    const response = await fetch(`${this.baseURL}/users/${userId}/orders`, {
+    const response = await fetch(`${this.baseURL.replace('/api/v1', '')}/user/${userId}/orders`, {
       headers
     })
     return this.handleResponse<any>(response)
