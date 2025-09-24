@@ -3,7 +3,9 @@
 import { auth } from "@/lib/firebase"
 
 // Using production Market Research API directly
-const API_BASE_URL = "https://market-finder-agent-194429268019.us-central1.run.app/api/v1"
+const API_BASE_URL = "https://market-research-api-26pkzuizfq-uc.a.run.app/api/v1"
+// Agent and Orders specific endpoint
+const AGENT_BASE_URL = "https://market-finder-agent-194429268019.us-central1.run.app"
 
 // Data types based on the market research API
 export interface Order {
@@ -77,7 +79,7 @@ class MarketResearchAPI {
       }
       
       const token = await user.getIdToken()
-      const url = `${this.baseURL.replace('/api/v1', '')}/user/${userId}/orders`
+      const url = `${AGENT_BASE_URL}/user/${userId}/orders`
       console.log('Fetching orders from:', url)
       
       const response = await fetch(url, {
@@ -140,7 +142,7 @@ class MarketResearchAPI {
 
   // Health check
   async healthCheck(): Promise<{ status: string }> {
-    const response = await fetch(`https://market-finder-agent-194429268019.us-central1.run.app/health`)
+    const response = await fetch(`${AGENT_BASE_URL}/health`)
     return this.handleResponse<{ status: string }>(response)
   }
 
@@ -153,7 +155,7 @@ class MarketResearchAPI {
       }
       
       const token = await user.getIdToken()
-      const url = `${this.baseURL.replace('/api/v1', '')}/invoke`
+      const url = `${AGENT_BASE_URL}/invoke`
       const payload = {
         user_id: userId,
         product_id: productId
