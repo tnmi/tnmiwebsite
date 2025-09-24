@@ -153,19 +153,27 @@ class MarketResearchAPI {
       }
       
       const token = await user.getIdToken()
-      const response = await fetch(`${this.baseURL.replace('/api/v1', '')}/invoke`, {
+      const url = `${this.baseURL.replace('/api/v1', '')}/invoke`
+      const payload = {
+        user_id: userId,
+        product_id: productId
+      }
+      
+      console.log('Starting research with URL:', url)
+      console.log('Payload:', payload)
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          user_id: userId,
-          product_id: productId
-        })
+        body: JSON.stringify(payload)
       })
       
+      console.log('Start research response status:', response.status)
       const result = await this.handleResponse<any>(response)
+      console.log('Start research result:', result)
       return { order_id: result.order_id || result.data?.order_id || result.id || 'research-started' }
     } catch (error) {
       console.error('Failed to start research:', error)
