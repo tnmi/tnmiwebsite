@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { 
   BarChart3, 
   FileText,
@@ -17,7 +18,7 @@ import {
 } from "lucide-react"
 import { useAuthStore } from "@/lib/store"
 import { useToast } from "@/components/ui/use-toast"
-import { useUserOrders, useStartResearch } from "@/hooks/use-market-research"
+import { useUserOrders, useStartResearch, useOrderDetails } from "@/hooks/use-market-research"
 
 interface Product {
   id: string;
@@ -30,9 +31,16 @@ export default function MarketInsightsPage() {
   const [activeTab, setActiveTab] = useState("overview")
   const [selectedProductId, setSelectedProductId] = useState<string>("")
   const [availableProducts, setAvailableProducts] = useState<Product[]>([])
+  const [selectedOrder, setSelectedOrder] = useState<any>(null)
+  const [orderDetails, setOrderDetails] = useState<any>(null)
+  const [showOrderDetails, setShowOrderDetails] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [ordersPerPage] = useState(5)
+  
   // API hooks
   const { data: orders, loading: ordersLoading, error: ordersError, refetch: refetchOrders } = useUserOrders(user?.uid)
   const { startResearch, loading: startResearchLoading, error: startResearchError } = useStartResearch()
+  const { getOrderDetails, loading: orderDetailsLoading, error: orderDetailsError } = useOrderDetails()
 
   // Fetch available products from the existing /api/products endpoint
   useEffect(() => {
@@ -105,6 +113,33 @@ export default function MarketInsightsPage() {
     }
   }
 
+  const handleOrderClick = async (order: any) => {
+    try {
+      setSelectedOrder(order)
+      setOrderDetails(null)
+      setShowOrderDetails(true)
+      
+      const details = await getOrderDetails(order.order_id)
+      setOrderDetails(details)
+    } catch (error) {
+      toast({
+        title: "Failed to Load Order Details",
+        description: error instanceof Error ? error.message : "An error occurred while fetching order details.",
+        variant: "destructive"
+      })
+    }
+  }
+
+  // Pagination logic
+  const indexOfLastOrder = currentPage * ordersPerPage
+  const indexOfFirstOrder = indexOfLastOrder - ordersPerPage
+  const currentOrders = orders.slice(indexOfFirstOrder, indexOfLastOrder)
+  const totalPages = Math.ceil(orders.length / ordersPerPage)
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
@@ -159,10 +194,10 @@ export default function MarketInsightsPage() {
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
 
-            {/* Recent Research Requests */}
+            {/* Research Requests */}
             <Card className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-500 shadow-xl hover:shadow-2xl">
               <CardHeader>
-                <CardTitle className="text-gray-900 font-medium tracking-wide">Recent Research Requests</CardTitle>
+                <CardTitle className="text-gray-900 font-medium tracking-wide">Research Requests</CardTitle>
               </CardHeader>
               <CardContent>
                 {ordersLoading ? (
@@ -175,26 +210,75 @@ export default function MarketInsightsPage() {
                     <p>Failed to load research requests: {ordersError}</p>
                   </div>
                 ) : orders.length > 0 ? (
-                  <div className="space-y-3">
-                    {orders.slice(0, 5).map((order) => (
-                      <div key={order.order_id} className="flex items-center justify-between p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10 hover:bg-white/30 transition-all duration-200">
-                        <div className="flex items-center space-x-3">
-                          {getStatusIcon(order.status)}
-                          <div>
-                            <p className="font-medium text-gray-900 tracking-wide drop-shadow-sm">{order.product_id}</p>
-                            <p className="text-sm text-gray-700 font-light tracking-wide drop-shadow-sm">Request ID: {order.order_id}</p>
+                  <div className="space-y-4">
+                    <div className="space-y-3">
+                      {currentOrders.map((order) => (
+                        <div 
+                          key={order.order_id} 
+                          className="flex items-center justify-between p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10 hover:bg-white/30 transition-all duration-200 cursor-pointer"
+                          onClick={() => handleOrderClick(order)}
+                        >
+                          <div className="flex items-center space-x-3">
+                            {getStatusIcon(order.status)}
+                            <div>
+                              <p className="font-medium text-gray-900 tracking-wide drop-shadow-sm">{order.product_id}</p>
+                              <p className="text-sm text-gray-700 font-light tracking-wide drop-shadow-sm">Request ID: {order.order_id}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Badge className={getStatusColor(order.status)}>
+                              {order.status}
+                            </Badge>
+                            <span className="text-sm text-gray-700 font-light tracking-wide drop-shadow-sm">
+                              {new Date(order.created_at).toLocaleDateString()}
+                            </span>
                           </div>
                         </div>
+                      ))}
+                    </div>
+                    
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                        <div className="text-sm text-gray-700">
+                          Showing {indexOfFirstOrder + 1}-{Math.min(indexOfLastOrder, orders.length)} of {orders.length} requests
+                        </div>
                         <div className="flex items-center space-x-2">
-                          <Badge className={getStatusColor(order.status)}>
-                            {order.status}
-                          </Badge>
-                          <span className="text-sm text-gray-700 font-light tracking-wide drop-shadow-sm">
-                            {new Date(order.created_at).toLocaleDateString()}
-                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className="bg-white/10 border-white/20 text-gray-700 hover:bg-white/20"
+                          >
+                            Previous
+                          </Button>
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                            <Button
+                              key={page}
+                              variant={page === currentPage ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => handlePageChange(page)}
+                              className={page === currentPage 
+                                ? "bg-blue-600 text-white" 
+                                : "bg-white/10 border-white/20 text-gray-700 hover:bg-white/20"
+                              }
+                            >
+                              {page}
+                            </Button>
+                          ))}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            className="bg-white/10 border-white/20 text-gray-700 hover:bg-white/20"
+                          >
+                            Next
+                          </Button>
                         </div>
                       </div>
-                    ))}
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8 text-gray-700">
@@ -262,6 +346,129 @@ export default function MarketInsightsPage() {
           </TabsContent>
 
         </Tabs>
+
+        {/* Order Details Dialog */}
+        <Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-white/95 backdrop-blur-xl border-white/20">
+            <DialogHeader>
+              <DialogTitle className="text-gray-900 font-medium tracking-wide">
+                Research Request Details
+              </DialogTitle>
+            </DialogHeader>
+            
+            {selectedOrder && (
+              <div className="space-y-6">
+                {/* Order Summary */}
+                <div className="p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10">
+                  <h3 className="font-medium text-gray-900 mb-3">Order Summary</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium text-gray-700">Order ID:</span>
+                      <p className="text-gray-900">{selectedOrder.order_id}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Product ID:</span>
+                      <p className="text-gray-900">{selectedOrder.product_id}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Status:</span>
+                      <div className="flex items-center space-x-2">
+                        {getStatusIcon(selectedOrder.status)}
+                        <Badge className={getStatusColor(selectedOrder.status)}>
+                          {selectedOrder.status}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Created:</span>
+                      <p className="text-gray-900">{new Date(selectedOrder.created_at).toLocaleString()}</p>
+                    </div>
+                    {selectedOrder.updated_at && (
+                      <div>
+                        <span className="font-medium text-gray-700">Last Updated:</span>
+                        <p className="text-gray-900">{new Date(selectedOrder.updated_at).toLocaleString()}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Progress Information */}
+                {selectedOrder.progress && (
+                  <div className="p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10">
+                    <h3 className="font-medium text-gray-900 mb-3">Progress</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <span className="font-medium text-gray-700">Current Step:</span>
+                        <p className="text-gray-900">{selectedOrder.progress.current_step}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700">Steps Completed:</span>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {selectedOrder.progress.steps_completed?.map((step: string, index: number) => (
+                            <Badge key={index} className="bg-green-100 text-green-800">
+                              {step}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      {selectedOrder.progress.total_steps && (
+                        <div>
+                          <span className="font-medium text-gray-700">Total Steps:</span>
+                          <p className="text-gray-900">{selectedOrder.progress.total_steps}</p>
+                        </div>
+                      )}
+                      {selectedOrder.progress.errors && selectedOrder.progress.errors.length > 0 && (
+                        <div>
+                          <span className="font-medium text-gray-700">Errors:</span>
+                          <div className="space-y-2 mt-1">
+                            {selectedOrder.progress.errors.map((error: any, index: number) => (
+                              <div key={index} className="p-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+                                <p><strong>Step:</strong> {error.step}</p>
+                                <p><strong>Message:</strong> {error.message}</p>
+                                {error.timestamp && (
+                                  <p><strong>Time:</strong> {new Date(error.timestamp).toLocaleString()}</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Request Parameters */}
+                {selectedOrder.request_params && (
+                  <div className="p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10">
+                    <h3 className="font-medium text-gray-900 mb-3">Request Parameters</h3>
+                    <pre className="text-sm text-gray-800 bg-gray-50 p-3 rounded overflow-x-auto">
+                      {JSON.stringify(selectedOrder.request_params, null, 2)}
+                    </pre>
+                  </div>
+                )}
+
+                {/* Detailed Results */}
+                {orderDetailsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <RefreshCw className="w-6 h-6 animate-spin mr-2 text-gray-700" />
+                    <span className="text-gray-700">Loading detailed results...</span>
+                  </div>
+                ) : orderDetailsError ? (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded">
+                    <p className="text-red-700">Failed to load detailed results: {orderDetailsError}</p>
+                  </div>
+                ) : orderDetails ? (
+                  <div className="p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10">
+                    <h3 className="font-medium text-gray-900 mb-3">Detailed Results</h3>
+                    <pre className="text-sm text-gray-800 bg-gray-50 p-3 rounded overflow-x-auto max-h-96">
+                      {JSON.stringify(orderDetails, null, 2)}
+                    </pre>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
     </div>
   )
 }

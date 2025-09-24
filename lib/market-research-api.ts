@@ -109,6 +109,44 @@ class MarketResearchAPI {
     }
   }
 
+  // Get order details (GET /order/{order_id}/details) - using proxy to avoid CORS
+  async getOrderDetails(orderId: string): Promise<any> {
+    try {
+      const user = auth.currentUser
+      if (!user) {
+        throw new Error('User not authenticated')
+      }
+      
+      const token = await user.getIdToken()
+      
+      console.log('Fetching order details for:', orderId)
+      
+      // Use our Next.js API proxy to avoid CORS issues
+      const response = await fetch(`/api/market-research/order-details?order_id=${orderId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      console.log('Order details response status:', response.status)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Order details proxy error:', errorText)
+        throw new Error(`Failed to fetch order details: ${response.status} - ${errorText}`)
+      }
+      
+      const data = await response.json()
+      console.log('Order details response data:', data)
+      return data
+    } catch (error) {
+      console.error('Failed to get order details:', error)
+      throw error
+    }
+  }
+
   // 2. Get user analytics (GET /api/v1/users/{user_id}/analytics)
   async getUserAnalytics(userId: string): Promise<any> {
     const headers = await this.getAuthHeaders(userId)

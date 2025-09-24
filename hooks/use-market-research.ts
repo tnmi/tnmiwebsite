@@ -185,3 +185,26 @@ export function useHealthCheck() {
 
   return { isHealthy, loading }
 }
+
+// Order Details Hook
+export function useOrderDetails() {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const getOrderDetails = async (orderId: string): Promise<any> => {
+    try {
+      setLoading(true)
+      setError(null)
+      const result = await marketResearchAPI.getOrderDetails(orderId)
+      return result
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch order details'
+      setError(errorMessage)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { getOrderDetails, loading, error }
+}
