@@ -18,9 +18,7 @@ import {
 import { useAuthStore } from "@/lib/store"
 import { useToast } from "@/components/ui/use-toast"
 import { useUserOrders, useStartResearch, useOrderDetails } from "@/hooks/use-market-research"
-import OrderDetailsEnhanced from "@/components/market-insights/order-details-enhanced"
-import CompanyDirectory from "@/components/market-insights/company-directory"
-import ResearchDashboard from "@/components/market-insights/research-dashboard"
+import SimpleOrderDetails from "@/components/market-insights/order-details-simple"
 
 interface Product {
   id: string;
@@ -183,10 +181,9 @@ export default function MarketInsightsPage() {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 bg-white/10 backdrop-blur-xl border-white/20">
+        <TabsList className="grid w-full grid-cols-2 bg-white/10 backdrop-blur-xl border-white/20">
           <TabsTrigger value="overview" className="data-[state=active]:bg-white/20 data-[state=active]:text-gray-900 text-gray-700">Research Requests</TabsTrigger>
           <TabsTrigger value="start-research" className="data-[state=active]:bg-white/20 data-[state=active]:text-gray-900 text-gray-700">Start Research</TabsTrigger>
-          <TabsTrigger value="companies" className="data-[state=active]:bg-white/20 data-[state=active]:text-gray-900 text-gray-700">Company Directory</TabsTrigger>
         </TabsList>
 
           {/* Overview Tab */}
@@ -410,133 +407,36 @@ export default function MarketInsightsPage() {
             </Card>
           </TabsContent>
 
-          {/* Companies Tab */}
-          <TabsContent value="companies" className="space-y-6">
-            <CompanyDirectory />
-          </TabsContent>
-
         </Tabs>
 
-        {/* Enhanced Order Details Dialog */}
+        {/* Minimal Order Details Dialog */}
         <Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
-          <DialogContent className="w-[98vw] max-w-7xl max-h-[95vh] overflow-y-auto bg-white/98 backdrop-blur-xl border-white/30 mx-auto">
+          <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-xl border-white/20 mx-auto">
             <DialogHeader>
-              <DialogTitle className="text-gray-900 font-medium tracking-wide text-xl">
-                Market Research Analysis
+              <DialogTitle className="text-gray-900 font-medium tracking-wide text-lg sm:text-xl">
+                Research Request Details
               </DialogTitle>
             </DialogHeader>
             
             {selectedOrder && (
               <div className="space-y-6">
-                {/* Enhanced Tabs for Order Details */}
-                <Tabs defaultValue="dashboard" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-                    <TabsTrigger value="details">Analysis Details</TabsTrigger>
-                    <TabsTrigger value="companies">Companies</TabsTrigger>
-                    <TabsTrigger value="raw">Raw Data</TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="dashboard" className="mt-6">
-                    {orderDetailsLoading ? (
-                      <div className="flex items-center justify-center py-12">
-                        <RefreshCw className="w-6 h-6 animate-spin mr-2 text-gray-700" />
-                        <span className="text-gray-700">Loading research dashboard...</span>
-                      </div>
-                    ) : orderDetails ? (
-                      <ResearchDashboard orderData={orderDetails} />
-                    ) : (
-                      <div className="text-center py-8 text-gray-600">
-                        <p>Research dashboard will appear here once data is loaded.</p>
-                      </div>
-                    )}
-                  </TabsContent>
-                  
-                  <TabsContent value="details" className="mt-6">
-                    {orderDetailsLoading ? (
-                      <div className="flex items-center justify-center py-12">
-                        <RefreshCw className="w-6 h-6 animate-spin mr-2 text-gray-700" />
-                        <span className="text-gray-700">Loading detailed analysis...</span>
-                      </div>
-                    ) : orderDetails ? (
-                      <OrderDetailsEnhanced orderData={orderDetails} />
-                    ) : (
-                      <div className="text-center py-8 text-gray-600">
-                        <p>Detailed analysis will appear here once data is loaded.</p>
-                      </div>
-                    )}
-                  </TabsContent>
-                  
-                  <TabsContent value="companies" className="mt-6">
-                    {orderDetailsLoading ? (
-                      <div className="flex items-center justify-center py-12">
-                        <RefreshCw className="w-6 h-6 animate-spin mr-2 text-gray-700" />
-                        <span className="text-gray-700">Loading company directory...</span>
-                      </div>
-                    ) : orderDetails ? (
-                      <CompanyDirectory 
-                        industries={orderDetails.raw_research_data?.flatMap((item: any) => 
-                          item.research_data?.industries || []
-                        ) || []}
-                        productSummary={orderDetails.raw_research_data?.[0]?.research_data?.product_summary}
-                      />
-                    ) : (
-                      <div className="text-center py-8 text-gray-600">
-                        <p>Company directory will appear here once data is loaded.</p>
-                      </div>
-                    )}
-                  </TabsContent>
-                  
-                  <TabsContent value="raw" className="mt-6">
-                    {/* Basic Order Information */}
-                    <div className="space-y-6">
-                      <Card>
-                        <CardHeader>
-                          <CardTitle>Order Summary</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                            <div>
-                              <span className="font-medium text-gray-700">Order ID:</span>
-                              <p className="text-gray-900 break-all">{selectedOrder.order_id}</p>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-700">Product ID:</span>
-                              <p className="text-gray-900 break-all">{selectedOrder.product_id}</p>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-700">Status:</span>
-                              <div className="flex items-center space-x-2">
-                                {getStatusIcon(selectedOrder.status)}
-                                <Badge className={getStatusColor(selectedOrder.status)}>
-                                  {selectedOrder.status}
-                                </Badge>
-                              </div>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-700">Created:</span>
-                              <p className="text-gray-900">{new Date(selectedOrder.created_at).toLocaleString()}</p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      {/* Raw Data */}
-                      {orderDetails && (
-                        <Card>
-                          <CardHeader>
-                            <CardTitle>Raw Research Data</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <pre className="text-xs text-gray-800 bg-gray-50 p-4 rounded overflow-x-auto max-h-96">
-                              {JSON.stringify(orderDetails, null, 2)}
-                            </pre>
-                          </CardContent>
-                        </Card>
-                      )}
-                    </div>
-                  </TabsContent>
-                </Tabs>
+                {orderDetailsLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <RefreshCw className="w-6 h-6 animate-spin mr-2 text-gray-700" />
+                    <span className="text-gray-700">Loading...</span>
+                  </div>
+                ) : orderDetails ? (
+                  <SimpleOrderDetails 
+                    orderSummary={{
+                      order_id: selectedOrder.order_id,
+                      product_id: selectedOrder.product_id,
+                      status: selectedOrder.status,
+                      created_at: selectedOrder.created_at,
+                      updated_at: selectedOrder.updated_at,
+                    }}
+                    details={orderDetails}
+                  />
+                ) : null}
               </div>
             )}
           </DialogContent>
