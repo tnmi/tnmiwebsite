@@ -1,14 +1,9 @@
 "use client"
 
-import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { useAuthStore } from "@/lib/store"
-import { marketResearchAPI } from "@/lib/market-research-api"
 
 interface SimpleOrderDetailsProps {
   orderSummary: {
@@ -34,28 +29,10 @@ export default function SimpleOrderDetails({ orderSummary, details }: SimpleOrde
   const allSources: string[] = industryFindings.flatMap((item: any) => item.research_data?.research_sources || [])
   const productSummary: string | undefined = industryFindings[0]?.research_data?.product_summary
 
-  // Companies directory - real search, no dummy data
-  const { user } = useAuthStore()
-  const [query, setQuery] = useState("")
-  const [searching, setSearching] = useState(false)
-  const [results, setResults] = useState<any>(null)
-
-  const companies: any[] = Array.isArray(results) 
-    ? results 
-    : (results?.data?.items || results?.items || results?.results || [])
-
-  const onSearch = async () => {
-    if (!query.trim() || !user?.uid) return
-    try {
-      setSearching(true)
-      const res = await marketResearchAPI.searchCompanies(query.trim(), user.uid)
-      setResults(res)
-    } catch (e) {
-      setResults({ error: true })
-    } finally {
-      setSearching(false)
-    }
-  }
+  // Companies directory (no search): build useful external queries from industry names
+  const uniqueIndustries = Array.from(new Map(
+    (allIndustries || []).map((ind: any) => [ind.industry, ind])
+  ).values())
 
   return (
     <div className="space-y-6">
@@ -72,7 +49,7 @@ export default function SimpleOrderDetails({ orderSummary, details }: SimpleOrde
           {allIndustries.length > 0 ? (
             <div className="space-y-4">
               {allIndustries.map((ind: any, i: number) => (
-                <Card key={i} className="bg-white/10 backdrop-blur-xl border border-white/20">
+                <Card key={i} className={`${i % 2 === 0 ? 'bg-white/10' : 'bg-white/20'} backdrop-blur-xl border border-white/20`}>
                   <CardHeader>
                     <CardTitle className="text-gray-900">{ind.industry || 'Industry'}</CardTitle>
                   </CardHeader>
@@ -128,7 +105,7 @@ export default function SimpleOrderDetails({ orderSummary, details }: SimpleOrde
               <CardContent className="space-y-3 text-sm">
                 {allIndustries.map((ind: any, i: number) => (
                   ind.market_opportunity ? (
-                    <div key={i} className="rounded-lg border border-white/20 bg-white/20 p-3">
+                    <div key={i} className={`rounded-lg border border-white/20 ${i % 2 === 0 ? 'bg-white/10' : 'bg-white/20'} p-3`}>
                       <div className="font-medium text-gray-900 mb-1">{ind.industry}</div>
                       <div className="text-gray-900">{ind.market_opportunity}</div>
                     </div>
@@ -159,51 +136,42 @@ export default function SimpleOrderDetails({ orderSummary, details }: SimpleOrde
           )}
         </TabsContent>
 
-        {/* Companies */}
+        {/* Companies (no search): quick outbound lookups per industry) */}
         <TabsContent value="companies" className="space-y-6">
           <Card className="bg-white/10 backdrop-blur-xl border border-white/20">
             <CardHeader>
               <CardTitle className="text-gray-900">Company Directory</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-2">
-                <Input 
-                  placeholder="Search companies (e.g., concrete, PFAS, agriculture)" 
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  className="bg-white/20 border-white/30 text-gray-900 placeholder-gray-600"
-                />
-                <Button onClick={onSearch} disabled={searching || !query.trim()} className="bg-blue-600 text-white">
-                  {searching ? 'Searching...' : 'Search'}
-                </Button>
-              </div>
-
-              {Array.isArray(companies) && companies.length > 0 ? (
-                <div className="space-y-3">
-                  {companies.map((c: any, i: number) => (
-                    <div key={i} className="rounded-lg border border-white/20 bg-white/20 p-3">
-                      <div className="flex justify-between gap-3">
-                        <div className="font-medium text-gray-900 break-all">{c.name || c.title || c.company_name || 'Company'}</div>
-                        {(c.website || c.url) && (
-                          <a 
-                            href={(c.website || c.url)} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-blue-700 underline"
-                          >
-                            Visit
-                          </a>
-                        )}
+            <CardContent className="space-y-3">
+              {uniqueIndustries.length > 0 ? (
+                <div className="space-y-2">
+                  {uniqueIndustries.map((ind: any, i: number) => (
+                    <div key={i} className="flex items-center justify-between rounded-lg border border-white/20 bg-white/20 p-3">
+                      <div className="font-medium text-gray-900">{ind.industry}</div>
+                      <div className="flex gap-2">
+                        <a
+                          href={`https://www.google.com/search?q=${encodeURIComponent(ind.industry + ' companies')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-700 underline"
+                        >
+                          Google
+                        </a>
+                        <a
+                          href={`https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(ind.industry)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-700 underline"
+                        >
+                          LinkedIn
+                        </a>
                       </div>
-                      {c.description && (
-                        <div className="text-sm text-gray-800 mt-1">{c.description}</div>
-                      )}
                     </div>
                   ))}
                 </div>
-              ) : results && !searching ? (
-                <div className="text-gray-700 text-sm">No results.</div>
-              ) : null}
+              ) : (
+                <div className="text-gray-700 text-sm">No industries available to search companies.</div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
