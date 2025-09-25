@@ -18,6 +18,9 @@ import {
 import { useAuthStore } from "@/lib/store"
 import { useToast } from "@/components/ui/use-toast"
 import { useUserOrders, useStartResearch, useOrderDetails } from "@/hooks/use-market-research"
+import OrderDetailsEnhanced from "@/components/market-insights/order-details-enhanced"
+import CompanyDirectory from "@/components/market-insights/company-directory"
+import ResearchDashboard from "@/components/market-insights/research-dashboard"
 
 interface Product {
   id: string;
@@ -180,9 +183,10 @@ export default function MarketInsightsPage() {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 bg-white/10 backdrop-blur-xl border-white/20">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-white/20 data-[state=active]:text-gray-900 text-gray-700">Overview</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 bg-white/10 backdrop-blur-xl border-white/20">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-white/20 data-[state=active]:text-gray-900 text-gray-700">Research Requests</TabsTrigger>
           <TabsTrigger value="start-research" className="data-[state=active]:bg-white/20 data-[state=active]:text-gray-900 text-gray-700">Start Research</TabsTrigger>
+          <TabsTrigger value="companies" className="data-[state=active]:bg-white/20 data-[state=active]:text-gray-900 text-gray-700">Company Directory</TabsTrigger>
         </TabsList>
 
           {/* Overview Tab */}
@@ -406,126 +410,133 @@ export default function MarketInsightsPage() {
             </Card>
           </TabsContent>
 
+          {/* Companies Tab */}
+          <TabsContent value="companies" className="space-y-6">
+            <CompanyDirectory />
+          </TabsContent>
+
         </Tabs>
 
-        {/* Order Details Dialog */}
+        {/* Enhanced Order Details Dialog */}
         <Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
-          <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] sm:max-h-[80vh] overflow-y-auto bg-white/95 backdrop-blur-xl border-white/20 mx-auto">
+          <DialogContent className="w-[98vw] max-w-7xl max-h-[95vh] overflow-y-auto bg-white/98 backdrop-blur-xl border-white/30 mx-auto">
             <DialogHeader>
-              <DialogTitle className="text-gray-900 font-medium tracking-wide text-lg sm:text-xl">
-                Research Request Details
+              <DialogTitle className="text-gray-900 font-medium tracking-wide text-xl">
+                Market Research Analysis
               </DialogTitle>
             </DialogHeader>
             
             {selectedOrder && (
               <div className="space-y-6">
-                {/* Order Summary */}
-                <div className="p-3 sm:p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10">
-                  <h3 className="font-medium text-gray-900 mb-3 text-sm sm:text-base">Order Summary</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
-                    <div>
-                      <span className="font-medium text-gray-700">Order ID:</span>
-                      <p className="text-gray-900 break-all">{selectedOrder.order_id}</p>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-700">Product ID:</span>
-                      <p className="text-gray-900 break-all">{selectedOrder.product_id}</p>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-700">Status:</span>
-                      <div className="flex items-center space-x-2">
-                        {getStatusIcon(selectedOrder.status)}
-                        <Badge className={getStatusColor(selectedOrder.status)}>
-                          {selectedOrder.status}
-                        </Badge>
+                {/* Enhanced Tabs for Order Details */}
+                <Tabs defaultValue="dashboard" className="w-full">
+                  <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                    <TabsTrigger value="details">Analysis Details</TabsTrigger>
+                    <TabsTrigger value="companies">Companies</TabsTrigger>
+                    <TabsTrigger value="raw">Raw Data</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="dashboard" className="mt-6">
+                    {orderDetailsLoading ? (
+                      <div className="flex items-center justify-center py-12">
+                        <RefreshCw className="w-6 h-6 animate-spin mr-2 text-gray-700" />
+                        <span className="text-gray-700">Loading research dashboard...</span>
                       </div>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-700">Created:</span>
-                      <p className="text-gray-900">{new Date(selectedOrder.created_at).toLocaleString()}</p>
-                    </div>
-                    {selectedOrder.updated_at && (
-                      <div className="sm:col-span-2">
-                        <span className="font-medium text-gray-700">Last Updated:</span>
-                        <p className="text-gray-900">{new Date(selectedOrder.updated_at).toLocaleString()}</p>
+                    ) : orderDetails ? (
+                      <ResearchDashboard orderData={orderDetails} />
+                    ) : (
+                      <div className="text-center py-8 text-gray-600">
+                        <p>Research dashboard will appear here once data is loaded.</p>
                       </div>
                     )}
-                  </div>
-                </div>
-
-                {/* Progress Information */}
-                {selectedOrder.progress && (
-                  <div className="p-3 sm:p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10">
-                    <h3 className="font-medium text-gray-900 mb-3 text-sm sm:text-base">Progress</h3>
-                    <div className="space-y-3">
-                      <div>
-                        <span className="font-medium text-gray-700">Current Step:</span>
-                        <p className="text-gray-900">{selectedOrder.progress.current_step}</p>
+                  </TabsContent>
+                  
+                  <TabsContent value="details" className="mt-6">
+                    {orderDetailsLoading ? (
+                      <div className="flex items-center justify-center py-12">
+                        <RefreshCw className="w-6 h-6 animate-spin mr-2 text-gray-700" />
+                        <span className="text-gray-700">Loading detailed analysis...</span>
                       </div>
-                      <div>
-                        <span className="font-medium text-gray-700">Steps Completed:</span>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {selectedOrder.progress.steps_completed?.map((step: string, index: number) => (
-                            <Badge key={index} className="bg-green-100 text-green-800">
-                              {step}
-                            </Badge>
-                          ))}
-                        </div>
+                    ) : orderDetails ? (
+                      <OrderDetailsEnhanced orderData={orderDetails} />
+                    ) : (
+                      <div className="text-center py-8 text-gray-600">
+                        <p>Detailed analysis will appear here once data is loaded.</p>
                       </div>
-                      {selectedOrder.progress.total_steps && (
-                        <div>
-                          <span className="font-medium text-gray-700">Total Steps:</span>
-                          <p className="text-gray-900">{selectedOrder.progress.total_steps}</p>
-                        </div>
-                      )}
-                      {selectedOrder.progress.errors && selectedOrder.progress.errors.length > 0 && (
-                        <div>
-                          <span className="font-medium text-gray-700">Errors:</span>
-                          <div className="space-y-2 mt-1">
-                            {selectedOrder.progress.errors.map((error: any, index: number) => (
-                              <div key={index} className="p-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
-                                <p><strong>Step:</strong> {error.step}</p>
-                                <p><strong>Message:</strong> {error.message}</p>
-                                {error.timestamp && (
-                                  <p><strong>Time:</strong> {new Date(error.timestamp).toLocaleString()}</p>
-                                )}
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="companies" className="mt-6">
+                    {orderDetailsLoading ? (
+                      <div className="flex items-center justify-center py-12">
+                        <RefreshCw className="w-6 h-6 animate-spin mr-2 text-gray-700" />
+                        <span className="text-gray-700">Loading company directory...</span>
+                      </div>
+                    ) : orderDetails ? (
+                      <CompanyDirectory 
+                        industries={orderDetails.raw_research_data?.flatMap((item: any) => 
+                          item.research_data?.industries || []
+                        ) || []}
+                        productSummary={orderDetails.raw_research_data?.[0]?.research_data?.product_summary}
+                      />
+                    ) : (
+                      <div className="text-center py-8 text-gray-600">
+                        <p>Company directory will appear here once data is loaded.</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="raw" className="mt-6">
+                    {/* Basic Order Information */}
+                    <div className="space-y-6">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Order Summary</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                              <span className="font-medium text-gray-700">Order ID:</span>
+                              <p className="text-gray-900 break-all">{selectedOrder.order_id}</p>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-700">Product ID:</span>
+                              <p className="text-gray-900 break-all">{selectedOrder.product_id}</p>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-700">Status:</span>
+                              <div className="flex items-center space-x-2">
+                                {getStatusIcon(selectedOrder.status)}
+                                <Badge className={getStatusColor(selectedOrder.status)}>
+                                  {selectedOrder.status}
+                                </Badge>
                               </div>
-                            ))}
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-700">Created:</span>
+                              <p className="text-gray-900">{new Date(selectedOrder.created_at).toLocaleString()}</p>
+                            </div>
                           </div>
-                        </div>
+                        </CardContent>
+                      </Card>
+                      
+                      {/* Raw Data */}
+                      {orderDetails && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Raw Research Data</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <pre className="text-xs text-gray-800 bg-gray-50 p-4 rounded overflow-x-auto max-h-96">
+                              {JSON.stringify(orderDetails, null, 2)}
+                            </pre>
+                          </CardContent>
+                        </Card>
                       )}
                     </div>
-                  </div>
-                )}
-
-                {/* Request Parameters */}
-                {selectedOrder.request_params && (
-                  <div className="p-3 sm:p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10">
-                    <h3 className="font-medium text-gray-900 mb-3 text-sm sm:text-base">Request Parameters</h3>
-                    <pre className="text-xs sm:text-sm text-gray-800 bg-gray-50 p-2 sm:p-3 rounded overflow-x-auto">
-                      {JSON.stringify(selectedOrder.request_params, null, 2)}
-                    </pre>
-                  </div>
-                )}
-
-                {/* Detailed Results */}
-                {orderDetailsLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <RefreshCw className="w-6 h-6 animate-spin mr-2 text-gray-700" />
-                    <span className="text-gray-700">Loading detailed results...</span>
-                  </div>
-                ) : orderDetailsError ? (
-                  <div className="p-4 bg-red-50 border border-red-200 rounded">
-                    <p className="text-red-700">Failed to load detailed results: {orderDetailsError}</p>
-                  </div>
-                ) : orderDetails ? (
-                  <div className="p-3 sm:p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10">
-                    <h3 className="font-medium text-gray-900 mb-3 text-sm sm:text-base">Detailed Results</h3>
-                    <pre className="text-xs sm:text-sm text-gray-800 bg-gray-50 p-2 sm:p-3 rounded overflow-x-auto max-h-64 sm:max-h-96">
-                      {JSON.stringify(orderDetails, null, 2)}
-                    </pre>
-                  </div>
-                ) : null}
+                  </TabsContent>
+                </Tabs>
               </div>
             )}
           </DialogContent>
