@@ -25,10 +25,12 @@ export default function SimpleOrderDetails({ orderSummary, details }: SimpleOrde
   // Accept multiple industry research types (e.g., industry_finding, industry_research)
   const industryItems = rawResearch.filter((r: any) => typeof r.research_type === 'string' && r.research_type.startsWith('industry_'))
   const validationBlocks = rawResearch.filter((r: any) => r.research_data?.type === "validation_results")
+  const companyBlocks = rawResearch.filter((r: any) => r.research_data?.type === "company_findings")
 
   const allIndustries = industryItems.flatMap((item: any) => item.research_data?.industries || [])
   const allSources: string[] = industryItems.flatMap((item: any) => item.research_data?.research_sources || [])
   const productSummary: string | undefined = industryItems.map((it: any) => it.research_data?.product_summary).find((v: any) => !!v)
+  const allCompanies = companyBlocks.flatMap((item: any) => item.research_data?.companies || [])
 
   // Companies directory (no search): build useful external queries from industry names
   const uniqueIndustries = Array.from(new Map(
@@ -137,41 +139,133 @@ export default function SimpleOrderDetails({ orderSummary, details }: SimpleOrde
           )}
         </TabsContent>
 
-        {/* Companies (no search): quick outbound lookups per industry) */}
+        {/* Companies: dynamic company findings */}
         <TabsContent value="companies" className="space-y-6">
           <Card className="bg-white/10 backdrop-blur-xl border border-white/20">
             <CardHeader>
               <CardTitle className="text-gray-900">Company Directory</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {uniqueIndustries.length > 0 ? (
-                <div className="space-y-2">
-                  {uniqueIndustries.map((ind: any, i: number) => (
-                    <div key={i} className="flex items-center justify-between rounded-lg border border-white/20 bg-white/20 p-3">
-                      <div className="font-medium text-gray-900">{ind.industry}</div>
-                      <div className="flex gap-2">
-                        <a
-                          href={`https://www.google.com/search?q=${encodeURIComponent(ind.industry + ' companies')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-700 underline"
-                        >
-                          Google
-                        </a>
-                        <a
-                          href={`https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(ind.industry)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-700 underline"
-                        >
-                          LinkedIn
-                        </a>
+              {Array.isArray(allCompanies) && allCompanies.length > 0 ? (
+                <div className="space-y-3">
+                  {allCompanies.map((c: any, i: number) => (
+                    <div key={i} className={`rounded-lg border border-white/20 ${i % 2 === 0 ? 'bg-white/10' : 'bg-white/20'} p-4`}> 
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <div className="font-medium text-gray-900">{c.company_name || 'Company'}</div>
+                          {c.company_size && (
+                            <div className="text-xs text-gray-700 mt-0.5">{c.company_size}</div>
+                          )}
+                        </div>
+                        {c.contact_info?.company_website && (
+                          <a
+                            href={c.contact_info.company_website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-700 underline"
+                          >
+                            Website
+                          </a>
+                        )}
                       </div>
+
+                      {c.company_description && (
+                        <div className="text-sm text-gray-800 mt-2">{c.company_description}</div>
+                      )}
+
+                      <div className="grid sm:grid-cols-2 gap-3 mt-3 text-sm">
+                        {c.market_position && (
+                          <div className="rounded bg-white/30 border border-white/30 p-2">
+                            <div className="text-gray-700">Market Position</div>
+                            <div className="text-gray-900">{c.market_position}</div>
+                          </div>
+                        )}
+                        {c.technical_fit && (
+                          <div className="rounded bg-white/30 border border-white/30 p-2">
+                            <div className="text-gray-700">Technical Fit</div>
+                            <div className="text-gray-900">{c.technical_fit}</div>
+                          </div>
+                        )}
+                        {c.drop_in_potential && (
+                          <div className="rounded bg-white/30 border border-white/30 p-2 sm:col-span-2">
+                            <div className="text-gray-700">Drop-in Potential</div>
+                            <div className="text-gray-900">{c.drop_in_potential}</div>
+                          </div>
+                        )}
+                      </div>
+
+                      {Array.isArray(c.current_solutions) && c.current_solutions.length > 0 && (
+                        <div className="mt-3">
+                          <div className="text-gray-700 text-sm mb-1">Current Solutions</div>
+                          <ul className="list-disc list-inside text-sm text-gray-900 space-y-0.5">
+                            {c.current_solutions.map((s: string, si: number) => (<li key={si}>{s}</li>))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {Array.isArray(c.decision_makers) && c.decision_makers.length > 0 && (
+                        <div className="mt-3">
+                          <div className="text-gray-700 text-sm mb-1">Decision Makers</div>
+                          <ul className="text-sm text-gray-900 space-y-0.5">
+                            {c.decision_makers.map((d: any, di: number) => (
+                              <li key={di} className="list-disc list-inside">
+                                {d.name || d.full_name || 'Contact'}{d.title ? ` – ${d.title}` : d.role ? ` – ${d.role}` : ''}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {(c.contact_info?.emails || c.contact_info?.phone_numbers || c.contact_info?.linkedin_profiles) && (
+                        <div className="mt-3 grid sm:grid-cols-3 gap-3 text-sm">
+                          {Array.isArray(c.contact_info?.emails) && c.contact_info.emails.length > 0 && (
+                            <div className="rounded bg-white/30 border border-white/30 p-2">
+                              <div className="text-gray-700">Emails</div>
+                              <div className="space-y-0.5">
+                                {c.contact_info.emails.map((e: string, ei: number) => (
+                                  <div key={ei} className="break-all">{e}</div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {Array.isArray(c.contact_info?.phone_numbers) && c.contact_info.phone_numbers.length > 0 && (
+                            <div className="rounded bg-white/30 border border-white/30 p-2">
+                              <div className="text-gray-700">Phones</div>
+                              <div className="space-y-0.5">
+                                {c.contact_info.phone_numbers.map((p: string, pi: number) => (
+                                  <div key={pi} className="break-all">{p}</div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {Array.isArray(c.contact_info?.linkedin_profiles) && c.contact_info.linkedin_profiles.length > 0 && (
+                            <div className="rounded bg-white/30 border border-white/30 p-2">
+                              <div className="text-gray-700">LinkedIn</div>
+                              <div className="space-y-0.5">
+                                {c.contact_info.linkedin_profiles.map((l: string, li: number) => (
+                                  <a key={li} href={l} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline break-all">{l}</a>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {Array.isArray(c.research_sources) && c.research_sources.length > 0 && (
+                        <div className="mt-3">
+                          <div className="text-gray-700 text-sm mb-1">Research Sources</div>
+                          <div className="flex flex-wrap gap-2">
+                            {c.research_sources.map((s: string, si: number) => (
+                              <a key={si} href={s} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline break-all bg-white/20 px-2 py-1 rounded border border-white/30">{s}</a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-gray-700 text-sm">No industries available to search companies.</div>
+                <div className="text-gray-700 text-sm">No companies found.</div>
               )}
             </CardContent>
           </Card>
@@ -184,7 +278,7 @@ export default function SimpleOrderDetails({ orderSummary, details }: SimpleOrde
               {validationBlocks.map((v: any, vi: number) => {
                 const vr = v.research_data
                 return (
-                  <Card key={vi} className="bg-white/10 backdrop-blur-xl border border-white/20">
+                  <Card key={vi} className={`${vi % 2 === 0 ? 'bg-white/10' : 'bg-white/20'} backdrop-blur-xl border border-white/20`}>
                     <CardHeader>
                       <CardTitle className="text-gray-900">{vr.industry || 'Validation Results'}</CardTitle>
                     </CardHeader>
