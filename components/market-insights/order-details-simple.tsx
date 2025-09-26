@@ -22,12 +22,13 @@ export default function SimpleOrderDetails({ orderSummary, details }: SimpleOrde
   const researchResults = details.research_results
   const rawResearch = Array.isArray(details.raw_research_data) ? details.raw_research_data : []
 
-  const industryFindings = rawResearch.filter((r: any) => r.research_type === "industry_finding")
+  // Accept multiple industry research types (e.g., industry_finding, industry_research)
+  const industryItems = rawResearch.filter((r: any) => typeof r.research_type === 'string' && r.research_type.startsWith('industry_'))
   const validationBlocks = rawResearch.filter((r: any) => r.research_data?.type === "validation_results")
 
-  const allIndustries = industryFindings.flatMap((item: any) => item.research_data?.industries || [])
-  const allSources: string[] = industryFindings.flatMap((item: any) => item.research_data?.research_sources || [])
-  const productSummary: string | undefined = industryFindings[0]?.research_data?.product_summary
+  const allIndustries = industryItems.flatMap((item: any) => item.research_data?.industries || [])
+  const allSources: string[] = industryItems.flatMap((item: any) => item.research_data?.research_sources || [])
+  const productSummary: string | undefined = industryItems.map((it: any) => it.research_data?.product_summary).find((v: any) => !!v)
 
   // Companies directory (no search): build useful external queries from industry names
   const uniqueIndustries = Array.from(new Map(
