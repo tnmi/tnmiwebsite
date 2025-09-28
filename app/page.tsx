@@ -232,7 +232,7 @@ export default function TrueNorthWebsite() {
 
   {/* Secondary Outline Glass Button */}
   <Link
-    href="https://calendly.com/tobiastnmi/30min"
+    href="https://calendly.com/tobiastnmi/20min"
     target="_blank"
     rel="noopener noreferrer"
     passHref
