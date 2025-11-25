@@ -68,10 +68,21 @@ export default function Sidebar() {
       )}>
         <div className="flex flex-col">
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-700">
-          <Link href="/dashboard" className="flex items-center">
-            <Image src="/logo.png" alt="TrueNorth Logo" width={32} height={32} className="invert flex-shrink-0" />
+          <Link href="/dashboard" className="flex items-center relative">
+            <div className="relative">
+              <Image src="/logo.png" alt="TrueNorth Logo" width={32} height={32} className="invert flex-shrink-0" />
+              {/* Beta badge on logo for collapsed state */}
+              {!isMobile && isCollapsed && (
+                <span className="absolute -top-1 -right-1 px-1 py-0.5 text-[8px] font-bold bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full">β</span>
+              )}
+            </div>
             {/* On mobile, always show full title; on desktop, hide when collapsed */}
-            {(isMobile || !isCollapsed) && <h1 className="ml-3 text-xl font-semibold text-tn-primary-green">NorthStar</h1>}
+            {(isMobile || !isCollapsed) && (
+              <div className="ml-3 flex items-center gap-2">
+                <h1 className="text-xl font-semibold text-tn-primary-green">NorthStar</h1>
+                <span className="px-2 py-0.5 text-[10px] font-bold bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full uppercase tracking-wider">Beta</span>
+              </div>
+            )}
           </Link>
           {/* Only show collapse button on desktop when not collapsed */}
           {!isMobile && !isCollapsed && (
