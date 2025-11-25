@@ -1,6 +1,6 @@
 import { create as createZustand } from 'zustand'
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged, User, AuthError } from 'firebase/auth'
-import { auth } from './firebase'
+import { getAuthInstance } from './firebase'
 
 const firebaseErrorMessages: Record<string, string> = {
   'auth/invalid-credential': 'Invalid email or password.',
@@ -22,17 +22,21 @@ interface AuthState {
 }
 
 export const useAuthStore = createZustand<AuthState>((set) => {
-  // Listen to Firebase auth state
-  onAuthStateChanged(auth, (user) => {
-    set({ user, isAuthenticated: !!user, loading: false })
-  })
+  // Listen to Firebase auth state only in the browser
+  if (typeof window !== 'undefined') {
+    const auth = getAuthInstance();
+    onAuthStateChanged(auth, (user) => {
+      set({ user, isAuthenticated: !!user, loading: false })
+    })
+  }
 
   return {
     user: null,
     isAuthenticated: false,
-    loading: true, // <-- set to true initially
+    loading: typeof window === 'undefined' ? false : true, // Don't show loading during SSR
     error: null,
     login: async (email, password) => {
+      const auth = getAuthInstance();
       set({ loading: true, error: null })
       try {
         await signInWithEmailAndPassword(auth, email, password)
@@ -47,6 +51,7 @@ export const useAuthStore = createZustand<AuthState>((set) => {
       }
     },
     logout: async () => {
+      const auth = getAuthInstance();
       set({ loading: true, error: null })
       try {
         await signOut(auth)

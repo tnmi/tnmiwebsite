@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Globe, Eye, EyeOff, User, ArrowRight } from 'lucide-react'
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, updateProfile } from 'firebase/auth'
-import { auth } from '@/lib/firebase'
+import { getAuthInstance } from '@/lib/firebase'
 import { useAuthStore } from '@/lib/store'
 import { useLanguage } from '@/lib/i18n'
 
@@ -18,6 +18,7 @@ function LoginContent() {
   const redirect = searchParams.get('redirect') || '/dashboard'
   const { login } = useAuthStore()
   const { language, setLanguage, t } = useLanguage()
+  const auth = getAuthInstance(); // Get auth instance
 
   const [isLogin, setIsLogin] = useState(true)
   const [isResetMode, setIsResetMode] = useState(false)
