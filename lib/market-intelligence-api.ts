@@ -1,5 +1,5 @@
 // API interfaces and client for Market Intelligence and Market Pull agents
-import { auth } from './firebase';
+import { getAuthInstance } from './firebase';
 
 const API_BASE = '/api';
 
@@ -116,7 +116,7 @@ export const marketIntelligenceAPI = {
    * Get Firebase auth token
    */
   async getAuthToken(): Promise<string> {
-    const user = auth.currentUser;
+    const user = getAuthInstance().currentUser;
     if (!user) {
       throw new Error('User not authenticated');
     }
@@ -279,5 +279,6 @@ export const marketIntelligenceAPI = {
     return response.json();
   },
 };
+
 
 

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { User, Mail, Shield, Save, Loader2, Lock, Eye, EyeOff, Download, Trash2 } from 'lucide-react'
-import { auth } from '@/lib/firebase'
+import { getAuthInstance } from '@/lib/firebase'
 import { updateProfile, updateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential, getIdToken } from 'firebase/auth'
 import { useAuthStore } from '@/lib/store'
 import { useLanguage } from '@/lib/i18n'
@@ -13,6 +13,7 @@ import { useLanguage } from '@/lib/i18n'
 export default function SettingsPage() {
   const { user } = useAuthStore()
   const { t } = useLanguage()
+  const auth = getAuthInstance(); // Get auth instance
   const [userData, setUserData] = useState({
     firstName: '',
     lastName: '',

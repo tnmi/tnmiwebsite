@@ -1,6 +1,6 @@
 "use client"
 
-import { auth } from "@/lib/firebase"
+import { getAuthInstance } from "@/lib/firebase"
 
 // Using secure backend API wrapper
 // All authentication and validation handled by backend
@@ -76,7 +76,7 @@ class MarketResearchAPI {
 
   private async getAuthHeaders(): Promise<Record<string, string>> {
     try {
-      const user = auth.currentUser
+      const user = getAuthInstance().currentUser
       
       if (user) {
         const token = await user.getIdToken()
