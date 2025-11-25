@@ -2,242 +2,221 @@
 
 import { auth } from "@/lib/firebase"
 
-// Using production Market Research API directly
-const API_BASE_URL = "https://market-research-api-26pkzuizfq-uc.a.run.app/api/v1"
-// Agent and Orders specific endpoint
-const AGENT_BASE_URL = "https://market-finder-agent-194429268019.us-central1.run.app"
+// Using secure backend API wrapper
+// All authentication and validation handled by backend
+const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || "https://northstar-backend-26pkzuizfq-uc.a.run.app"
 
 // Data types based on the market research API
-export interface Order {
-  order_id: string
+export interface MarketResearchJob {
+  job_id: string
   product_id: string
-  user_id: string
-  status: 'completed' | 'processing' | 'failed' | 'pending'
-  created_at: string
-  updated_at?: string
+  status: 'running' | 'completed' | 'failed'
+  started_at: string
+  completed_at?: string
+  segment_name: string
+  product_name: string
+  user_id?: string
+  environment?: string
+  input_data?: any
+  steps?: any[]
+  final_output?: string
+  error?: string | null
 }
 
-export interface OrderStatus {
-  order_id: string
-  status: 'completed' | 'processing' | 'failed' | 'pending'
-  progress?: number
-  message?: string
-  result?: any
+export interface StartMarketResearchRequest {
+  product_id: string
+  segment_name: string
+  product_data: {
+    product_name: string
+  }
+  market_data: {
+    industry: string
+    target_region: string
+  }
 }
 
-export interface StartResearchRequest {
+export interface StartMarketResearchResponse {
+  job_id: string
+  status: string
+  message: string
   user_id: string
   product_id: string
+}
+
+export interface UserJobsResponse {
+  user_id: string
+  total_jobs: number
+  jobs: MarketResearchJob[]
+}
+
+export interface ProductJobsResponse {
+  product_id: string
+  total_jobs: number
+  jobs: MarketResearchJob[]
+}
+
+export interface CancelJobResponse {
+  job_id: string
+  status: string
+  message: string
+}
+
+export interface HealthCheckResponse {
+  status: 'healthy' | 'unhealthy'
+  service: string
+  upstream_status: number
 }
 
 class MarketResearchAPI {
   private baseURL: string
   
   constructor() {
-    this.baseURL = API_BASE_URL
+    this.baseURL = BACKEND_API_URL
   }
 
-  private async getAuthHeaders(userId?: string): Promise<Record<string, string>> {
+  private async getAuthHeaders(): Promise<Record<string, string>> {
     try {
       const user = auth.currentUser
-      const effectiveUserId = userId || user?.uid
       
-      if (user && effectiveUserId) {
+      if (user) {
         const token = await user.getIdToken()
         return {
           'Authorization': `Bearer ${token}`,
-          'X-User-ID': effectiveUserId,
           'Content-Type': 'application/json'
         }
       }
     } catch (error) {
-      console.error('Failed to get auth headers:', error)
+      console.error('[MarketResearch] Failed to get auth headers:', error)
     }
     
-    // Return basic headers if no auth
-    return {
-      'Content-Type': 'application/json'
-    }
+    throw new Error('User not authenticated')
   }
 
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`API Error ${response.status}: ${errorText}`)
+      let errorMessage = `API Error ${response.status}`
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.error || errorMessage
+        if (errorData.error_id) {
+          console.error(`[MarketResearch] Error ID: ${errorData.error_id}`)
+        }
+      } catch {
+        errorMessage = await response.text()
+      }
+      throw new Error(errorMessage)
     }
     
-    const data = await response.json()
-    return data
+    return response.json()
   }
 
-  // 1. List user orders (GET /user/{user_id}/orders) - using proxy to avoid CORS
-  async getUserOrders(userId: string): Promise<any> {
-    try {
-      const user = auth.currentUser
-      if (!user) {
-        throw new Error('User not authenticated')
-      }
-      
-      const token = await user.getIdToken()
-      
-      // Use our Next.js API proxy to avoid CORS issues
-      const response = await fetch(`/api/market-research/orders?user_id=${userId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-      
-      console.log('Orders response status:', response.status)
-      
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('Orders proxy error:', errorText)
-        // Return empty orders instead of throwing to prevent UI from breaking
-        return { data: { items: [] } }
-      }
-      
-      const data = await response.json()
-      console.log('Orders response data:', data)
-      return data
-    } catch (error) {
-      console.error('Failed to get user orders:', error)
-      // Return empty orders instead of throwing to prevent UI from breaking
-      console.log('Returning empty orders due to error')
-      return { data: { items: [] } }
+  /**
+   * Start a new market research job
+   * Rate Limited: 5 requests per hour
+   */
+  async startMarketResearch(request: StartMarketResearchRequest): Promise<StartMarketResearchResponse> {
+    const headers = await this.getAuthHeaders()
+    const response = await fetch(`${this.baseURL}/market-research/start`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(request)
+    })
+    return this.handleResponse<StartMarketResearchResponse>(response)
+  }
+
+  /**
+   * Get all jobs for the authenticated user
+   */
+  async getUserJobs(): Promise<UserJobsResponse> {
+    const headers = await this.getAuthHeaders()
+    const response = await fetch(`${this.baseURL}/market-research/jobs`, {
+      headers
+    })
+    return this.handleResponse<UserJobsResponse>(response)
+  }
+
+  /**
+   * Get detailed status for a specific job
+   */
+  async getJobStatus(jobId: string): Promise<MarketResearchJob> {
+    const headers = await this.getAuthHeaders()
+    const response = await fetch(`${this.baseURL}/market-research/jobs/${jobId}`, {
+      headers
+    })
+    return this.handleResponse<MarketResearchJob>(response)
+  }
+
+  /**
+   * Cancel a running job
+   * Rate Limited: 10 requests per hour
+   */
+  async cancelJob(jobId: string, productId?: string): Promise<CancelJobResponse> {
+    const headers = await this.getAuthHeaders()
+    const url = new URL(`${this.baseURL}/market-research/jobs/${jobId}/cancel`)
+    if (productId) {
+      url.searchParams.set('product_id', productId)
     }
-  }
-
-  // Get order details (GET /order/{order_id}/details) - using proxy to avoid CORS
-  async getOrderDetails(orderId: string): Promise<any> {
-    try {
-      const user = auth.currentUser
-      if (!user) {
-        throw new Error('User not authenticated')
-      }
-      
-      const token = await user.getIdToken()
-      
-      console.log('Fetching order details for:', orderId)
-      
-      // Use our Next.js API proxy to avoid CORS issues
-      const response = await fetch(`/api/market-research/order-details?order_id=${orderId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-      
-      console.log('Order details response status:', response.status)
-      
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('Order details proxy error:', errorText)
-        throw new Error(`Failed to fetch order details: ${response.status} - ${errorText}`)
-      }
-      
-      const data = await response.json()
-      console.log('Order details response data:', data)
-      return data
-    } catch (error) {
-      console.error('Failed to get order details:', error)
-      throw error
-    }
-  }
-
-  // 2. Get user analytics (GET /api/v1/users/{user_id}/analytics)
-  async getUserAnalytics(userId: string): Promise<any> {
-    const headers = await this.getAuthHeaders(userId)
-    const response = await fetch(`${this.baseURL}/users/${userId}/analytics`, {
-      headers
-    })
-    return this.handleResponse<any>(response)
-  }
-
-  // 3. Get order full report (GET /api/v1/orders/{order_id}/full-report)
-  async getOrderReport(orderId: string, userId: string): Promise<any> {
-    const headers = await this.getAuthHeaders(userId)
-    const response = await fetch(`${this.baseURL}/orders/${orderId}/full-report`, {
-      headers
-    })
-    return this.handleResponse<any>(response)
-  }
-
-  // 4. Search companies (GET /api/v1/search/companies)
-  async searchCompanies(query: string, userId: string): Promise<any> {
-    const headers = await this.getAuthHeaders(userId)
-    const response = await fetch(`${this.baseURL}/search/companies?query=${encodeURIComponent(query)}`, {
-      headers
-    })
-    return this.handleResponse<any>(response)
-  }
-
-  // 5. Export order to PDF (POST /api/v1/export/orders/{order_id}/pdf)
-  async exportOrderPDF(orderId: string, userId: string): Promise<Blob> {
-    const headers = await this.getAuthHeaders(userId)
-    const response = await fetch(`${this.baseURL}/export/orders/${orderId}/pdf`, {
+    
+    const response = await fetch(url.toString(), {
       method: 'POST',
       headers
     })
-    
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`API Error ${response.status}: ${errorText}`)
-    }
-    
-    return response.blob()
+    return this.handleResponse<CancelJobResponse>(response)
   }
 
-  // Health check
-  async healthCheck(): Promise<{ status: string }> {
-    const response = await fetch(`${AGENT_BASE_URL}/health`)
-    return this.handleResponse<{ status: string }>(response)
+  /**
+   * Get all jobs for a specific product
+   */
+  async getProductJobs(productId: string): Promise<ProductJobsResponse> {
+    const headers = await this.getAuthHeaders()
+    const response = await fetch(`${this.baseURL}/market-research/product/${productId}/jobs`, {
+      headers
+    })
+    return this.handleResponse<ProductJobsResponse>(response)
   }
 
-  // Create new market research order (POST /invoke) - using proxy to avoid CORS
-  async startResearch(userId: string, productId: string): Promise<{ order_id: string }> {
-    try {
-      const user = auth.currentUser
-      if (!user) {
-        throw new Error('User not authenticated')
+  /**
+   * Health check - no authentication required
+   */
+  async healthCheck(): Promise<HealthCheckResponse> {
+    const response = await fetch(`${this.baseURL}/market-research/health`)
+    return this.handleResponse<HealthCheckResponse>(response)
+  }
+
+  /**
+   * Poll job status until completion
+   * @param jobId Job identifier
+   * @param onProgress Callback for progress updates
+   * @param maxPolls Maximum number of polls (default: 300 = 2.5 hours at 30s intervals)
+   * @param pollInterval Interval between polls in ms (default: 30000 = 30s)
+   */
+  async pollJobStatus(
+    jobId: string,
+    onProgress?: (status: MarketResearchJob) => void,
+    maxPolls: number = 300,
+    pollInterval: number = 30000
+  ): Promise<MarketResearchJob> {
+    let polls = 0
+    
+    while (polls < maxPolls) {
+      const status = await this.getJobStatus(jobId)
+      
+      if (onProgress) {
+        onProgress(status)
       }
       
-      const token = await user.getIdToken()
-      const payload = {
-        user_id: userId,
-        product_id: productId
+      if (status.status === 'completed' || status.status === 'failed') {
+        return status
       }
       
-      console.log('Starting research via proxy with payload:', payload)
-      
-      // Use our Next.js API proxy to avoid CORS issues
-      const response = await fetch('/api/market-research/invoke', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      })
-      
-      console.log('Start research response status:', response.status)
-      
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('Start research proxy error:', errorText)
-        throw new Error(`Failed to start research: ${response.status} - ${errorText}`)
-      }
-      
-      const result = await response.json()
-      console.log('Start research result:', result)
-      return { order_id: result.order_id || result.data?.order_id || result.id || 'research-started' }
-    } catch (error) {
-      console.error('Failed to start research:', error)
-      throw error
+      // Wait before next poll
+      await new Promise(resolve => setTimeout(resolve, pollInterval))
+      polls++
     }
+    
+    throw new Error('Job polling timeout - job did not complete within expected time')
   }
 }
 
 export const marketResearchAPI = new MarketResearchAPI()
+

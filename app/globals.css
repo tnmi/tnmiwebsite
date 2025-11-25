@@ -54,6 +54,16 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+
+    /* Aurora Background Colors */
+    --white: #ffffff;
+    --black: #000000;
+    --transparent: transparent;
+    --blue-500: #3A29FF;
+    --blue-400: #00ff88;
+    --blue-300: #FF94B4;
+    --indigo-300: #00ff88;
+    --violet-200: #FF3232;
   }
   .dark {
     --background: 222.2 84% 4.9%;
@@ -108,4 +118,174 @@ h4,
 h5,
 h6 {
   font-family: "Satoshi", system-ui, sans-serif;
+}
+
+/* Market Insights - Glass morphism effects */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-panel-hover {
+  transition: all 0.3s ease;
+}
+
+.glass-panel-hover:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Tree connector animations */
+@keyframes pulse-line {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.tree-connector {
+  animation: pulse-line 2s ease-in-out infinite;
+}
+
+/* Smooth scrollbar for market insights */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Markdown prose styling for inverted colors */
+.prose-invert {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.prose-invert h1,
+.prose-invert h2,
+.prose-invert h3,
+.prose-invert h4,
+.prose-invert h5,
+.prose-invert h6 {
+  color: #ffffff;
+  font-weight: 600;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.prose-invert h1 {
+  font-size: 1.5em;
+}
+
+.prose-invert h2 {
+  font-size: 1.3em;
+}
+
+.prose-invert h3 {
+  font-size: 1.1em;
+}
+
+.prose-invert p {
+  margin-bottom: 1em;
+  line-height: 1.6;
+}
+
+.prose-invert ul,
+.prose-invert ol {
+  margin-bottom: 1em;
+  padding-left: 1.5em;
+}
+
+.prose-invert li {
+  margin-bottom: 0.5em;
+}
+
+.prose-invert strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.prose-invert a {
+  color: #93c5fd;
+  text-decoration: underline;
+}
+
+.prose-invert a:hover {
+  color: #bfdbfe;
+}
+
+.prose-invert code {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.2em 0.4em;
+  border-radius: 0.25em;
+  font-size: 0.9em;
+}
+
+.prose-invert pre {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1em;
+  border-radius: 0.5em;
+  overflow-x: auto;
+  margin-bottom: 1em;
+}
+
+.prose-invert blockquote {
+  border-left: 3px solid rgba(255, 255, 255, 0.3);
+  padding-left: 1em;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 1em 0;
+}
+
+/* Special formatting for structured content */
+.prose-invert hr {
+  border-color: rgba(255, 255, 255, 0.2);
+  margin: 1.5em 0;
+}
+
+.prose-invert table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+}
+
+.prose-invert th,
+.prose-invert td {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.5em;
+  text-align: left;
+}
+
+.prose-invert th {
+  background: rgba(255, 255, 255, 0.1);
+  font-weight: 600;
+}
+
+/* Better text wrapping for long content */
+.prose-invert {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Preserve line breaks in content */
+.prose-invert pre {
+  white-space: pre-wrap;
+  word-break: break-word;
 }

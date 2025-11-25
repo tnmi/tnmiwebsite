@@ -280,24 +280,14 @@ export default function SettingsPage() {
       })
 
       if (!response.ok) {
-        console.log('DEBUG - Response not OK:', {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries())
-        })
-        
         let errorData
         try {
           errorData = await response.json()
-          console.log('DEBUG - Error data from API (JSON):', errorData)
         } catch (jsonError) {
-          console.log('DEBUG - Failed to parse as JSON, trying text:', jsonError)
           const textData = await response.text()
-          console.log('DEBUG - Raw text response:', textData)
           throw new Error(`Failed to export data - Status: ${response.status}, Text: ${textData}`)
         }
         
-        console.log('DEBUG - Throwing error with message:', errorData.error || 'Failed to export data')
         throw new Error(errorData.error || 'Failed to export data')
       }
 

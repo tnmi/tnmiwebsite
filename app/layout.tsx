@@ -105,6 +105,10 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#10b981" />
         
         {/* Structured Data for Google */}
+        {/* SECURITY NOTE: Using dangerouslySetInnerHTML here is safe because:
+            1. Content is static JSON-LD structured data
+            2. All values are hardcoded string literals (no user input)
+            3. JSON.stringify ensures proper escaping */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, FileText, Pencil, X, Trash2, Download } from "lucide-react"
+import { Plus, FileText, Pencil, X, Trash2, Download, Loader2 } from "lucide-react"
 import { db } from "@/lib/firebase"
 import { collection, addDoc, getDocs, DocumentData, serverTimestamp, query, where, updateDoc, deleteDoc, doc } from "firebase/firestore"
 import { useAuthStore } from "@/lib/store"
@@ -14,6 +14,13 @@ import { storage } from "@/lib/firebase"
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage"
 import { useLanguage } from "@/lib/i18n"
 import { useToast } from "@/components/ui/use-toast"
+import dynamic from 'next/dynamic'
+
+// Lazy load LightRays to prevent SSR issues
+const LightRays = dynamic(
+  () => import('@/components/ui/LightRays'),
+  { ssr: false }
+)
 
 interface ProductFile {
   id: string;
@@ -64,6 +71,7 @@ export default function MyProductsPage() {
   const [editing, setEditing] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deletingFileId, setDeletingFileId] = useState<string | null>(null)
+  const [productsLoading, setProductsLoading] = useState(true)
   const user = useAuthStore((state) => state.user)
 
   // Function to remove a file from a specific category
@@ -77,6 +85,7 @@ export default function MyProductsPage() {
   const fetchProducts = async () => {
     if (!user) return;
     
+    setProductsLoading(true)
     try {
       const token = await user.getIdToken()
       const response = await fetch('/api/products', {
@@ -97,6 +106,8 @@ export default function MyProductsPage() {
     } catch (err) {
       console.error('Error fetching products:', err)
       setProducts([]) // Set empty array on error
+    } finally {
+      setProductsLoading(false)
     }
   }
 
@@ -578,72 +589,100 @@ export default function MyProductsPage() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 font-satoshi px-4 sm:px-6">
-      <Card className="bg-gradient-to-r from-tn-primary-blue/20 via-tn-deep-blue/20 to-tn-dark-bg/20 text-white backdrop-blur-xl border border-white/20 shadow-2xl">
-        <CardHeader className="p-4 sm:p-6">
-          <CardTitle className="text-2xl sm:text-3xl font-light tracking-wide">{t('myProducts')}</CardTitle>
-          <CardDescription className="text-white/80 font-light tracking-wide text-sm sm:text-base">
-            {t('manageProductFiles')}
-          </CardDescription>
-        </CardHeader>
-      </Card>
+    <div className="relative flex flex-col h-full w-full overflow-hidden bg-black">
+      {/* Light Rays Background */}
+      <div className="absolute inset-0 z-0">
+        <LightRays
+          raysOrigin="top-center"
+          raysColor="#00ff88"
+          raysSpeed={1.0}
+          lightSpread={0.8}
+          rayLength={0.5}
+          followMouse={true}
+          mouseInfluence={0.15}
+          noiseAmount={0.1}
+          distortion={0.05}
+        />
+      </div>
 
+      {/* Main Content */}
+      <div className="relative z-10 space-y-4 sm:space-y-6 font-satoshi overflow-auto">
+        <Card className="bg-white/10 backdrop-blur-3xl border border-white/20 shadow-2xl mx-4 sm:mx-6 mt-6">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-2xl sm:text-3xl font-light tracking-wide text-white">{t('myProducts')}</CardTitle>
+            <CardDescription className="text-white/80 font-light tracking-wide text-sm sm:text-base">
+              {t('manageProductFiles')}
+            </CardDescription>
+          </CardHeader>
+        </Card>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-        {/* + Card */}
-        <Card className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-500 cursor-pointer group shadow-xl hover:shadow-2xl">
-          <CardContent className="flex flex-col items-center justify-center h-40 sm:h-48 p-4 sm:p-6" onClick={openAddModal}>
-            <Plus className="w-10 sm:w-12 h-10 sm:h-12 text-tn-primary-green/90 mb-2 sm:mb-3 group-hover:text-tn-primary-green group-hover:scale-110 transition-all duration-300" />
-            <span className="text-gray-800 font-light tracking-wide text-center drop-shadow-sm text-sm sm:text-base">{t('uploadProduct')}</span>
+        {/* Loading State */}
+        {productsLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <Loader2 className="w-12 h-12 animate-spin text-white mx-auto mb-4" />
+              <p className="text-white font-medium text-lg">Loading products...</p>
+              <p className="text-white/70 text-sm mt-2">Please wait</p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 px-4 sm:px-6 pb-6">
+            {/* + Card */}
+            <Card className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-500 cursor-pointer group shadow-xl hover:shadow-2xl">
+              <CardContent className="flex flex-col items-center justify-center h-40 sm:h-48 p-4 sm:p-6" onClick={openAddModal}>
+                <Plus className="w-10 sm:w-12 h-10 sm:h-12 text-white/90 mb-2 sm:mb-3 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
+                <span className="text-white font-light tracking-wide text-center drop-shadow-sm text-sm sm:text-base">{t('uploadProduct')}</span>
               </CardContent>
             </Card>
-        
-        {/* Product Cards */}
-        {Array.isArray(products) && products.map((prod, idx) => {
-          const totalFiles = Object.values(prod.files || {}).reduce((sum, fileArray) => sum + fileArray.length, 0)
-          return (
-          <Card key={idx} className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-500 cursor-pointer group shadow-xl hover:shadow-2xl" onClick={() => openProductModal(prod)}>
-            <CardContent className="p-4 sm:p-6 h-40 sm:h-48 flex flex-col">
-              <div className="flex-1">
-                  <h3 className="font-medium text-base sm:text-lg mb-2 sm:mb-3 text-gray-800 truncate tracking-wide drop-shadow-sm" title={prod.product_name}>
-                    {prod.product_name || 'Unnamed Product'}
-                </h3>
-                <p className="text-xs sm:text-sm text-gray-700 mb-1 sm:mb-2 font-light tracking-wide drop-shadow-sm">
-                    {prod.trl_level && `TRL Level: ${prod.trl_level}`}
-                </p>
-                <p className="text-xs text-gray-600 line-clamp-2 sm:line-clamp-3 font-light tracking-wide leading-relaxed drop-shadow-sm">
-                  {prod.description || t('noDescription')}
-                </p>
-              </div>
-                {totalFiles > 0 && (
-                <div className="flex items-center mt-2 sm:mt-3 text-xs text-gray-700">
-                  <FileText className="w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2" />
-                    <span className="font-light tracking-wide drop-shadow-sm">{totalFiles} file{totalFiles > 1 ? 's' : ''} attached</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          )
-        })}
+            
+            {/* Product Cards */}
+            {Array.isArray(products) && products.map((prod, idx) => {
+              const totalFiles = Object.values(prod.files || {}).reduce((sum, fileArray) => sum + fileArray.length, 0)
+              return (
+                <Card key={idx} className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-500 cursor-pointer group shadow-xl hover:shadow-2xl" onClick={() => openProductModal(prod)}>
+                  <CardContent className="p-4 sm:p-6 h-40 sm:h-48 flex flex-col">
+                    <div className="flex-1">
+                      <h3 className="font-medium text-base sm:text-lg mb-2 sm:mb-3 text-white truncate tracking-wide drop-shadow-sm" title={prod.product_name}>
+                        {prod.product_name || 'Unnamed Product'}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-white/80 mb-1 sm:mb-2 font-light tracking-wide drop-shadow-sm">
+                        {prod.trl_level && `TRL Level: ${prod.trl_level}`}
+                      </p>
+                      <p className="text-xs text-white/70 line-clamp-2 sm:line-clamp-3 font-light tracking-wide leading-relaxed drop-shadow-sm">
+                        {prod.description || t('noDescription')}
+                      </p>
+                    </div>
+                    {totalFiles > 0 && (
+                      <div className="flex items-center mt-2 sm:mt-3 text-xs text-white/80">
+                        <FileText className="w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2" />
+                        <span className="font-light tracking-wide drop-shadow-sm">{totalFiles} file{totalFiles > 1 ? 's' : ''} attached</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4">
-          <Card className="w-full max-w-[80vw] max-h-[80vh] overflow-y-auto bg-white/95 backdrop-blur-2xl border border-white/30 shadow-2xl font-satoshi relative z-[999999]">
+          <Card className="w-full max-w-[80vw] max-h-[80vh] overflow-y-auto bg-white/10 backdrop-blur-3xl border border-white/20 shadow-2xl font-satoshi relative z-[999999]">
             <CardHeader className="relative p-4 sm:p-6 border-b-0">
-              <button onClick={closeModal} className="absolute top-3 sm:top-4 right-3 sm:right-4 text-gray-500 hover:text-gray-700 text-xl transition-colors duration-200">
+              <button onClick={closeModal} className="absolute top-3 sm:top-4 right-3 sm:right-4 text-white/70 hover:text-white text-xl transition-colors duration-200">
                 &times;
               </button>
               {modalProduct ? (
                 <div>
-                  <CardTitle className="text-lg sm:text-xl mb-2 font-medium text-gray-800 tracking-wide pr-8">{modalProduct.product_name || 'Unnamed Product'}</CardTitle>
-                  <CardDescription className="text-gray-600 font-light tracking-wide text-sm sm:text-base">
+                  <CardTitle className="text-lg sm:text-xl mb-2 font-medium text-white tracking-wide pr-8">{modalProduct.product_name || 'Unnamed Product'}</CardTitle>
+                  <CardDescription className="text-white/80 font-light tracking-wide text-sm sm:text-base">
                     {modalProduct.trl_level && `TRL Level: ${modalProduct.trl_level}`}
               </CardDescription>
                 </div>
               ) : (
-                <CardTitle className="text-lg sm:text-xl font-medium text-gray-800 tracking-wide pr-8">{t('uploadFile')}</CardTitle>
+                <CardTitle className="text-lg sm:text-xl font-medium text-white tracking-wide pr-8">{t('uploadFile')}</CardTitle>
               )}
             </CardHeader>
             <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 pt-0">
@@ -651,11 +690,11 @@ export default function MyProductsPage() {
                 <div className={editMode ? "space-y-6" : "space-y-6"}>
                   {!editMode && (
                     <div className="space-y-4">
-                    <div className="text-gray-700 font-light tracking-wide leading-relaxed">
+                    <div className="text-white/90 font-light tracking-wide leading-relaxed">
                       {modalProduct.description || t('noDescription')}
                       </div>
                       {modalProduct.trl_level && (
-                        <div className="inline-flex items-center px-3 py-1 bg-tn-primary-blue/10 text-tn-primary-blue rounded-full text-sm font-medium">
+                        <div className="inline-flex items-center px-3 py-1 bg-white/20 text-white rounded-full text-sm font-medium">
                           TRL Level {modalProduct.trl_level}
                     </div>
                   )}
@@ -665,7 +704,7 @@ export default function MyProductsPage() {
                   {/* Attached Files Section - Hide when editing */}
                   {!editMode && (
                     <div className="space-y-4">
-                      <h4 className="text-sm font-medium text-gray-800 tracking-wide">{t('attachedFiles')}</h4>
+                      <h4 className="text-sm font-medium text-white tracking-wide">{t('attachedFiles')}</h4>
                       {(() => {
                         // Handle the new backend structure with files organized by category
                         if (modalProduct.files && typeof modalProduct.files === 'object') {
@@ -684,31 +723,31 @@ export default function MyProductsPage() {
                           });
                           
                           if (categoriesWithFiles.length === 0) {
-                            return <p className="text-sm text-gray-500 font-light tracking-wide">{t('noFilesAttached')}</p>;
+                            return <p className="text-sm text-white/70 font-light tracking-wide">{t('noFilesAttached')}</p>;
                           }
                           
                           return (
                             <div className="space-y-6">
                               {categoriesWithFiles.map(([category, fileList]) => (
                                 <div key={category} className="space-y-3">
-                                  <h5 className="text-base font-semibold text-gray-800 tracking-wide flex items-center">
-                                    <div className="w-2 h-2 bg-tn-primary-blue rounded-full mr-3"></div>
+                                  <h5 className="text-base font-semibold text-white tracking-wide flex items-center">
+                                    <div className="w-2 h-2 bg-white rounded-full mr-3"></div>
                                     {categoryLabels[category as keyof typeof categoryLabels] || category}
-                                    <span className="ml-2 text-sm font-normal text-gray-500">({fileList.length})</span>
+                                    <span className="ml-2 text-sm font-normal text-white/70">({fileList.length})</span>
                                   </h5>
                                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                     {fileList.map((file) => (
-                                      <div key={file.id} className="group bg-white rounded-lg border border-gray-200 hover:border-tn-primary-blue/30 hover:shadow-md transition-all duration-200 p-4">
+                                      <div key={file.id} className="group bg-white/10 backdrop-blur-xl rounded-lg border border-white/20 hover:border-white/30 hover:shadow-md transition-all duration-200 p-4">
                                         <div className="flex items-start justify-between mb-3">
                                           <div className="flex items-center space-x-2 flex-1 min-w-0">
-                                            <div className="w-8 h-8 bg-tn-primary-blue/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                                              <FileText className="w-4 h-4 text-tn-primary-blue" />
+                                            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                                              <FileText className="w-4 h-4 text-white" />
                                             </div>
                                 <div className="min-w-0 flex-1">
-                                              <p className="text-sm font-medium text-gray-900 truncate" title={file.original_filename}>
+                                              <p className="text-sm font-medium text-white truncate" title={file.original_filename}>
                                     {file.original_filename}
                                   </p>
-                                              <p className="text-xs text-gray-500 mt-1">
+                                              <p className="text-xs text-white/70 mt-1">
                                                 {new Date(file.uploaded_at).toLocaleDateString()}
                                   </p>
                                 </div>
@@ -718,7 +757,7 @@ export default function MyProductsPage() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                            className="h-8 w-8 p-0 hover:bg-tn-primary-blue/10 hover:text-tn-primary-blue"
+                                            className="h-8 w-8 p-0 hover:bg-white/20 hover:text-white text-white/70"
                                             onClick={() => handleDownloadFile(file)}
                                   title={`Download ${file.original_filename}`}
                                 >
@@ -727,12 +766,12 @@ export default function MyProductsPage() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600"
+                                  className="h-8 w-8 p-0 hover:bg-red-500/20 hover:text-red-300 text-red-400"
                                   onClick={() => handleDeleteFile(file.id)}
                                   disabled={deletingFileId === file.id}
                                 >
                                   {deletingFileId === file.id ? (
-                                    <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                                    <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
                                   ) : (
                                               <Trash2 className="w-4 h-4" />
                                   )}
@@ -754,7 +793,7 @@ export default function MyProductsPage() {
                   
                   {!editMode && (
                     <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                      <Button variant="outline" size="sm" className="border-gray-300 text-gray-700 font-light tracking-wide transition-all duration-200 text-xs sm:text-sm hover:bg-gray-50" onClick={() => {
+                      <Button variant="outline" size="sm" className="border-white/20 bg-white/10 backdrop-blur-xl text-white font-light tracking-wide transition-all duration-200 text-xs sm:text-sm hover:bg-white/20" onClick={() => {
                         setEditMode(true)
                         setName(modalProduct.product_name || '')
                         setTrlLevel(modalProduct.trl_level || '')
@@ -787,21 +826,21 @@ export default function MyProductsPage() {
                         </div>
                       )}
                       <div>
-                        <label className="block mb-2 font-medium text-gray-700 tracking-wide">{t('productName')}</label>
+                        <label className="block mb-2 font-medium text-white tracking-wide">{t('productName')}</label>
                         <input
                           type="text"
                           value={name}
                           onChange={e => setName(e.target.value)}
-                          className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 placeholder-gray-500"
+                          className="w-full p-3 border border-white/20 rounded-xl bg-white/10 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/50 transition-all duration-200 font-light tracking-wide text-white placeholder-white/50"
                         />
                       </div>
                       <div>
-                        <label className="block mb-2 font-medium text-gray-700 tracking-wide">TRL Level</label>
+                        <label className="block mb-2 font-medium text-white tracking-wide">TRL Level</label>
                         <div className="relative">
                           <select
                             value={trlLevel}
                             onChange={e => setTrlLevel(e.target.value)}
-                            className="w-full p-3 pr-10 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 appearance-none cursor-pointer hover:bg-white/80 hover:border-tn-primary-blue/30"
+                            className="w-full p-3 pr-10 border border-white/20 rounded-xl bg-white/10 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/50 transition-all duration-200 font-light tracking-wide text-white appearance-none cursor-pointer hover:bg-white/20 hover:border-white/30"
                           >
                             <option value="">Select TRL Level</option>
                             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(level => (
@@ -809,18 +848,18 @@ export default function MyProductsPage() {
                             ))}
                           </select>
                           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
                           </div>
                         </div>
                       </div>
-                      <div>
-                        <label className="block mb-2 font-medium text-gray-700 tracking-wide">Description</label>
+                      <div className="md:col-span-2">
+                        <label className="block mb-2 font-medium text-white tracking-wide">Description</label>
                         <textarea
                           value={description}
                           onChange={e => setDescription(e.target.value)}
-                          className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 resize-none font-light tracking-wide leading-relaxed text-gray-800 placeholder-gray-500"
+                          className="w-full p-3 border border-white/20 rounded-xl bg-white/10 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/50 transition-all duration-200 resize-none font-light tracking-wide leading-relaxed text-white placeholder-white/50"
                           rows={3}
                         />
                       </div>
@@ -829,7 +868,7 @@ export default function MyProductsPage() {
                       {/* Existing Files Display */}
                       {modalProduct.files && Object.keys(modalProduct.files).some(key => Array.isArray(modalProduct.files[key]) && modalProduct.files[key].length > 0) && (
                         <div className="space-y-4">
-                          <h3 className="text-lg font-medium text-gray-800 tracking-wide border-b border-gray-200 pb-2">Current Files</h3>
+                          <h3 className="text-lg font-medium text-white tracking-wide border-b border-white/20 pb-2">Current Files</h3>
                           {Object.entries(modalProduct.files).map(([category, fileList]) => {
                             if (!Array.isArray(fileList) || fileList.length === 0) return null;
                             
@@ -844,15 +883,15 @@ export default function MyProductsPage() {
                             
                             return (
                               <div key={category} className="space-y-2">
-                                <h5 className="text-sm font-medium text-gray-700 tracking-wide">
+                                <h5 className="text-sm font-medium text-white/90 tracking-wide">
                                   {categoryLabels[category as keyof typeof categoryLabels] || category}
                                 </h5>
                                 <div className="space-y-1">
                                   {fileList.map((file) => (
-                                    <div key={file.id} className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                                    <div key={file.id} className="flex items-center justify-between p-2 bg-white/10 backdrop-blur-xl rounded border border-white/20">
                                       <div className="flex items-center space-x-2 flex-1 min-w-0">
-                                        <FileText className="w-3 h-3 text-gray-500 flex-shrink-0" />
-                                        <span className="text-xs text-gray-700 truncate">{file.original_filename}</span>
+                                        <FileText className="w-3 h-3 text-white/70 flex-shrink-0" />
+                                        <span className="text-xs text-white truncate">{file.original_filename}</span>
                                       </div>
                                       <Button
                                         variant="ghost"
@@ -879,12 +918,12 @@ export default function MyProductsPage() {
 
                       {/* File Upload Categories for Editing */}
                       <div className="space-y-6">
-                        <h3 className="text-lg font-medium text-gray-800 tracking-wide border-b border-gray-200 pb-2">Add New Files</h3>
+                        <h3 className="text-lg font-medium text-white tracking-wide border-b border-white/20 pb-2">Add New Files</h3>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         
                         {/* General Product Files */}
                         <div>
-                          <label className="block mb-2 font-medium text-gray-700 tracking-wide">General Product Files (max 10MB per file)</label>
+                          <label className="block mb-2 font-medium text-white tracking-wide">General Product Files (max 10MB per file)</label>
                         <input
                           type="file"
                             accept=".pdf,.doc,.docx,.xls,.xlsx" 
@@ -893,14 +932,14 @@ export default function MyProductsPage() {
                               const newFiles = Array.from(e.target.files || [])
                               setFiles(prev => ({ ...prev, general: [...prev.general, ...newFiles] }))
                           }}
-                          className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
+                          className="w-full p-3 border border-white/20 rounded-xl bg-white/10 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/50 transition-all duration-200 font-light tracking-wide text-white file:text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white/20 file:text-white hover:file:bg-white/30"
                         />
                           {files.general.length > 0 && (
                           <div className="mt-2 space-y-1">
                               {files.general.map((file, index) => (
-                              <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                              <div key={index} className="text-xs text-white/80 flex items-center justify-between font-light tracking-wide bg-white/10 backdrop-blur-xl rounded-lg p-2 border border-white/20">
                                 <div className="flex items-center flex-1 min-w-0">
-                                  <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
+                                  <FileText className="w-3 h-3 mr-2 flex-shrink-0 text-white/70" />
                                   <span className="truncate">{file.name}</span>
                                 </div>
                                 <button
@@ -918,7 +957,7 @@ export default function MyProductsPage() {
 
                         {/* SDS/TDS/MSDS */}
                       <div>
-                          <label className="block mb-2 font-medium text-gray-700 tracking-wide">SDS/TDS/MSDS Files (max 10MB per file)</label>
+                          <label className="block mb-2 font-medium text-white tracking-wide">SDS/TDS/MSDS Files (max 10MB per file)</label>
                           <input 
                             type="file" 
                             accept=".pdf,.doc,.docx" 
@@ -927,14 +966,14 @@ export default function MyProductsPage() {
                               const newFiles = Array.from(e.target.files || [])
                               setFiles(prev => ({ ...prev, sds: [...prev.sds, ...newFiles] }))
                             }}
-                            className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
+                            className="w-full p-3 border border-white/20 rounded-xl bg-white/10 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/50 transition-all duration-200 font-light tracking-wide text-white file:text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white/20 file:text-white hover:file:bg-white/30"
                           />
                           {files.sds.length > 0 && (
                             <div className="mt-2 space-y-1">
                               {files.sds.map((file, index) => (
-                              <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                              <div key={index} className="text-xs text-white/80 flex items-center justify-between font-light tracking-wide bg-white/10 backdrop-blur-xl rounded-lg p-2 border border-white/20">
                                 <div className="flex items-center flex-1 min-w-0">
-                                  <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
+                                  <FileText className="w-3 h-3 mr-2 flex-shrink-0 text-white/70" />
                                   <span className="truncate">{file.name}</span>
                       </div>
                                 <button
@@ -952,7 +991,7 @@ export default function MyProductsPage() {
 
                         {/* COA (Certificate of Analysis) */}
                       <div>
-                          <label className="block mb-2 font-medium text-gray-700 tracking-wide">COA (Certificate of Analysis) per lot/batch (max 10MB per file)</label>
+                          <label className="block mb-2 font-medium text-white tracking-wide">COA (Certificate of Analysis) per lot/batch (max 10MB per file)</label>
                           <input 
                             type="file" 
                             accept=".pdf,.doc,.docx" 
@@ -961,14 +1000,14 @@ export default function MyProductsPage() {
                               const newFiles = Array.from(e.target.files || [])
                               setFiles(prev => ({ ...prev, coa: [...prev.coa, ...newFiles] }))
                             }}
-                            className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
+                            className="w-full p-3 border border-white/20 rounded-xl bg-white/10 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/50 transition-all duration-200 font-light tracking-wide text-white file:text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white/20 file:text-white hover:file:bg-white/30"
                           />
                           {files.coa.length > 0 && (
                             <div className="mt-2 space-y-1">
                               {files.coa.map((file, index) => (
-                              <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                              <div key={index} className="text-xs text-white/80 flex items-center justify-between font-light tracking-wide bg-white/10 backdrop-blur-xl rounded-lg p-2 border border-white/20">
                                 <div className="flex items-center flex-1 min-w-0">
-                                  <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
+                                  <FileText className="w-3 h-3 mr-2 flex-shrink-0 text-white/70" />
                                   <span className="truncate">{file.name}</span>
                                 </div>
                                 <button
@@ -986,7 +1025,7 @@ export default function MyProductsPage() {
 
                         {/* Lab Test Reports */}
                       <div>
-                          <label className="block mb-2 font-medium text-gray-700 tracking-wide">Lab Test Reports (PDF/CSV) from LIMS (max 10MB per file)</label>
+                          <label className="block mb-2 font-medium text-white tracking-wide">Lab Test Reports (PDF/CSV) from LIMS (max 10MB per file)</label>
                           <input 
                             type="file" 
                             accept=".pdf,.csv,.xls,.xlsx" 
@@ -995,14 +1034,14 @@ export default function MyProductsPage() {
                               const newFiles = Array.from(e.target.files || [])
                               setFiles(prev => ({ ...prev, lab: [...prev.lab, ...newFiles] }))
                             }}
-                            className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
+                            className="w-full p-3 border border-white/20 rounded-xl bg-white/10 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/50 transition-all duration-200 font-light tracking-wide text-white file:text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white/20 file:text-white hover:file:bg-white/30"
                           />
                           {files.lab.length > 0 && (
                             <div className="mt-2 space-y-1">
                               {files.lab.map((file, index) => (
-                              <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                              <div key={index} className="text-xs text-white/80 flex items-center justify-between font-light tracking-wide bg-white/10 backdrop-blur-xl rounded-lg p-2 border border-white/20">
                                 <div className="flex items-center flex-1 min-w-0">
-                                  <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
+                                  <FileText className="w-3 h-3 mr-2 flex-shrink-0 text-white/70" />
                                   <span className="truncate">{file.name}</span>
                                 </div>
                                 <button
@@ -1020,7 +1059,7 @@ export default function MyProductsPage() {
 
                         {/* Analyzer Logs */}
                       <div>
-                          <label className="block mb-2 font-medium text-gray-700 tracking-wide">On-line Analyzer Logs from DCS/SCADA or Historians (e.g., PI) (max 10MB per file)</label>
+                          <label className="block mb-2 font-medium text-white tracking-wide">On-line Analyzer Logs from DCS/SCADA or Historians (e.g., PI) (max 10MB per file)</label>
                           <input 
                             type="file" 
                             accept=".csv,.txt,.log,.pdf,.xls,.xlsx" 
@@ -1029,14 +1068,14 @@ export default function MyProductsPage() {
                               const newFiles = Array.from(e.target.files || [])
                               setFiles(prev => ({ ...prev, logs: [...prev.logs, ...newFiles] }))
                             }}
-                            className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
+                            className="w-full p-3 border border-white/20 rounded-xl bg-white/10 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/50 transition-all duration-200 font-light tracking-wide text-white file:text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white/20 file:text-white hover:file:bg-white/30"
                           />
                           {files.logs.length > 0 && (
                             <div className="mt-2 space-y-1">
                               {files.logs.map((file, index) => (
-                              <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                              <div key={index} className="text-xs text-white/80 flex items-center justify-between font-light tracking-wide bg-white/10 backdrop-blur-xl rounded-lg p-2 border border-white/20">
                                 <div className="flex items-center flex-1 min-w-0">
-                                  <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
+                                  <FileText className="w-3 h-3 mr-2 flex-shrink-0 text-white/70" />
                                   <span className="truncate">{file.name}</span>
                                 </div>
                                 <button
@@ -1054,7 +1093,7 @@ export default function MyProductsPage() {
 
                         {/* Calibration Certificates and SOPs */}
                       <div>
-                          <label className="block mb-2 font-medium text-gray-700 tracking-wide">Calibration Certificates and SOPs (Standard Operating Procedures) (max 10MB per file)</label>
+                          <label className="block mb-2 font-medium text-white tracking-wide">Calibration Certificates and SOPs (Standard Operating Procedures) (max 10MB per file)</label>
                           <input 
                             type="file" 
                             accept=".pdf,.doc,.docx" 
@@ -1063,14 +1102,14 @@ export default function MyProductsPage() {
                               const newFiles = Array.from(e.target.files || [])
                               setFiles(prev => ({ ...prev, calibration: [...prev.calibration, ...newFiles] }))
                             }}
-                            className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
+                            className="w-full p-3 border border-white/20 rounded-xl bg-white/10 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/50 transition-all duration-200 font-light tracking-wide text-white file:text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white/20 file:text-white hover:file:bg-white/30"
                           />
                           {files.calibration.length > 0 && (
                             <div className="mt-2 space-y-1">
                               {files.calibration.map((file, index) => (
-                              <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                              <div key={index} className="text-xs text-white/80 flex items-center justify-between font-light tracking-wide bg-white/10 backdrop-blur-xl rounded-lg p-2 border border-white/20">
                                 <div className="flex items-center flex-1 min-w-0">
-                                  <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
+                                  <FileText className="w-3 h-3 mr-2 flex-shrink-0 text-white/70" />
                                   <span className="truncate">{file.name}</span>
                                 </div>
                                 <button
@@ -1089,14 +1128,14 @@ export default function MyProductsPage() {
                       </div>
                       
                       <div className="flex flex-col sm:flex-row gap-2">
-                        <Button type="submit" className="flex-1 bg-tn-primary-blue hover:bg-tn-primary-blue/90 text-white font-medium tracking-wide transition-all duration-200 text-xs sm:text-sm" disabled={editing}>
+                        <Button type="submit" className="flex-1 bg-blue-500/30 backdrop-blur-xl border border-blue-400/30 hover:bg-blue-500/40 text-white font-medium tracking-wide transition-all duration-200 text-xs sm:text-sm" disabled={editing}>
                           {editing ? t('saving') : t('save')}
                         </Button>
-                        <Button type="button" variant="outline" className="flex-1 border-gray-300 text-white font-medium tracking-wide transition-all duration-200 text-xs sm:text-sm" onClick={() => setEditMode(false)}>
+                        <Button type="button" variant="outline" className="flex-1 border-white/20 bg-white/10 backdrop-blur-xl text-white font-medium tracking-wide transition-all duration-200 text-xs sm:text-sm hover:bg-white/20" onClick={() => setEditMode(false)}>
                           <X className="w-3 sm:w-4 h-3 sm:h-4 mr-1 text-white" />
                           {t('cancel')}
                         </Button>
-                        <Button type="button" variant="destructive" className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium tracking-wide transition-all duration-200 text-xs sm:text-sm" onClick={handleDeleteProduct} disabled={deleting}>
+                        <Button type="button" variant="destructive" className="flex-1 bg-red-500/30 backdrop-blur-xl border border-red-400/30 hover:bg-red-500/40 text-white font-medium tracking-wide transition-all duration-200 text-xs sm:text-sm" onClick={handleDeleteProduct} disabled={deleting}>
                           {deleting ? t('deleting') : t('delete')}
                 </Button>
               </div>
@@ -1113,22 +1152,22 @@ export default function MyProductsPage() {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block mb-2 font-medium text-gray-700 tracking-wide">{t('productName')}</label>
+                    <label className="block mb-2 font-medium text-white tracking-wide">{t('productName')}</label>
                     <input
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder={t('productName')}
-                      className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 placeholder-gray-500"
+                      className="w-full p-3 border border-white/20 rounded-xl bg-white/10 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/50 transition-all duration-200 font-light tracking-wide text-white placeholder-white/50"
                     />
                   </div>
                   <div>
-                      <label className="block mb-2 font-medium text-gray-700 tracking-wide">TRL Level</label>
+                      <label className="block mb-2 font-medium text-white tracking-wide">TRL Level</label>
                       <div className="relative">
                         <select
                           value={trlLevel}
                           onChange={(e) => setTrlLevel(e.target.value)}
-                          className="w-full p-3 pr-10 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 appearance-none cursor-pointer hover:bg-white/80 hover:border-tn-primary-blue/30"
+                          className="w-full p-3 pr-10 border border-white/20 rounded-xl bg-white/10 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/50 transition-all duration-200 font-light tracking-wide text-white appearance-none cursor-pointer hover:bg-white/20 hover:border-white/30"
                         >
                           <option value="">Select TRL Level</option>
                           {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(level => (
@@ -1136,32 +1175,32 @@ export default function MyProductsPage() {
                           ))}
                         </select>
                         <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                           </svg>
                         </div>
                       </div>
                     </div>
-                    <div>
-                      <label className="block mb-2 font-medium text-gray-700 tracking-wide">Description</label>
+                    <div className="md:col-span-2">
+                      <label className="block mb-2 font-medium text-white tracking-wide">Description</label>
                     <textarea
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                         placeholder="Product description"
-                      className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 resize-none font-light tracking-wide leading-relaxed text-gray-800 placeholder-gray-500"
+                      className="w-full p-3 border border-white/20 rounded-xl bg-white/10 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/50 transition-all duration-200 resize-none font-light tracking-wide leading-relaxed text-white placeholder-white/50"
                       rows={3}
                     />
                   </div>
                   </div>
                   
-                  {/* File Upload Categories */}
-                  <div className="space-y-6">
-                    <h3 className="text-lg font-medium text-gray-800 tracking-wide border-b border-gray-200 pb-2">Document Uploads</h3>
+                    {/* File Upload Categories */}
+                    <div className="space-y-6">
+                      <h3 className="text-lg font-medium text-white tracking-wide border-b border-white/20 pb-2">Document Uploads</h3>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     
                     {/* General Product Files */}
                     <div>
-                      <label className="block mb-2 font-medium text-gray-700 tracking-wide">General Product Files (max 10MB per file)</label>
+                      <label className="block mb-2 font-medium text-white tracking-wide">General Product Files (max 10MB per file)</label>
                       <input 
                         type="file" 
                         accept=".pdf,.doc,.docx,.xls,.xlsx" 
@@ -1170,12 +1209,12 @@ export default function MyProductsPage() {
                           const newFiles = Array.from(e.target.files || [])
                           setFiles(prev => ({ ...prev, general: [...prev.general, ...newFiles] }))
                         }}
-                        className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
+                        className="w-full p-3 border border-white/20 rounded-xl bg-white/10 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/50 transition-all duration-200 font-light tracking-wide text-white file:text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white/20 file:text-white hover:file:bg-white/30"
                       />
                       {files.general.length > 0 && (
                         <div className="mt-2 space-y-1">
                           {files.general.map((file, index) => (
-                            <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                            <div key={index} className="text-xs text-white/80 flex items-center justify-between font-light tracking-wide bg-white/10 backdrop-blur-xl rounded-lg p-2 border border-white/20">
                               <div className="flex items-center flex-1 min-w-0">
                                 <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
                                 <span className="truncate">{file.name}</span>
@@ -1195,7 +1234,7 @@ export default function MyProductsPage() {
 
                     {/* SDS/TDS/MSDS */}
                     <div>
-                      <label className="block mb-2 font-medium text-gray-700 tracking-wide">SDS/TDS/MSDS Files (max 10MB per file)</label>
+                      <label className="block mb-2 font-medium text-white tracking-wide">SDS/TDS/MSDS Files (max 10MB per file)</label>
                       <input 
                         type="file" 
                         accept=".pdf,.doc,.docx" 
@@ -1204,12 +1243,12 @@ export default function MyProductsPage() {
                           const newFiles = Array.from(e.target.files || [])
                           setFiles(prev => ({ ...prev, sds: [...prev.sds, ...newFiles] }))
                         }}
-                        className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
+                        className="w-full p-3 border border-white/20 rounded-xl bg-white/10 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/50 transition-all duration-200 font-light tracking-wide text-white file:text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white/20 file:text-white hover:file:bg-white/30"
                       />
                       {files.sds.length > 0 && (
                         <div className="mt-2 space-y-1">
                           {files.sds.map((file, index) => (
-                            <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                            <div key={index} className="text-xs text-white/80 flex items-center justify-between font-light tracking-wide bg-white/10 backdrop-blur-xl rounded-lg p-2 border border-white/20">
                               <div className="flex items-center flex-1 min-w-0">
                                 <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
                                 <span className="truncate">{file.name}</span>
@@ -1229,7 +1268,7 @@ export default function MyProductsPage() {
 
                     {/* COA (Certificate of Analysis) */}
                     <div>
-                      <label className="block mb-2 font-medium text-gray-700 tracking-wide">COA (Certificate of Analysis) per lot/batch (max 10MB per file)</label>
+                      <label className="block mb-2 font-medium text-white tracking-wide">COA (Certificate of Analysis) per lot/batch (max 10MB per file)</label>
                       <input 
                         type="file" 
                         accept=".pdf,.doc,.docx" 
@@ -1238,12 +1277,12 @@ export default function MyProductsPage() {
                           const newFiles = Array.from(e.target.files || [])
                           setFiles(prev => ({ ...prev, coa: [...prev.coa, ...newFiles] }))
                         }}
-                        className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
+                        className="w-full p-3 border border-white/20 rounded-xl bg-white/10 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/50 transition-all duration-200 font-light tracking-wide text-white file:text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white/20 file:text-white hover:file:bg-white/30"
                       />
                       {files.coa.length > 0 && (
                         <div className="mt-2 space-y-1">
                           {files.coa.map((file, index) => (
-                            <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                            <div key={index} className="text-xs text-white/80 flex items-center justify-between font-light tracking-wide bg-white/10 backdrop-blur-xl rounded-lg p-2 border border-white/20">
                               <div className="flex items-center flex-1 min-w-0">
                                 <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
                                 <span className="truncate">{file.name}</span>
@@ -1263,7 +1302,7 @@ export default function MyProductsPage() {
 
                     {/* Lab Test Reports */}
                     <div>
-                      <label className="block mb-2 font-medium text-gray-700 tracking-wide">Lab Test Reports (PDF/CSV) from LIMS (max 10MB per file)</label>
+                      <label className="block mb-2 font-medium text-white tracking-wide">Lab Test Reports (PDF/CSV) from LIMS (max 10MB per file)</label>
                       <input 
                         type="file" 
                         accept=".pdf,.csv,.xls,.xlsx" 
@@ -1272,12 +1311,12 @@ export default function MyProductsPage() {
                           const newFiles = Array.from(e.target.files || [])
                           setFiles(prev => ({ ...prev, lab: [...prev.lab, ...newFiles] }))
                         }}
-                        className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
+                        className="w-full p-3 border border-white/20 rounded-xl bg-white/10 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/50 transition-all duration-200 font-light tracking-wide text-white file:text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white/20 file:text-white hover:file:bg-white/30"
                       />
                       {files.lab.length > 0 && (
                         <div className="mt-2 space-y-1">
                           {files.lab.map((file, index) => (
-                            <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                            <div key={index} className="text-xs text-white/80 flex items-center justify-between font-light tracking-wide bg-white/10 backdrop-blur-xl rounded-lg p-2 border border-white/20">
                               <div className="flex items-center flex-1 min-w-0">
                                 <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
                                 <span className="truncate">{file.name}</span>
@@ -1297,7 +1336,7 @@ export default function MyProductsPage() {
 
                     {/* Analyzer Logs */}
                     <div>
-                      <label className="block mb-2 font-medium text-gray-700 tracking-wide">On-line Analyzer Logs from DCS/SCADA or Historians (e.g., PI) (max 10MB per file)</label>
+                      <label className="block mb-2 font-medium text-white tracking-wide">On-line Analyzer Logs from DCS/SCADA or Historians (e.g., PI) (max 10MB per file)</label>
                       <input 
                         type="file" 
                         accept=".csv,.txt,.log,.pdf,.xls,.xlsx" 
@@ -1306,12 +1345,12 @@ export default function MyProductsPage() {
                           const newFiles = Array.from(e.target.files || [])
                           setFiles(prev => ({ ...prev, logs: [...prev.logs, ...newFiles] }))
                         }}
-                        className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
+                        className="w-full p-3 border border-white/20 rounded-xl bg-white/10 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/50 transition-all duration-200 font-light tracking-wide text-white file:text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white/20 file:text-white hover:file:bg-white/30"
                       />
                       {files.logs.length > 0 && (
                         <div className="mt-2 space-y-1">
                           {files.logs.map((file, index) => (
-                            <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                            <div key={index} className="text-xs text-white/80 flex items-center justify-between font-light tracking-wide bg-white/10 backdrop-blur-xl rounded-lg p-2 border border-white/20">
                               <div className="flex items-center flex-1 min-w-0">
                                 <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
                                 <span className="truncate">{file.name}</span>
@@ -1331,7 +1370,7 @@ export default function MyProductsPage() {
 
                     {/* Calibration Certificates and SOPs */}
                     <div>
-                      <label className="block mb-2 font-medium text-gray-700 tracking-wide">Calibration Certificates and SOPs (Standard Operating Procedures) (max 10MB per file)</label>
+                      <label className="block mb-2 font-medium text-white tracking-wide">Calibration Certificates and SOPs (Standard Operating Procedures) (max 10MB per file)</label>
                       <input 
                         type="file" 
                         accept=".pdf,.doc,.docx" 
@@ -1340,12 +1379,12 @@ export default function MyProductsPage() {
                           const newFiles = Array.from(e.target.files || [])
                           setFiles(prev => ({ ...prev, calibration: [...prev.calibration, ...newFiles] }))
                         }}
-                        className="w-full p-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-tn-primary-blue/30 focus:border-tn-primary-blue/50 transition-all duration-200 font-light tracking-wide text-gray-800 file:text-gray-800"
+                        className="w-full p-3 border border-white/20 rounded-xl bg-white/10 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/50 transition-all duration-200 font-light tracking-wide text-white file:text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white/20 file:text-white hover:file:bg-white/30"
                       />
                       {files.calibration.length > 0 && (
                         <div className="mt-2 space-y-1">
                           {files.calibration.map((file, index) => (
-                            <div key={index} className="text-xs text-gray-500 flex items-center justify-between font-light tracking-wide bg-gray-50 rounded-lg p-2">
+                            <div key={index} className="text-xs text-white/80 flex items-center justify-between font-light tracking-wide bg-white/10 backdrop-blur-xl rounded-lg p-2 border border-white/20">
                               <div className="flex items-center flex-1 min-w-0">
                                 <FileText className="w-3 h-3 mr-2 flex-shrink-0" />
                                 <span className="truncate">{file.name}</span>
@@ -1364,7 +1403,7 @@ export default function MyProductsPage() {
                     </div>
                     </div>
                   </div>
-                  <Button type="submit" className="w-full bg-tn-primary-blue hover:bg-tn-primary-blue/90 text-white font-medium tracking-wide transition-all duration-200 text-sm sm:text-base" disabled={adding}>
+                  <Button type="submit" className="w-full bg-blue-500/30 backdrop-blur-xl border border-blue-400/30 hover:bg-blue-500/40 text-white font-medium tracking-wide transition-all duration-200 text-sm sm:text-base" disabled={adding}>
                     {adding ? t('uploading') : t('uploadFile')}
                   </Button>
                 </form>

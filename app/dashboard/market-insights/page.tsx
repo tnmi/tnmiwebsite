@@ -1,24 +1,24 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { 
-  FileText,
-  RefreshCw,
-  Plus,
-  CheckCircle,
-  Clock,
-  XCircle
-} from "lucide-react"
+import { useState, useEffect, useMemo } from "react"
 import { useAuthStore } from "@/lib/store"
 import { useToast } from "@/components/ui/use-toast"
-import { useUserOrders, useStartResearch, useOrderDetails } from "@/hooks/use-market-research"
-import SimpleOrderDetails from "@/components/market-insights/order-details-simple"
+import { useMarketIntelligence } from "@/hooks/use-market-intelligence"
+import { useMarketPull } from "@/hooks/use-market-pull"
+import { marketIntelligenceAPI } from "@/lib/market-intelligence-api"
+import { SourcesPanel } from "@/components/market-insights/sources-panel"
+import { MarketTree } from "@/components/market-insights/market-tree"
+import { SegmentDetailsPanel } from "@/components/market-insights/segment-details-panel"
+import { TreeNodeData } from "@/components/market-insights/tree-node"
+import { Button } from "@/components/ui/button"
+import { Play } from "lucide-react"
+import dynamic from 'next/dynamic'
+
+// Lazy load LightRays to prevent SSR issues
+const LightRays = dynamic(
+  () => import('@/components/ui/LightRays'),
+  { ssr: false }
+)
 
 interface Product {
   id: string;
@@ -26,28 +26,119 @@ interface Product {
 }
 
 export default function MarketInsightsPage() {
+  return (
+    <div className="relative w-full h-full overflow-hidden bg-black font-satoshi">
+      {/* Background Light Rays */}
+      <div className="absolute inset-0 z-0">
+        <LightRays
+          raysOrigin="top-center"
+          raysColor="#00ff88"
+          raysSpeed={1.0}
+          lightSpread={0.8}
+          rayLength={0.5}
+          followMouse={true}
+          mouseInfluence={0.15}
+          noiseAmount={0.1}
+          distortion={0.05}
+        />
+      </div>
+      {/* Content Layer */}
+      <div className="relative z-10 w-full h-full">
+        <MarketInsightsContent />
+      </div>
+    </div>
+  )
+}
+
+function MarketInsightsContent() {
   const { user } = useAuthStore()
   const { toast } = useToast()
-  const [activeTab, setActiveTab] = useState("overview")
-  const [selectedProductId, setSelectedProductId] = useState<string>("")
-  const [availableProducts, setAvailableProducts] = useState<Product[]>([])
-  const [selectedOrder, setSelectedOrder] = useState<any>(null)
-  const [orderDetails, setOrderDetails] = useState<any>(null)
-  const [showOrderDetails, setShowOrderDetails] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [ordersPerPage] = useState(5)
   
-  // API hooks
-  const { data: orders, loading: ordersLoading, error: ordersError, refetch: refetchOrders } = useUserOrders(user?.uid)
-  const { startResearch, loading: startResearchLoading, error: startResearchError } = useStartResearch()
-  const { getOrderDetails, loading: orderDetailsLoading, error: orderDetailsError } = useOrderDetails()
+  // State
+  const [products, setProducts] = useState<Product[]>([])
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null)
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [treeData, setTreeData] = useState<TreeNodeData | null>(null)
+  const [selectedSegment, setSelectedSegment] = useState<string | null>(null)
+  const [productsLoading, setProductsLoading] = useState(true)
+  const [jobHistory, setJobHistory] = useState<any[]>([])
+  const [marketIntelligenceHistory, setMarketIntelligenceHistory] = useState<any[]>([])
+  const [selectedHistorySessionId, setSelectedHistorySessionId] = useState<string | null>(null)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  
+  // API Hooks
+  const marketIntelligence = useMarketIntelligence()
+  const marketPull = useMarketPull()
 
-  // Fetch available products from the existing /api/products endpoint
+  // Helper function to fetch Market Intelligence history
+  const fetchMarketIntelligenceHistory = async () => {
+    if (!user?.uid || !selectedProductId) return;
+    
+    try {
+      const history = await marketIntelligenceAPI.getMarketIntelligenceHistory(user.uid, selectedProductId);
+      const historyItems: any[] = [];
+      
+      // Always include current analysis if it exists
+      if (marketIntelligence.data) {
+        historyItems.push({
+          session_id: marketIntelligence.data.session_id,
+          product_id: selectedProductId,
+          created_at: marketIntelligence.data.metadata?.completed_at || new Date().toISOString(),
+          segment_count: marketIntelligence.data.market_segments.market_segments.length,
+          data: marketIntelligence.data,
+        });
+      }
+      
+      // Add historical analyses from API (using history.history, not history.analyses)
+      if (history.history && history.history.length > 0) {
+        // Log each historical item
+        history.history.forEach((item: any, index: number) => {
+        });
+        
+        // Convert API format to our format and filter duplicates
+        const historicalItems = history.history
+          .filter((item: any) => !marketIntelligence.data || item.session_id !== marketIntelligence.data.session_id)
+          .map((item: any) => ({
+            session_id: item.session_id,
+            product_id: selectedProductId,
+            created_at: item.created_at,
+            segment_count: item.output?.market_segments?.market_segments?.length || 0,
+            data: item.output,
+          }));
+        historyItems.push(...historicalItems);
+      }
+      
+      // Sort by most recent first (descending order)
+      historyItems.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setMarketIntelligenceHistory(historyItems);
+      
+      // Set the current session as selected (most recent)
+      if (historyItems.length > 0) {
+        setSelectedHistorySessionId(historyItems[0].session_id);
+      }
+    } catch (err) {
+      // Even on error, include current analysis if available
+      if (marketIntelligence.data) {
+        const fallbackItem = {
+          session_id: marketIntelligence.data.session_id,
+          product_id: selectedProductId,
+          created_at: marketIntelligence.data.metadata?.completed_at || new Date().toISOString(),
+          segment_count: marketIntelligence.data.market_segments.market_segments.length,
+          data: marketIntelligence.data,
+        };
+        setMarketIntelligenceHistory([fallbackItem]);
+        setSelectedHistorySessionId(fallbackItem.session_id);
+      } else {
+        setMarketIntelligenceHistory([]);
+      }
+    }
+  };
+
+  // Fetch products
   useEffect(() => {
     const fetchProducts = async () => {
-      if (!user?.uid) {
-        return
-      }
+      if (!user?.uid) return
       
       try {
         const token = await user.getIdToken()
@@ -60,387 +151,553 @@ export default function MarketInsightsPage() {
         
         if (response.ok) {
           const data = await response.json()
-          // Ensure products is always an array (same logic as main dashboard)
-          const productsArray = Array.isArray(data) ? data : (data.products || data.data || [])
-          setAvailableProducts(productsArray)
-        } else {
-          const errorText = await response.text()
-          console.error('Failed to fetch products:', response.status, errorText)
-          setAvailableProducts([])
+          setProducts(data.products || [])
         }
-      } catch (err) {
-        console.error('Failed to fetch products:', err)
-        setAvailableProducts([])
+      } catch (error) {
+        console.error('Error fetching products:', error)
+      } finally {
+        setProductsLoading(false)
       }
     }
 
-    if (user) {
       fetchProducts()
-    }
   }, [user])
 
-  const handleStartResearch = async () => {
-    if (!user?.uid) {
+  // Check for cached Market Intelligence results when product is selected
+  useEffect(() => {
+    if (selectedProductId && user?.uid) {
+      const cacheKey = `mi_${user.uid}_${selectedProductId}`
+      const cached = localStorage.getItem(cacheKey)
+      
+      if (cached) {
+        try {
+          const cachedData = JSON.parse(cached)
+          const cacheAge = Date.now() - cachedData.timestamp
+          const maxAge = 24 * 60 * 60 * 1000 // 24 hours
+          
+          // Use cached data if less than 24 hours old
+          if (cacheAge < maxAge) {
+            // Load cached data into the hook
+            marketIntelligence.loadCached(cachedData.data)
+            
       toast({
-        title: "Authentication Required",
-        description: "Please log in to start a new research order.",
-        variant: "destructive"
-      })
-      return
+              title: "Previous Analysis Loaded",
+              description: `Using cached results from ${new Date(cachedData.timestamp).toLocaleString()}`,
+            })
+          } else {
+            // Clear old cache
+            localStorage.removeItem(cacheKey)
+          }
+        } catch (err) {
+          console.error('Failed to load cached results:', err)
+          localStorage.removeItem(cacheKey)
+        }
+      }
+      
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProductId, user?.uid])
+
+  // Fetch history when Market Intelligence data becomes available
+  useEffect(() => {
+    if (marketIntelligence.data && selectedProductId && user?.uid) {
+      fetchMarketIntelligenceHistory();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [marketIntelligence.data, selectedProductId, user?.uid])
+
+  // Update selected product and set product ID for market pull filtering
+  useEffect(() => {
+    if (selectedProductId) {
+      const product = products.find(p => p.id === selectedProductId)
+      setSelectedProduct(product || null)
+      marketPull.setProductId(selectedProductId)
+    } else {
+      setSelectedProduct(null)
+      marketPull.setProductId(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProductId, products]) // Removed marketPull from dependencies
+
+  // Update job history from active jobs and completed jobs
+  useEffect(() => {
+    const history: any[] = [];
+    
+    // Add active jobs
+    marketPull.activeJobs.forEach((job, segmentName) => {
+      history.push({
+        job_id: job.jobId,
+        segment_name: segmentName,
+        product_name: selectedProduct?.product_name || '',
+        status: job.status,
+        started_at: job.startedAt,
+        completed_at: undefined,
+      });
+    });
+    
+    // Add completed jobs from jobResults
+    marketPull.jobResults.forEach((result, segmentName) => {
+      // Only add if not already in active jobs
+      if (!marketPull.activeJobs.has(segmentName)) {
+        history.push({
+          job_id: result.job_id,
+          segment_name: segmentName,
+          product_name: selectedProduct?.product_name || '',
+          status: result.status,
+          started_at: result.started_at,
+          completed_at: result.completed_at,
+        });
+      }
+    });
+    
+    // Sort by most recent first
+    history.sort((a, b) => {
+      const aTime = new Date(a.completed_at || a.started_at).getTime();
+      const bTime = new Date(b.completed_at || b.started_at).getTime();
+      return bTime - aTime;
+    });
+    
+    setJobHistory(history);
+  }, [marketPull.activeJobs, marketPull.jobResults, selectedProduct])
+
+  // Build tree data when market intelligence data or market pull jobs change
+  // Also refresh every second to update elapsed time for running jobs
+  useEffect(() => {
+    const buildTree = () => {
+      
+      if (selectedProduct) {
+        // If we have market intelligence data, show full tree
+        if (marketIntelligence.data) {
+          const segments = marketIntelligence.data.market_segments.market_segments || []
+          
+          const treeNode: TreeNodeData = {
+            id: selectedProduct.id,
+            type: 'product',
+            label: selectedProduct.product_name,
+            description: `${segments.length} market segments identified`,
+            hasData: true, // We have data
+            children: segments.map((segment) => {
+            const jobStatus = marketPull.getJobStatus(segment.name)
+            const jobResult = marketPull.getJobResult(segment.name)
+            
+            // Calculate elapsed time for running jobs
+            let elapsedTime = '';
+            if (jobStatus?.status === 'running' && jobStatus.startedAt) {
+              const startTime = new Date(jobStatus.startedAt).getTime();
+              const now = Date.now();
+              const seconds = Math.floor((now - startTime) / 1000);
+              const minutes = Math.floor(seconds / 60);
+              const remainingSeconds = seconds % 60;
+              elapsedTime = minutes > 0 
+                ? `${minutes}m ${remainingSeconds}s` 
+                : `${seconds}s`;
+            }
+            
+            // Build children based on job status
+            let children: TreeNodeData[] | undefined = undefined;
+            
+            // Check if there are completed versions (we'll need to get count from API later)
+            const hasCompletedVersions = jobResult?.status === 'completed';
+            const completedVersionsCount = hasCompletedVersions ? 1 : 0; // TODO: Get actual count from API
+            
+            if (jobStatus?.status === 'running') {
+              // Show running analysis node (clickable to view partial results)
+              children = [{
+                id: `${segment.name}-running`,
+                type: 'result',
+                label: `Deep analysis into ${segment.name} (${elapsedTime})`,
+                description: 'Market Pull analysis in progress - Click to view partial results',
+                status: 'running',
+                progress: jobStatus.progress,
+                onClick: () => {
+                  setSelectedSegment(segment.name);
+                }
+              }];
+              
+              // If there are completed versions, add a second node for them
+              if (hasCompletedVersions) {
+                children.push({
+                  id: `${segment.name}-result`,
+                  type: 'result',
+                  label: `Analysis Complete`,
+                  description: 'Click to view results',
+                  status: 'completed',
+                  onClick: () => {
+                    setSelectedSegment(segment.name);
+                  }
+                });
+              }
+            } else if (jobStatus?.status === 'failed') {
+              // Show failed node
+              children = [{
+                id: `${segment.name}-failed`,
+                type: 'result',
+                label: 'Analysis Failed',
+                description: 'An error occurred during analysis',
+                status: 'failed',
+              }];
+              
+              // If there are completed versions, still show them
+              if (hasCompletedVersions) {
+                children.push({
+                  id: `${segment.name}-result`,
+                  type: 'result',
+                  label: `Analysis Complete`,
+                  description: 'Click to view results',
+                  status: 'completed',
+                  onClick: () => {
+                    setSelectedSegment(segment.name);
+                  }
+                });
+              }
+            } else if (hasCompletedVersions) {
+              // Only completed versions, no running job
+              children = [{
+                id: `${segment.name}-result`,
+                type: 'result',
+                label: `Analysis Complete`,
+                description: 'Click to view results',
+                status: 'completed',
+                onClick: () => {
+                  setSelectedSegment(segment.name);
+                }
+              }];
+            }
+            
+            const segmentNode: TreeNodeData = {
+              id: segment.name,
+              type: 'segment',
+              label: segment.name,
+              description: segment.description,
+              share_pct: segment.share_pct,
+              status: startingSegments.has(segment.name) ? 'running' : (jobStatus?.status || 'idle'), // Show as running if being started
+              progress: jobStatus?.progress,
+              onClick: () => handleStartMarketPull(segment.name), // Analyze button triggers market pull
+              children
+            }
+            return segmentNode
+          })
+        }
+        setTreeData(treeNode)
+      } else {
+        // No data yet - show product node with Run Market Intelligence button or analyzing state
+        const treeNode: TreeNodeData = {
+          id: selectedProduct.id,
+          type: 'product',
+          label: selectedProduct.product_name,
+          description: 'Run Market Intelligence to identify market segments',
+          hasData: false, // No data yet
+          status: marketIntelligence.loading ? 'running' : 'idle', // Show analyzing state if loading
+          onRunIntelligence: handleRunIntelligence, // Pass the function to run MI
+        }
+        setTreeData(treeNode)
+      }
+    } else {
+      setTreeData(null)
+    }
+    };
+
+    buildTree();
+    
+    // Refresh every second to update elapsed time for running jobs
+    const interval = setInterval(() => {
+      if (marketPull.activeJobs.size > 0) {
+        buildTree();
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [marketIntelligence.data, marketIntelligence.loading, selectedProduct, marketPull.activeJobs, marketPull.jobResults])
+
+  // Handle running market intelligence
+  const handleRunIntelligence = async () => {
     if (!selectedProductId) {
       toast({
-        title: "Product Not Selected",
-        description: "Please select a product to start market research.",
+        title: "No Product Selected",
+        description: "Please select a product first",
         variant: "destructive"
       })
       return
     }
 
     try {
-      const result = await startResearch(user.uid, selectedProductId)
-      toast({
-        title: "Research Started!",
-        description: `Research request ${result.order_id} initiated successfully.`,
-      })
-      refetchOrders() // Refresh the orders list
-    } catch (error) {
-      toast({
-        title: "Failed to Start Research",
-        description: error instanceof Error ? error.message : "An unexpected error occurred while creating the research order.",
-        variant: "destructive"
-      })
-    }
-  }
-
-  const handleOrderClick = async (order: any) => {
-    try {
-      setSelectedOrder(order)
-      setOrderDetails(null)
-      setShowOrderDetails(true)
+      const result = await marketIntelligence.analyze(selectedProductId)
       
-      const details = await getOrderDetails(order.order_id)
-      setOrderDetails(details)
-    } catch (error) {
+      // Cache the results
+      if (user?.uid) {
+        const cacheKey = `mi_${user.uid}_${selectedProductId}`
+        const cacheData = {
+          data: result,
+          timestamp: Date.now(),
+          productId: selectedProductId
+        }
+        localStorage.setItem(cacheKey, JSON.stringify(cacheData))
+      }
+      
       toast({
-        title: "Failed to Load Order Details",
-        description: error instanceof Error ? error.message : "An error occurred while fetching order details.",
+        title: "Analysis Complete",
+        description: "Market segments have been identified"
+      })
+      
+      // Fetch history after analysis completes
+      fetchMarketIntelligenceHistory();
+    } catch (err) {
+      toast({
+        title: "Analysis Failed",
+        description: err instanceof Error ? err.message : "An error occurred",
         variant: "destructive"
       })
     }
   }
 
-  // Pagination logic
-  const indexOfLastOrder = currentPage * ordersPerPage
-  const indexOfFirstOrder = indexOfLastOrder - ordersPerPage
-  const currentOrders = orders.slice(indexOfFirstOrder, indexOfLastOrder)
-  const totalPages = Math.ceil(orders.length / ordersPerPage)
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page)
+  // Handle product selection
+  const handleProductSelect = (productId: string) => {
+    // Clear previous analysis when changing products
+    setTreeData(null)
+    marketIntelligence.reset()
+    marketPull.reset()
+    marketPull.setProductId(productId) // Set the product ID for filtering jobs
+    setSelectedProductId(productId)
   }
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle className="w-4 h-4 text-green-500" />
-      case 'processing':
-        return <Clock className="w-4 h-4 text-blue-500" />
-      case 'failed':
-        return <XCircle className="w-4 h-4 text-red-500" />
-      default:
-        return <Clock className="w-4 h-4 text-gray-500" />
+  // Handle node click (both segment click to start market pull, and result click to view details)
+  const handleNodeClick = async (nodeId: string) => {
+    if (!selectedProduct || !marketIntelligence.data) return
+
+    // Check if it's a versions node
+    if (nodeId.endsWith('-versions')) {
+      const segmentName = nodeId.replace('-versions', '')
+      // TODO: In the future, show a version selector modal here
+      // For now, just show the latest version
+      setSelectedSegment(segmentName)
+      return
+    }
+
+    // Check if it's a result node (ends with "-result")
+    if (nodeId.endsWith('-result')) {
+      const segmentName = nodeId.replace('-result', '')
+      setSelectedSegment(segmentName)
+      return
+    }
+    
+    // Check if it's a running node (show details of running job with partial results)
+    if (nodeId.endsWith('-running')) {
+      const segmentName = nodeId.replace('-running', '')
+
+      await marketPull.refreshJobStatus(segmentName);
+      
+      setSelectedSegment(segmentName)
+      return
+    }
+
+    // Otherwise, it's a segment node - just select it (don't auto-start)
+    const segment = marketIntelligence.data.market_segments.market_segments.find(
+      s => s.name === nodeId
+    )
+    
+    if (!segment) return
+
+    // Just select the segment, let the Analyze button in the node trigger the job
+    setSelectedSegment(nodeId)
+  }
+
+  // Track segments that are currently being started (to prevent double-clicks)
+  const [startingSegments, setStartingSegments] = useState<Set<string>>(new Set())
+
+  // Handle starting market pull analysis (triggered by Analyze button)
+  const handleStartMarketPull = async (segmentName: string) => {
+    if (!selectedProduct || !marketIntelligence.data) return
+
+    // Prevent double-clicks
+    if (startingSegments.has(segmentName)) {
+      return
+    }
+
+    const segment = marketIntelligence.data.market_segments.market_segments.find(
+      s => s.name === segmentName
+    )
+    
+    if (!segment) return
+
+    const existingJob = marketPull.getJobStatus(segmentName)
+    if (existingJob && existingJob.status === 'running') {
+      toast({
+        title: "Job Already Running",
+        description: `Market pull for "${segmentName}" is already in progress`,
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      // Mark as starting
+      setStartingSegments(prev => new Set(prev).add(segmentName))
+
+      await marketPull.startPull(
+        segmentName,
+        selectedProduct.product_name,
+        selectedProduct.id,
+        segmentName // Using segment name as industry for now
+      )
+
+      toast({
+        title: "Market Pull Started",
+        description: `Analyzing "${segmentName}"...`
+      })
+    } catch (err) {
+      toast({
+        title: "Failed to Start Analysis",
+        description: err instanceof Error ? err.message : "An error occurred",
+        variant: "destructive"
+      })
+    } finally {
+      // Remove from starting set after a delay
+      setTimeout(() => {
+        setStartingSegments(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(segmentName)
+          return newSet
+        })
+      }, 2000) // Wait 2 seconds before allowing another click
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800'
-      case 'processing':
-        return 'bg-blue-100 text-blue-800'
-      case 'failed':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
+  // Handle reset
+  const handleReset = () => {
+    setTreeData(null)
+    marketIntelligence.reset()
+    setMarketIntelligenceHistory([])
+    setSelectedHistorySessionId(null)
+    if (user?.uid && selectedProductId) {
+      const cacheKey = `mi_${user.uid}_${selectedProductId}`
+      localStorage.removeItem(cacheKey)
     }
   }
 
+  // Handle history selection
+  const handleHistorySelect = async (sessionId: string) => {
+    setSelectedHistorySessionId(sessionId);
+    
+    // Find the history item
+    const historyItem = marketIntelligenceHistory.find(h => h.session_id === sessionId);
+    
+    if (historyItem && historyItem.data) {
+      // Load the historical data (this will trigger tree rebuild via useEffect)
+      marketIntelligence.loadCached(historyItem.data);
+      
+      toast({
+        title: "Historical Analysis Loaded",
+        description: `Viewing analysis from ${new Date(historyItem.created_at).toLocaleString()} (${historyItem.segment_count} segments)`,
+      });
+    } else {
+      console.error('[History Select] No data found for session:', sessionId);
+    }
+  }
+
+  // Get market intelligence status
+  const getIntelligenceStatus = () => {
+    if (marketIntelligence.loading) return 'running'
+    if (marketIntelligence.error) return 'error'
+    if (marketIntelligence.data) return 'completed'
+    return 'idle'
+  }
+
+  // Handle refresh button click
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await marketPull.refreshAllJobs()
+      toast({
+        title: "Refreshed",
+        description: "Job statuses updated successfully"
+      })
+    } catch (err) {
+      console.error('Failed to refresh:', err)
+      toast({
+        title: "Refresh Failed",
+        description: "Failed to update job statuses",
+        variant: "destructive"
+      })
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
+  // Prepare SVG tree component by grouping by levels
+  const processedTreeData = useMemo(() => {
+    if (!treeData) return null
+    
+    // Helper to add x, y coordinates for rendering
+    const assignCoordinates = (node: TreeNodeData, level: number, index: number): any => {
+      return {
+        ...node,
+        level,
+        index,
+        children: node.children?.map((child, idx) => assignCoordinates(child, level + 1, idx))
+      }
+    }
+    
+    const processed = assignCoordinates(treeData, 0, 0);
+
+    if (processed.children && processed.children.length > 0) {
+      processed.children.forEach((child: any) => {
+        if (child.children && child.children.length > 0) {
+          child.children.forEach((grandChild: any) => {
+          });
+        }
+      });
+    }
+    
+    return processed;
+  }, [treeData])
 
   return (
-    <div className="space-y-4 sm:space-y-6 font-satoshi px-4 sm:px-6">
-      {/* Header */}
-      <Card className="bg-gradient-to-r from-tn-primary-blue/20 via-tn-deep-blue/20 to-tn-dark-bg/20 text-white backdrop-blur-xl border border-white/20 shadow-2xl">
-        <CardHeader className="p-4 sm:p-6">
-          <div>
-            <CardTitle className="text-2xl sm:text-3xl font-light tracking-wide text-white">Market Insights</CardTitle>
-            <p className="text-white/80 font-light tracking-wide text-sm sm:text-base">Comprehensive market research analytics</p>
-          </div>
-        </CardHeader>
-      </Card>
+    <div className="h-full flex flex-col">
+      {/* Main Layout */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sources Panel */}
+        <SourcesPanel
+          products={products}
+          selectedProductId={selectedProductId}
+          onProductSelect={handleProductSelect}
+          isLoading={productsLoading}
+          marketIntelligenceStatus={getIntelligenceStatus()}
+          marketPullEnabled={!!marketIntelligence.data}
+          activeJobsCount={marketPull.activeJobsCount}
+          marketIntelligenceHistory={marketIntelligenceHistory}
+          selectedHistorySessionId={selectedHistorySessionId}
+          onHistorySelect={handleHistorySelect}
+          onReset={handleReset}
+          onRunAnalysis={handleRunIntelligence}
+          hasData={!!marketIntelligence.data}
+        />
 
-      {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 bg-white/10 backdrop-blur-xl border-white/20">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-white/20 data-[state=active]:text-gray-900 text-gray-700">Research Requests</TabsTrigger>
-          <TabsTrigger value="start-research" className="data-[state=active]:bg-white/20 data-[state=active]:text-gray-900 text-gray-700">Start Research</TabsTrigger>
-        </TabsList>
-
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
-
-            {/* Research Requests */}
-            <Card className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-500 shadow-xl hover:shadow-2xl">
-              <CardHeader>
-                <CardTitle className="text-gray-900 font-medium tracking-wide">Research Requests</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {ordersLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <RefreshCw className="w-6 h-6 animate-spin mr-2 text-gray-700" />
-                    <span className="text-gray-700">Loading research requests...</span>
-                  </div>
-                ) : ordersError ? (
-                  <div className="text-center py-8 text-red-600">
-                    <p>Failed to load research requests: {ordersError}</p>
-                  </div>
-                ) : orders.length > 0 ? (
-                  <div className="space-y-4">
-                    <div className="space-y-3">
-                      {currentOrders.map((order) => (
-                        <div 
-                          key={order.order_id} 
-                          className="p-3 sm:p-4 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10 hover:bg-white/30 transition-all duration-200 cursor-pointer"
-                          onClick={() => handleOrderClick(order)}
-                        >
-                          {/* Mobile Layout */}
-                          <div className="flex flex-col space-y-3 sm:hidden">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-2">
-                                {getStatusIcon(order.status)}
-                                <Badge className={getStatusColor(order.status)}>
-                                  {order.status}
-                                </Badge>
-                              </div>
-                              <span className="text-xs text-gray-700 font-light">
-                                {new Date(order.created_at).toLocaleDateString()}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="font-medium text-gray-900 tracking-wide drop-shadow-sm text-sm">{order.product_id}</p>
-                              <p className="text-xs text-gray-700 font-light tracking-wide drop-shadow-sm mt-1">Request ID: {order.order_id}</p>
-                            </div>
-                          </div>
-                          
-                          {/* Desktop Layout */}
-                          <div className="hidden sm:flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              {getStatusIcon(order.status)}
-                              <div>
-                                <p className="font-medium text-gray-900 tracking-wide drop-shadow-sm">{order.product_id}</p>
-                                <p className="text-sm text-gray-700 font-light tracking-wide drop-shadow-sm">Request ID: {order.order_id}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Badge className={getStatusColor(order.status)}>
-                                {order.status}
-                              </Badge>
-                              <span className="text-sm text-gray-700 font-light tracking-wide drop-shadow-sm">
-                                {new Date(order.created_at).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+        {/* Market Tree (Center) */}
+        <MarketTree
+          treeData={processedTreeData}
+          isLoading={marketIntelligence.loading && !selectedProductId}
+          hasProductSelected={!!selectedProductId}
+          selectedProductName={selectedProduct?.product_name}
+          onNodeClick={handleNodeClick}
+          onRunAnalysis={handleRunIntelligence}
+          onRefresh={handleRefresh}
+          isRefreshing={isRefreshing}
+        />
                     </div>
                     
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                      <div className="pt-4 border-t border-white/10 space-y-3">
-                        {/* Mobile Pagination */}
-                        <div className="flex flex-col space-y-3 sm:hidden">
-                          <div className="text-xs text-gray-700 text-center">
-                            Page {currentPage} of {totalPages} ({orders.length} total)
-                          </div>
-                          <div className="flex items-center justify-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handlePageChange(currentPage - 1)}
-                              disabled={currentPage === 1}
-                              className="bg-white/10 border-white/20 text-gray-700 hover:bg-white/20 text-xs px-3"
-                            >
-                              Prev
-                            </Button>
-                            <span className="text-xs text-gray-700 px-2">
-                              {currentPage} / {totalPages}
-                            </span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handlePageChange(currentPage + 1)}
-                              disabled={currentPage === totalPages}
-                              className="bg-white/10 border-white/20 text-gray-700 hover:bg-white/20 text-xs px-3"
-                            >
-                              Next
-                            </Button>
-                          </div>
-                        </div>
-                        
-                        {/* Desktop Pagination */}
-                        <div className="hidden sm:flex items-center justify-between">
-                          <div className="text-sm text-gray-700">
-                            Showing {indexOfFirstOrder + 1}-{Math.min(indexOfLastOrder, orders.length)} of {orders.length} requests
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handlePageChange(currentPage - 1)}
-                              disabled={currentPage === 1}
-                              className="bg-white/10 border-white/20 text-gray-700 hover:bg-white/20"
-                            >
-                              Previous
-                            </Button>
-                            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                              let pageNumber;
-                              if (totalPages <= 5) {
-                                pageNumber = i + 1;
-                              } else if (currentPage <= 3) {
-                                pageNumber = i + 1;
-                              } else if (currentPage >= totalPages - 2) {
-                                pageNumber = totalPages - 4 + i;
-                              } else {
-                                pageNumber = currentPage - 2 + i;
-                              }
-                              return (
-                                <Button
-                                  key={pageNumber}
-                                  variant={pageNumber === currentPage ? "default" : "outline"}
-                                  size="sm"
-                                  onClick={() => handlePageChange(pageNumber)}
-                                  className={pageNumber === currentPage 
-                                    ? "bg-blue-600 text-white" 
-                                    : "bg-white/10 border-white/20 text-gray-700 hover:bg-white/20"
-                                  }
-                                >
-                                  {pageNumber}
-                                </Button>
-                              );
-                            })}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handlePageChange(currentPage + 1)}
-                              disabled={currentPage === totalPages}
-                              className="bg-white/10 border-white/20 text-gray-700 hover:bg-white/20"
-                            >
-                              Next
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-700">
-                    <FileText className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                    <p className="font-light tracking-wide">No research requests found</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Start Research Tab */}
-          <TabsContent value="start-research" className="space-y-6">
-            <Card className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-500 shadow-xl hover:shadow-2xl">
-              <CardHeader>
-                <CardTitle className="text-gray-900 font-medium tracking-wide">Initiate New Market Research</CardTitle>
-                <CardDescription className="text-gray-700 font-light tracking-wide">
-                  Select a product from your inventory to begin a new market research analysis.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-800 mb-2 tracking-wide">Select Product</label>
-                  <Select value={selectedProductId} onValueChange={setSelectedProductId}>
-                    <SelectTrigger className="bg-white/20 border-white/30 text-gray-900 hover:bg-white/30 transition-colors">
-                      <SelectValue placeholder={`Choose a product to research (${availableProducts.length} available)`} className="text-gray-600" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white/90 backdrop-blur-xl border-white/50">
-                      {availableProducts && Array.isArray(availableProducts) && availableProducts.length > 0 ? (
-                        availableProducts.map((product) => (
-                          <SelectItem key={product.id} value={product.id} className="text-gray-900 hover:bg-white/50">
-                            {product.product_name || 'Unnamed Product'}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="no-products" disabled className="text-gray-500">
-                          No products available
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button 
-                  onClick={handleStartResearch}
-                  disabled={!selectedProductId || startResearchLoading}
-                  className="w-full bg-gradient-to-r from-tn-primary-blue to-tn-deep-blue hover:from-tn-deep-blue hover:to-tn-primary-blue text-white font-medium tracking-wide transition-all duration-300 shadow-lg hover:shadow-xl"
-                >
-                  {startResearchLoading ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Starting Research...
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Start Research
-                    </>
-                  )}
-                </Button>
-                {startResearchError && (
-                  <p className="text-red-600 text-sm mt-2 font-light tracking-wide">{startResearchError}</p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-        </Tabs>
-
-        {/* Minimal Order Details Dialog */}
-        <Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
-          <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-xl border-white/20 mx-auto">
-            <DialogHeader>
-              <DialogTitle className="text-gray-900 font-medium tracking-wide text-lg sm:text-xl">
-                Research Request Details
-              </DialogTitle>
-            </DialogHeader>
-            
-            {selectedOrder && (
-              <div className="space-y-6">
-                {orderDetailsLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <RefreshCw className="w-6 h-6 animate-spin mr-2 text-gray-700" />
-                    <span className="text-gray-700">Loading...</span>
-                  </div>
-                ) : orderDetails ? (
-                  <SimpleOrderDetails 
-                    orderSummary={{
-                      order_id: selectedOrder.order_id,
-                      product_id: selectedOrder.product_id,
-                      status: selectedOrder.status,
-                      created_at: selectedOrder.created_at,
-                      updated_at: selectedOrder.updated_at,
-                    }}
-                    details={orderDetails}
-                  />
-                ) : null}
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
+      {/* Segment Details Modal */}
+      {selectedSegment && (
+        <SegmentDetailsPanel
+          segmentName={selectedSegment}
+          jobResult={marketPull.getJobResult(selectedSegment) || null}
+          isRunning={marketPull.getJobStatus(selectedSegment)?.status === 'running'}
+          onRefresh={async () => {
+            await marketPull.refreshJobStatus(selectedSegment);
+          }}
+          onClose={() => setSelectedSegment(null)}
+        />
+      )}
     </div>
   )
 }

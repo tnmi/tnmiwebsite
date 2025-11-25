@@ -16,6 +16,10 @@ export default function GoogleAnalytics() {
         strategy="afterInteractive"
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_TRACKING_ID}`}
       />
+      {/* SECURITY NOTE: Using dangerouslySetInnerHTML here is safe because:
+          1. GA_TRACKING_ID comes from environment variable (controlled by us)
+          2. Script content is static Google Analytics initialization code
+          3. No user input is involved in this script generation */}
       <Script
         id="google-analytics"
         strategy="afterInteractive"

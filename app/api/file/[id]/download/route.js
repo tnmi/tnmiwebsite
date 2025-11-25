@@ -13,7 +13,6 @@ export async function GET(request, { params }) {
     }
     
     const token = authHeader.split(' ')[1]
-    console.log('Single file download request for file ID:', id)
 
     // Forward the download request to the external API
     const response = await fetch(`https://northstar-backend-194429268019.us-central1.run.app/file/${id}/download`, {
@@ -40,8 +39,6 @@ export async function GET(request, { params }) {
     const contentDisposition = response.headers.get('content-disposition') || 'attachment'
     const contentLength = response.headers.get('content-length')
     
-    console.log('File download successful, streaming file...')
-
     // Prepare response headers
     const responseHeaders = {
       'Content-Type': contentType,

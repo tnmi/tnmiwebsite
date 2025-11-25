@@ -1,7 +1,6 @@
 "use client"
 import React from "react"
 import Sidebar from "@/components/dashboard/sidebar"
-import Header from "@/components/dashboard/header"
 import ChatbotToggle from "@/components/dashboard/chatbot/chatbot-toggle"
 import { Toaster } from "@/components/ui/toaster"
 import { useAuthStore } from "@/lib/store"
@@ -36,8 +35,7 @@ export default function DashboardLayout({
       <div className="font-satoshi bg-tn-light-bg flex h-screen overflow-hidden">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
-          <Header />
-          <main className="flex-1 overflow-x-hidden overflow-y-auto bg-tn-light-bg p-6">{children}</main>
+          <main className="flex-1 overflow-x-hidden overflow-y-auto">{children}</main>
         </div>
         <ChatbotToggle />
         <Toaster />

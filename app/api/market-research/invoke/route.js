@@ -22,8 +22,6 @@ export async function POST(request) {
       })
     }
 
-    console.log('Proxying invoke request:', { user_id, product_id })
-
     // Make request to agent service
     const agentResponse = await fetch(`https://market-finder-agent-194429268019.us-central1.run.app/invoke`, {
       method: 'POST',
@@ -37,8 +35,6 @@ export async function POST(request) {
       })
     })
 
-    console.log('Agent invoke response status:', agentResponse.status)
-
     if (!agentResponse.ok) {
       const errorText = await agentResponse.text()
       console.error('Agent invoke API error:', agentResponse.status, errorText)
@@ -49,7 +45,6 @@ export async function POST(request) {
     }
 
     const data = await agentResponse.json()
-    console.log('Agent invoke response data:', data)
 
     return new Response(JSON.stringify(data), {
       status: 200,

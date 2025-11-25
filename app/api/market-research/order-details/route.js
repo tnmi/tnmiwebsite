@@ -22,8 +22,6 @@ export async function GET(request) {
 
     const token = authHeader.replace('Bearer ', '')
 
-    console.log('Fetching order details for:', orderId)
-
     // Make request to agent service
     const agentResponse = await fetch(`https://market-finder-agent-194429268019.us-central1.run.app/order/${orderId}/details`, {
       method: 'GET',
@@ -32,8 +30,6 @@ export async function GET(request) {
         'Content-Type': 'application/json'
       }
     })
-
-    console.log('Order details response status:', agentResponse.status)
 
     if (!agentResponse.ok) {
       const errorText = await agentResponse.text()
@@ -45,7 +41,6 @@ export async function GET(request) {
     }
 
     const data = await agentResponse.json()
-    console.log('Order details response data:', data)
 
     return new Response(JSON.stringify(data), {
       status: 200,

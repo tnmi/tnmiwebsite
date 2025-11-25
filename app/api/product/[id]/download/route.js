@@ -13,7 +13,6 @@ export async function GET(request, { params }) {
     }
     
     const token = authHeader.split(' ')[1]
-    console.log('Download request for product ID:', id)
 
     // Forward the download request to the external API
     const response = await fetch(`https://northstar-backend-194429268019.us-central1.run.app/product/${id}/download`, {
@@ -39,8 +38,6 @@ export async function GET(request, { params }) {
     const contentType = response.headers.get('content-type') || 'application/zip'
     const contentDisposition = response.headers.get('content-disposition') || 'attachment; filename="product-files.zip"'
     
-    console.log('Download successful, streaming file...')
-
     // Stream the zip file response back to the client
     return new Response(response.body, {
       status: 200,

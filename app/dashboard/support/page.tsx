@@ -33,8 +33,6 @@ export default function SupportPage() {
     setSubmitStatus('idle')
 
     try {
-      console.log('Submitting support form:', formData)
-      
       const response = await fetch('/api/support-email', {
         method: 'POST',
         headers: {
@@ -43,11 +41,8 @@ export default function SupportPage() {
         body: JSON.stringify(formData),
       })
 
-      console.log('Support form response status:', response.status)
-      
       if (response.ok) {
         const result = await response.json()
-        console.log('Support form success:', result)
         setSubmitStatus('success')
         setFormData({ name: '', email: '', subject: '', message: '' })
       } else {
