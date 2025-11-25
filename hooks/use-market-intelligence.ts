@@ -40,11 +40,6 @@ export function useMarketIntelligence(): UseMarketIntelligenceReturn {
       return result;
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Analysis failed';
-      console.error('=== MARKET INTELLIGENCE ERROR ===');
-      console.error('User ID:', user.uid);
-      console.error('Product ID:', productId);
-      console.error('Error:', errorMsg);
-      console.error('=================================');
       setError(errorMsg);
       throw err;
     } finally {

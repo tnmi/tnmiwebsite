@@ -105,6 +105,10 @@ export function getAppInstance(): FirebaseApp {
   return app!;
 }
 
-// Export with backward compatibility
-export { auth, db, storage, serverTimestamp };
-export default app;
+// Re-export serverTimestamp for convenience
+export { serverTimestamp };
+
+// Initialize on first import in browser (for backward compatibility)
+if (typeof window !== 'undefined') {
+  initializeFirebase();
+}
