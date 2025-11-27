@@ -7,9 +7,12 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
 import { Mail, Send, Loader2 } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n'
+import { useAuthStore } from '@/lib/store'
+import { getAuthInstance } from '@/lib/firebase'
 
 export default function SupportPage() {
   const { t } = useLanguage()
+  const { user } = useAuthStore()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -33,10 +36,21 @@ export default function SupportPage() {
     setSubmitStatus('idle')
 
     try {
+      const auth = getAuthInstance()
+      const token = await auth.currentUser?.getIdToken()
+
+      if (!token) {
+        console.error('User not authenticated')
+        setSubmitStatus('error')
+        setIsSubmitting(false)
+        return
+      }
+
       const response = await fetch('/api/support-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(formData),
       })

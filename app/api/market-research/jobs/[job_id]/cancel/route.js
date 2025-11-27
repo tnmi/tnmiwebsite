@@ -30,7 +30,7 @@ export async function POST(request, { params }) {
       );
     }
 
-    const { job_id } = params;
+    const { job_id } = await params;
 
     // Forward to secure backend wrapper
     const response = await fetch(
@@ -99,4 +99,5 @@ export async function POST(request, { params }) {
     );
   }
 }
+
 

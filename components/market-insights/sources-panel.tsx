@@ -46,10 +46,11 @@ export function SourcesPanel({
   onHistorySelect,
   onReset,
   onRunAnalysis,
-  hasData = false
-}: SourcesPanelProps) {
+  hasData = false,
+  className
+}: SourcesPanelProps & { className?: string }) {
   return (
-    <div className="w-64 h-full bg-white/5 backdrop-blur-3xl border-r border-white/10 p-4 shadow-2xl flex flex-col font-satoshi">
+    <div className={`h-full bg-white/5 backdrop-blur-3xl border-r border-white/10 p-4 shadow-2xl flex flex-col font-satoshi ${className || 'w-64'}`}>
       <div className="mb-6">
         <h2 className="text-xs font-semibold text-white/90 uppercase tracking-wider mb-2 font-satoshi">
           SOURCES

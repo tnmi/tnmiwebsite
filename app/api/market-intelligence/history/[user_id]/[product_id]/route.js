@@ -1,6 +1,6 @@
 export async function GET(request, { params }) {
   try {
-    const { user_id, product_id } = params;
+    const { user_id, product_id } = await params;
 
     const response = await fetch(
       `https://market-intelligence-agent-194429268019.us-central1.run.app/api/v1/history/${user_id}/${product_id}`,

@@ -8,7 +8,8 @@ export async function DELETE(request, { params }) {
       })
     }
 
-    const fileId = params.id
+    const { id } = await params
+    const fileId = id
     if (!fileId) {
       return new Response(JSON.stringify({ error: 'File ID is required' }), {
         status: 400,

@@ -13,18 +13,55 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { X, Download, ExternalLink, ChevronDown, Clock, Loader2, RefreshCw } from "lucide-react"
+import { X, Download, ExternalLink, ChevronDown, Clock, Loader2, RefreshCw, PieChart, AlignLeft, TrendingUp, BarChart3 } from "lucide-react"
 import { JobStatusResponse } from "@/lib/market-intelligence-api"
 import ReactMarkdown from 'react-markdown'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, TooltipProps } from 'recharts';
 
 interface SegmentDetailsPanelProps {
   segmentName: string;
+  segmentData?: {
+    share_pct?: number;
+    description?: string;
+    estimation_method?: string;
+    source_url?: string;
+    found_with_query?: string;
+  };
+  productData?: {
+    pricing?: {
+      min_usd?: number;
+      max_usd?: number;
+      unit?: string;
+      time_series?: any[];
+      data_quality?: string;
+    };
+    materials?: {
+      technical_properties?: Record<string, string>;
+    };
+  };
   jobResult: JobStatusResponse | null;
   isRunning?: boolean;
   onRefresh?: () => Promise<void>;
   onClose: () => void;
+  onAnalyze?: () => Promise<void>;
+  viewMode?: 'details' | 'analysis';
 }
+
+// Custom Tooltip for Recharts
+const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-black/90 border border-white/20 p-3 rounded-lg text-xs text-white font-satoshi shadow-xl">
+        <p className="font-semibold mb-1">{data.notes || label}</p>
+        <p className="text-blue-300">Price: ${data.avg_price_usd?.toLocaleString()}</p>
+        <p className="text-white/50 mt-1">Year: {data.year}</p>
+      </div>
+    );
+  }
+  return null;
+};
 
 // Helper function to clean and format analysis text
 function cleanAnalysisText(text: string): string {
@@ -95,14 +132,216 @@ function getAgentData(jobResult: JobStatusResponse, agentName: string) {
 
 export function SegmentDetailsPanel({
   segmentName,
+  segmentData,
+  productData,
   jobResult,
   isRunning = false,
   onRefresh,
-  onClose
+  onClose,
+  onAnalyze,
+  viewMode = 'analysis' // Default to analysis for backward compatibility
 }: SegmentDetailsPanelProps) {
   const [selectedVersion, setSelectedVersion] = useState<'current' | string>('current');
   const [refreshing, setRefreshing] = useState(false);
-  
+
+  // Process time series data for chart
+  const chartData = useMemo(() => {
+    if (!productData?.pricing?.time_series) return [];
+    
+    // Sort generally by year then we rely on the order provided or notes
+    // The provided data seems mixed (quarters, months). 
+    // Let's try to parse a sortable date from "notes" + "year" if possible, 
+    // otherwise keep original order if it looks chronological, or just sort by year.
+    
+    // Simple sort by year for now to group them
+    const data = [...productData.pricing.time_series];
+    
+    // Try to add a rough sort key
+    // Logic: Year * 100 + Month (approx)
+    // Q1=1, Q2=4, Q3=7, Q4=10
+    // March=3, June=6, etc.
+    const getSortKey = (item: any) => {
+      let month = 0;
+      const text = (item.notes || '').toLowerCase();
+      if (text.includes('q1') || text.includes('jan') || text.includes('feb') || text.includes('mar')) month = 3;
+      else if (text.includes('q2') || text.includes('apr') || text.includes('may') || text.includes('jun')) month = 6;
+      else if (text.includes('q3') || text.includes('jul') || text.includes('aug') || text.includes('sep')) month = 9;
+      else if (text.includes('q4') || text.includes('oct') || text.includes('nov') || text.includes('dec')) month = 12;
+      
+      return (item.year || 0) * 100 + month;
+    };
+
+    return data.sort((a, b) => getSortKey(a) - getSortKey(b)).map(item => ({
+      ...item,
+      //Create a short label for X-axis
+      shortLabel: item.notes?.split(' ')[0] // e.g. "USA", "Japan" - might be too short, maybe use full notes but truncate in tick
+    }));
+  }, [productData?.pricing?.time_series]);
+
+  // Determine if we should show the details view
+  // Show details if viewMode is 'details' OR if we are in legacy mode (no viewMode passed) and no job exists
+  const showDetails = viewMode === 'details' || (!jobResult && !isRunning);
+
+  if (showDetails) {
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 font-satoshi">
+        <Card className="w-full max-w-3xl overflow-hidden bg-white/20 backdrop-blur-3xl shadow-2xl border border-white/30 font-satoshi max-h-[90vh] flex flex-col">
+          <CardHeader className="border-b border-white/30 bg-white/10 relative flex-shrink-0">
+            <CardTitle className="text-xl text-white">{segmentName}</CardTitle>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="absolute right-4 top-4 text-white/70 hover:text-white hover:bg-white/10"
+              onClick={onClose}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </CardHeader>
+          
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <CardContent className="p-6 flex flex-col gap-6">
+              
+              {/* Segment Info Section */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Market Share & Description */}
+                <div className="space-y-4">
+                  {segmentData?.share_pct !== undefined && (
+                    <div className="bg-white/10 rounded-lg p-4 border border-white/10">
+                      <div className="flex items-center gap-2 mb-1">
+                        <PieChart className="w-4 h-4 text-blue-300" />
+                        <span className="text-sm font-medium text-white/80">Market Share</span>
+                      </div>
+                      <p className="text-2xl font-bold text-white">{segmentData.share_pct}%</p>
+                      {segmentData.estimation_method && (
+                        <p className="text-xs text-white/50 mt-1 italic">
+                          Method: {segmentData.estimation_method}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  
+                  {segmentData?.description && (
+                    <div className="bg-white/10 rounded-lg p-4 border border-white/10">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlignLeft className="w-4 h-4 text-purple-300" />
+                        <span className="text-sm font-medium text-white/80">Description</span>
+                      </div>
+                      <p className="text-sm text-white/90 leading-relaxed">
+                        {segmentData.description}
+                      </p>
+                      {segmentData.source_url && (
+                        <div className="mt-3 pt-3 border-t border-white/10">
+                          <a 
+                            href={segmentData.source_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-300 hover:text-blue-200 flex items-center gap-1 truncate"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            Source: {new URL(segmentData.source_url).hostname}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Product Level Info (Pricing & Materials) */}
+                <div className="space-y-4">
+                  {productData?.pricing && (productData.pricing.min_usd || productData.pricing.max_usd) && (
+                    <div className="bg-white/10 rounded-lg p-4 border border-white/10">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4 text-green-300" />
+                          <span className="text-sm font-medium text-white/80">Estimated Market Pricing</span>
+                        </div>
+                        {productData.pricing.data_quality && (
+                          <Badge variant="outline" className={`text-[10px] h-5 ${
+                            productData.pricing.data_quality === 'high' ? 'border-green-500/50 text-green-200' :
+                            productData.pricing.data_quality === 'medium' ? 'border-yellow-500/50 text-yellow-200' :
+                            'border-red-500/50 text-red-200'
+                          }`}>
+                            {productData.pricing.data_quality} confidence
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-bold text-white">
+                          ${productData.pricing.min_usd?.toLocaleString()} - ${productData.pricing.max_usd?.toLocaleString()}
+                        </span>
+                        <span className="text-sm text-white/60">USD / {productData.pricing.unit || 'tonne'}</span>
+                      </div>
+                      <p className="text-xs text-white/50 mt-2">
+                        Based on similar product categories
+                      </p>
+                    </div>
+                  )}
+
+                  {productData?.materials?.technical_properties && Object.keys(productData.materials.technical_properties).length > 0 && (
+                    <div className="bg-white/10 rounded-lg p-4 border border-white/10">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-medium text-white/80">Technical Properties</span>
+                      </div>
+                      <div className="grid grid-cols-1 gap-2">
+                        {Object.entries(productData.materials.technical_properties).slice(0, 5).map(([key, value]) => (
+                          <div key={key} className="flex justify-between items-center text-xs border-b border-white/5 pb-1 last:border-0">
+                            <span className="text-white/70">{key}</span>
+                            <span className="text-white font-medium">{value as string}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Pricing Chart Section */}
+              {chartData.length > 0 && (
+                <div className="bg-white/10 rounded-lg p-4 border border-white/10">
+                  <div className="flex items-center gap-2 mb-4">
+                    <BarChart3 className="w-4 h-4 text-blue-300" />
+                    <span className="text-sm font-medium text-white/80">Historical Price Trends</span>
+                  </div>
+                  <div className="h-[200px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
+                        <XAxis 
+                          dataKey="notes" 
+                          tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }} 
+                          axisLine={false}
+                          tickLine={false}
+                          interval={0} // Show all ticks
+                          angle={-45}
+                          textAnchor="end"
+                          height={60}
+                        />
+                        <YAxis 
+                          tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }} 
+                          axisLine={false}
+                          tickLine={false}
+                          tickFormatter={(value) => `$${value}`}
+                        />
+                        <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(255,255,255,0.05)'}} />
+                        <Bar 
+                          dataKey="avg_price_usd" 
+                          fill="#60a5fa" 
+                          radius={[4, 4, 0, 0]} 
+                          name="Price (USD)"
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+
+            </CardContent>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   if (!jobResult) {
     return null;
   }

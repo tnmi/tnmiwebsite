@@ -68,6 +68,8 @@ export async function GET(request) {
     }
 
     const data = await response.json();
+    
+    console.log('[API Debug] Jobs API Response:', JSON.stringify(data, null, 2));
 
     return new Response(JSON.stringify(data), {
       status: 200,
@@ -97,4 +99,5 @@ export async function GET(request) {
     );
   }
 }
+
 

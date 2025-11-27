@@ -11,7 +11,10 @@ import { MarketTree } from "@/components/market-insights/market-tree"
 import { SegmentDetailsPanel } from "@/components/market-insights/segment-details-panel"
 import { TreeNodeData } from "@/components/market-insights/tree-node"
 import { Button } from "@/components/ui/button"
-import { Play } from "lucide-react"
+import { Play, Menu, LayoutList } from "lucide-react"
+import { useSidebar } from "@/hooks/use-sidebar"
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet"
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 import dynamic from 'next/dynamic'
 
 // Lazy load LightRays to prevent SSR issues
@@ -60,6 +63,7 @@ function MarketInsightsContent() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [treeData, setTreeData] = useState<TreeNodeData | null>(null)
   const [selectedSegment, setSelectedSegment] = useState<string | null>(null)
+  const [panelViewMode, setPanelViewMode] = useState<'details' | 'analysis'>('details')
   const [productsLoading, setProductsLoading] = useState(true)
   const [jobHistory, setJobHistory] = useState<any[]>([])
   const [marketIntelligenceHistory, setMarketIntelligenceHistory] = useState<any[]>([])
@@ -91,10 +95,6 @@ function MarketInsightsContent() {
       
       // Add historical analyses from API (using history.history, not history.analyses)
       if (history.history && history.history.length > 0) {
-        // Log each historical item
-        history.history.forEach((item: any, index: number) => {
-        });
-        
         // Convert API format to our format and filter duplicates
         const historicalItems = history.history
           .filter((item: any) => !marketIntelligence.data || item.session_id !== marketIntelligence.data.session_id)
@@ -113,9 +113,23 @@ function MarketInsightsContent() {
 
       setMarketIntelligenceHistory(historyItems);
       
-      // Set the current session as selected (most recent)
       if (historyItems.length > 0) {
-        setSelectedHistorySessionId(historyItems[0].session_id);
+        // Auto-load latest if nothing is currently loaded
+        if (!marketIntelligence.data && historyItems[0].data) {
+          marketIntelligence.loadCached(historyItems[0].data);
+          setSelectedHistorySessionId(historyItems[0].session_id);
+          
+          toast({
+            title: "Analysis Loaded",
+            description: "Most recent analysis loaded automatically."
+          });
+        } else if (marketIntelligence.data && marketIntelligence.data.session_id) {
+          // If data IS loaded, select the corresponding session ID
+          setSelectedHistorySessionId(marketIntelligence.data.session_id);
+        } else {
+          // Fallback to first item
+          setSelectedHistorySessionId(historyItems[0].session_id);
+        }
       }
     } catch (err) {
       // Even on error, include current analysis if available
@@ -152,6 +166,12 @@ function MarketInsightsContent() {
         if (response.ok) {
           const data = await response.json()
           setProducts(data.products || [])
+          
+          // Auto-load last selected product
+          const lastProductId = localStorage.getItem(`mi_last_product_${user.uid}`)
+          if (lastProductId && !selectedProductId && data.products.find((p: Product) => p.id === lastProductId)) {
+            handleProductSelect(lastProductId)
+          }
         }
       } catch (error) {
         console.error('Error fetching products:', error)
@@ -198,13 +218,13 @@ function MarketInsightsContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProductId, user?.uid])
 
-  // Fetch history when Market Intelligence data becomes available
+  // Fetch history when product is selected, or market intelligence data changes
   useEffect(() => {
-    if (marketIntelligence.data && selectedProductId && user?.uid) {
+    if (selectedProductId && user?.uid) {
       fetchMarketIntelligenceHistory();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [marketIntelligence.data, selectedProductId, user?.uid])
+  }, [selectedProductId, user?.uid, marketIntelligence.data])
 
   // Update selected product and set product ID for market pull filtering
   useEffect(() => {
@@ -260,9 +280,9 @@ function MarketInsightsContent() {
     setJobHistory(history);
   }, [marketPull.activeJobs, marketPull.jobResults, selectedProduct])
 
-  // Build tree data when market intelligence data or market pull jobs change
-  // Also refresh every second to update elapsed time for running jobs
-  useEffect(() => {
+    // Build tree data when market intelligence data or market pull jobs change
+    // Also refresh every second to update elapsed time for running jobs
+    useEffect(() => {
     const buildTree = () => {
       
       if (selectedProduct) {
@@ -293,7 +313,7 @@ function MarketInsightsContent() {
                 : `${seconds}s`;
             }
             
-            // Build children based on job status
+              // Build children based on job status
             let children: TreeNodeData[] | undefined = undefined;
             
             // Check if there are completed versions (we'll need to get count from API later)
@@ -311,6 +331,7 @@ function MarketInsightsContent() {
                 progress: jobStatus.progress,
                 onClick: () => {
                   setSelectedSegment(segment.name);
+                  setPanelViewMode('analysis');
                 }
               }];
               
@@ -324,6 +345,7 @@ function MarketInsightsContent() {
                   status: 'completed',
                   onClick: () => {
                     setSelectedSegment(segment.name);
+                    setPanelViewMode('analysis');
                   }
                 });
               }
@@ -335,6 +357,8 @@ function MarketInsightsContent() {
                 label: 'Analysis Failed',
                 description: 'An error occurred during analysis',
                 status: 'failed',
+                // Make sure failed nodes are visible in tree
+                children: [] 
               }];
               
               // If there are completed versions, still show them
@@ -347,6 +371,7 @@ function MarketInsightsContent() {
                   status: 'completed',
                   onClick: () => {
                     setSelectedSegment(segment.name);
+                    setPanelViewMode('analysis');
                   }
                 });
               }
@@ -360,6 +385,7 @@ function MarketInsightsContent() {
                 status: 'completed',
                 onClick: () => {
                   setSelectedSegment(segment.name);
+                  setPanelViewMode('analysis');
                 }
               }];
             }
@@ -372,7 +398,13 @@ function MarketInsightsContent() {
               share_pct: segment.share_pct,
               status: startingSegments.has(segment.name) ? 'running' : (jobStatus?.status || 'idle'), // Show as running if being started
               progress: jobStatus?.progress,
-              onClick: () => handleStartMarketPull(segment.name), // Analyze button triggers market pull
+              // Clicking node opens details
+              onClick: () => {
+                setSelectedSegment(segment.name);
+                setPanelViewMode('details');
+              },
+              // Analyze button starts market pull
+              onAnalyze: () => handleStartMarketPull(segment.name), 
               children
             }
             return segmentNode
@@ -399,14 +431,16 @@ function MarketInsightsContent() {
 
     buildTree();
     
-    // Refresh every second to update elapsed time for running jobs
+    // Remove auto-refresh polling completely as requested
+    /* 
     const interval = setInterval(() => {
       if (marketPull.activeJobs.size > 0) {
         buildTree();
       }
-    }, 1000);
+    }, 15000);
 
-    return () => clearInterval(interval);
+    return () => clearInterval(interval); 
+    */
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [marketIntelligence.data, marketIntelligence.loading, selectedProduct, marketPull.activeJobs, marketPull.jobResults])
 
@@ -459,6 +493,11 @@ function MarketInsightsContent() {
     marketPull.reset()
     marketPull.setProductId(productId) // Set the product ID for filtering jobs
     setSelectedProductId(productId)
+    
+    // Save last used product
+    if (user?.uid) {
+      localStorage.setItem(`mi_last_product_${user.uid}`, productId)
+    }
   }
 
   // Handle node click (both segment click to start market pull, and result click to view details)
@@ -478,6 +517,7 @@ function MarketInsightsContent() {
     if (nodeId.endsWith('-result')) {
       const segmentName = nodeId.replace('-result', '')
       setSelectedSegment(segmentName)
+      setPanelViewMode('analysis')
       return
     }
     
@@ -488,6 +528,7 @@ function MarketInsightsContent() {
       await marketPull.refreshJobStatus(segmentName);
       
       setSelectedSegment(segmentName)
+      setPanelViewMode('analysis')
       return
     }
 
@@ -500,6 +541,7 @@ function MarketInsightsContent() {
 
     // Just select the segment, let the Analyze button in the node trigger the job
     setSelectedSegment(nodeId)
+    setPanelViewMode('details')
   }
 
   // Track segments that are currently being started (to prevent double-clicks)
@@ -624,6 +666,32 @@ function MarketInsightsContent() {
     }
   }
 
+  const isMobile = useSidebar().isMobile
+  const { setIsCollapsed } = useSidebar()
+
+  // Derive selected segment data for the panel
+  const selectedSegmentData = useMemo(() => {
+    if (!marketIntelligence.data || !selectedSegment) return undefined
+    return marketIntelligence.data.market_segments.market_segments.find(s => s.name === selectedSegment)
+  }, [marketIntelligence.data, selectedSegment])
+
+  // Derive product data for the panel
+  const selectedProductData = useMemo(() => {
+    if (!marketIntelligence.data) return undefined
+    return {
+      pricing: {
+        min_usd: marketIntelligence.data.pricing_data?.min_usd_per_unit,
+        max_usd: marketIntelligence.data.pricing_data?.max_usd_per_unit,
+        unit: marketIntelligence.data.pricing_data?.unit,
+        time_series: marketIntelligence.data.pricing_data?.time_series,
+        data_quality: marketIntelligence.data.pricing_data?.data_quality,
+      },
+      materials: {
+        technical_properties: marketIntelligence.data.materials_passport?.technical_properties
+      }
+    }
+  }, [marketIntelligence.data])
+
   // Prepare SVG tree component by grouping by levels
   const processedTreeData = useMemo(() => {
     if (!treeData) return null
@@ -655,8 +723,55 @@ function MarketInsightsContent() {
   return (
     <div className="h-full flex flex-col">
       {/* Main Layout */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Sources Panel */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Mobile Navigation & Sources Triggers */}
+        {isMobile && (
+          <div className="absolute top-4 left-4 z-50 flex gap-2">
+            {/* Main Navigation Trigger */}
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="bg-black/50 backdrop-blur-md border-white/20 text-white hover:bg-white/20"
+              onClick={() => setIsCollapsed(false)}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+
+            {/* Sources Panel Trigger */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="bg-black/50 backdrop-blur-md border-white/20 text-white hover:bg-white/20">
+                  <LayoutList className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="p-0 w-80 bg-transparent border-none">
+                <VisuallyHidden>
+                  <SheetTitle>Sources Panel</SheetTitle>
+                  <SheetDescription>List of products and market intelligence history</SheetDescription>
+                </VisuallyHidden>
+                <SourcesPanel
+                  products={products}
+                  selectedProductId={selectedProductId}
+                  onProductSelect={handleProductSelect}
+                  isLoading={productsLoading}
+                  marketIntelligenceStatus={getIntelligenceStatus()}
+                  marketPullEnabled={!!marketIntelligence.data}
+                  activeJobsCount={marketPull.activeJobsCount}
+                  marketIntelligenceHistory={marketIntelligenceHistory}
+                  selectedHistorySessionId={selectedHistorySessionId}
+                  onHistorySelect={handleHistorySelect}
+                  onReset={handleReset}
+                  onRunAnalysis={handleRunIntelligence}
+                  hasData={!!marketIntelligence.data}
+                  className="w-full border-r-0"
+                />
+              </SheetContent>
+            </Sheet>
+          </div>
+        )}
+
+        {/* Desktop Sources Panel */}
+        {!isMobile && (
         <SourcesPanel
           products={products}
           selectedProductId={selectedProductId}
@@ -672,6 +787,7 @@ function MarketInsightsContent() {
           onRunAnalysis={handleRunIntelligence}
           hasData={!!marketIntelligence.data}
         />
+        )}
 
         {/* Market Tree (Center) */}
         <MarketTree
@@ -690,12 +806,18 @@ function MarketInsightsContent() {
       {selectedSegment && (
         <SegmentDetailsPanel
           segmentName={selectedSegment}
+          segmentData={selectedSegmentData}
+          productData={selectedProductData}
           jobResult={marketPull.getJobResult(selectedSegment) || null}
           isRunning={marketPull.getJobStatus(selectedSegment)?.status === 'running'}
+          viewMode={panelViewMode} // Pass viewMode state
           onRefresh={async () => {
             await marketPull.refreshJobStatus(selectedSegment);
           }}
           onClose={() => setSelectedSegment(null)}
+          onAnalyze={async () => {
+            await handleStartMarketPull(selectedSegment);
+          }}
         />
       )}
     </div>

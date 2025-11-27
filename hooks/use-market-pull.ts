@@ -50,42 +50,83 @@ export function useMarketPull(): UseMarketPullReturn {
     try {
       const allJobs = await marketIntelligenceAPI.getUserJobs(user.uid);
       
+      const jobsArray = Array.isArray(allJobs.jobs) ? allJobs.jobs : (Array.isArray((allJobs as any).items) ? (allJobs as any).items : []);
+      
       // Filter jobs by current product ID
-      const productJobs = allJobs.jobs.filter(job => job.product_id === currentProductId);
+      let productJobs = jobsArray.filter((job: any) => {
+        const jobProductId = job.product_id || job.productId; // Handle both cases
+        return String(jobProductId) === String(currentProductId);
+      });
+      
+      // Group jobs by segment to only process the latest one per segment
+      const jobsBySegment = new Map<string, any[]>();
+      
+      for (const job of productJobs) {
+        const segmentName = job.segment_name || job.segmentName;
+        if (segmentName) {
+          if (!jobsBySegment.has(segmentName)) {
+            jobsBySegment.set(segmentName, []);
+          }
+          jobsBySegment.get(segmentName)!.push(job);
+        }
+      }
       
       // Update activeJobs map with running jobs for this product
       const updatedActiveJobs = new Map<string, ActiveJob>();
       const updatedJobResults = new Map<string, JobStatusResponse>();
       
-      for (const job of productJobs) {
-        if (job.status === 'running') {
-          updatedActiveJobs.set(job.segment_name, {
-            jobId: job.job_id,
-            segmentName: job.segment_name,
+      // If no jobs found, log it for debugging
+      if (allJobs.jobs.length > 0 && productJobs.length === 0) {
+        // console.log('Found jobs but none match current product:', currentProductId);
+      }
+      
+      // Process only the latest job for each segment
+      for (const [segmentName, jobs] of jobsBySegment.entries()) {
+        // Sort by started_at descending (newest first)
+        jobs.sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
+        const latestJob = jobs[0];
+        
+        if (latestJob.status === 'running') {
+          updatedActiveJobs.set(segmentName, {
+            jobId: latestJob.job_id,
+            segmentName: segmentName,
             status: 'running',
-            startedAt: job.started_at,
+            startedAt: latestJob.started_at,
           });
-        } else if (job.status === 'completed') {
-          // Fetch full job result for completed jobs
-          try {
-            const fullResult = await marketIntelligenceAPI.getJobStatus(job.job_id, user.uid);
-            updatedJobResults.set(job.segment_name, fullResult);
-          } catch (err) {
-            console.error(`Failed to fetch result for completed job ${job.job_id}:`, err);
+        } else {
+          // For completed/failed job, try to fetch its result if we don't have it
+          if (!jobResults.has(segmentName)) {
+            try {
+              // Add a small delay to avoid hitting rate limits if processing many segments
+              await new Promise(resolve => setTimeout(resolve, 100)); 
+              const fullResult = await marketIntelligenceAPI.getJobStatus(latestJob.job_id, user.uid);
+              updatedJobResults.set(segmentName, fullResult);
+            } catch (err) {
+              console.error(`Failed to fetch result for job ${latestJob.job_id}:`, err);
+            }
+          } else {
+             // Keep existing result
+             updatedJobResults.set(segmentName, jobResults.get(segmentName)!);
           }
         }
       }
       
       // Update state with fetched jobs
       setActiveJobs(updatedActiveJobs);
-      setJobResults(updatedJobResults);
+      // Only update jobResults if we fetched new ones, merge with existing
+      setJobResults(prev => {
+        const newMap = new Map(prev);
+        updatedJobResults.forEach((val, key) => newMap.set(key, val));
+        return newMap;
+      });
       
       // Count active (running) jobs for this product
-      const runningCount = productJobs.filter(job => job.status === 'running').length;
+      const runningCount = Array.from(updatedActiveJobs.values()).filter(job => job.status === 'running').length;
       setActiveJobsCount(runningCount);
     } catch (err) {
-      // Silently fail and disable further attempts on 404 or 500
-      if (err instanceof Error && (err.message.includes('404') || err.message.includes('500'))) {
+      // Silently fail and disable further attempts ONLY on 404 (API not found)
+      // 500/503 errors are transient or server-side, so we should keep trying
+      if (err instanceof Error && err.message.includes('404')) {
         setJobsApiAvailable(false);
       }
       
@@ -100,6 +141,8 @@ export function useMarketPull(): UseMarketPullReturn {
   // Fetch user jobs on mount and when user or product changes
   useEffect(() => {
     if (user?.uid && jobsApiAvailable && currentProductId) {
+      // Reset results when switching products to prevent showing wrong data
+      setJobResults(new Map());
       fetchUserJobs();
     }
   }, [user?.uid, jobsApiAvailable, currentProductId, fetchUserJobs]);
@@ -220,6 +263,8 @@ export function useMarketPull(): UseMarketPullReturn {
 
     try {
       setLoading(true);
+      // Reset availability to try again in case it was disabled by a transient error
+      setJobsApiAvailable(true);
       
       // Fetch all jobs for this product
       await fetchUserJobs();

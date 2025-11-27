@@ -12,10 +12,12 @@ import {
   Handle,
   Position,
   NodeProps,
+  ReactFlowInstance,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { TreeNodeData } from './tree-node';
 import { Play, CheckCircle, Loader2, XCircle, RefreshCw } from 'lucide-react';
+import { useState, useRef } from 'react';
 
 interface FlowTreeProps {
   treeData: TreeNodeData | null;
@@ -41,6 +43,7 @@ interface SegmentNodeData {
   progress?: number;
   share_pct?: number;
   onClick?: () => void;
+  onAnalyze?: () => void; // Add this prop
 }
 
 interface ResultNodeData {
@@ -142,9 +145,12 @@ function SegmentNode({ data }: { data: SegmentNodeData }) {
         </div>
       )}
 
-      {data.status === 'idle' && data.onClick && (
+      {data.status === 'idle' && data.onAnalyze && (
         <button
-          onClick={data.onClick}
+          onClick={(e) => {
+            e.stopPropagation();
+            data.onAnalyze?.();
+          }}
           className="w-full mt-2 px-3 py-1.5 text-xs bg-purple-500/10 hover:bg-purple-500/20 text-purple-200 border border-purple-500/20 rounded backdrop-blur-md flex items-center justify-center gap-1 transition-all"
         >
           <Play className="w-3 h-3" />
@@ -211,13 +217,13 @@ function ResultNode({ data }: { data: ResultNodeData }) {
   );
 }
 
-const nodeTypes = {
-  product: ProductNode,
-  segment: SegmentNode,
-  result: ResultNode,
-};
-
 export function FlowTree({ treeData, onNodeClick, onRefresh, isRefreshing = false }: FlowTreeProps) {
+  const nodeTypes = useMemo(() => ({
+    product: ProductNode,
+    segment: SegmentNode,
+    result: ResultNode,
+  }), []);
+
   // Convert tree data to React Flow format
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
     if (!treeData) return { nodes: [], edges: [] };
@@ -245,6 +251,7 @@ export function FlowTree({ treeData, onNodeClick, onRefresh, isRefreshing = fals
           progress: nodeData.progress,
           hasData: nodeData.hasData,
           onRunIntelligence: nodeData.onRunIntelligence,
+          onAnalyze: nodeData.onAnalyze, // Pass this prop
           onClick: nodeData.onClick ? () => {
             nodeData.onClick?.();
             onNodeClick(nodeData.id);
@@ -288,6 +295,8 @@ export function FlowTree({ treeData, onNodeClick, onRefresh, isRefreshing = fals
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
+  const hasFittedRef = useRef(false);
 
   // Check if we only have a single product node (no children)
   const hasSingleProductNode = useMemo(() => {
@@ -298,7 +307,26 @@ export function FlowTree({ treeData, onNodeClick, onRefresh, isRefreshing = fals
   useEffect(() => {
     setNodes(initialNodes);
     setEdges(initialEdges);
-  }, [initialNodes, initialEdges, setNodes, setEdges, hasSingleProductNode]);
+  }, [initialNodes, initialEdges, setNodes, setEdges]);
+
+  // Initial fit view logic
+  useEffect(() => {
+    if (nodes.length > 0 && !hasFittedRef.current && rfInstance) {
+      // Small delay to ensure nodes are rendered
+      const timeout = setTimeout(() => {
+        if (!rfInstance) return;
+        rfInstance.fitView({
+          padding: 0.2,
+          minZoom: hasSingleProductNode ? 0.5 : 0.2,
+          maxZoom: hasSingleProductNode ? 0.7 : 3,
+          duration: 800,
+        });
+        hasFittedRef.current = true;
+      }, 500); // Increased delay to ensure layout is ready
+
+      return () => clearTimeout(timeout);
+    }
+  }, [nodes.length, rfInstance, hasSingleProductNode]);
 
   const onNodeClickHandler = useCallback((event: React.MouseEvent, node: Node) => {
     if (node.data.onClick && typeof node.data.onClick === 'function') {
@@ -317,12 +345,7 @@ export function FlowTree({ treeData, onNodeClick, onRefresh, isRefreshing = fals
         onEdgesChange={onEdgesChange}
         onNodeClick={onNodeClickHandler}
         nodeTypes={nodeTypes}
-        fitView={!hasSingleProductNode} // Only fitView when there are multiple nodes
-        fitViewOptions={{
-          padding: 0.2,
-          minZoom: hasSingleProductNode ? 0.5 : 0.2, // Less zoom for single node
-          maxZoom: hasSingleProductNode ? 0.7 : 3, // Cap max zoom for single node
-        }}
+        onInit={setRfInstance}
         minZoom={0.2}
         maxZoom={3}
         defaultViewport={hasSingleProductNode ? { x: 100, y: 100, zoom: 0.6 } : { x: 0, y: 0, zoom: 1 }} // Set initial viewport for single node

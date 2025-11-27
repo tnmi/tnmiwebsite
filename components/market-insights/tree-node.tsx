@@ -17,6 +17,7 @@ export interface TreeNodeData {
   status?: 'idle' | 'running' | 'completed' | 'failed';
   progress?: number; // Progress percentage 0-100
   onClick?: () => void;
+  onAnalyze?: () => void; // New prop for Analyze button
   children?: TreeNodeData[];
   hasData?: boolean; // For product node to show/hide button
   onRunIntelligence?: () => void; // For product node button
@@ -81,9 +82,9 @@ export function TreeNode({ data, level }: TreeNodeProps) {
         className={cn(
           'border-2 transition-all duration-300 shadow-lg hover:shadow-xl',
           getNodeStyles(),
-          data.onClick && data.type === 'result' && 'hover:scale-105 cursor-pointer'
+          data.onClick && (data.type === 'result' || data.type === 'segment') && 'hover:scale-105 cursor-pointer'
         )}
-        onClick={data.type === 'result' ? data.onClick : undefined}
+        onClick={(data.type === 'result' || data.type === 'segment') ? data.onClick : undefined}
       >
         <div className="p-4 space-y-2">
           <div className="flex items-start justify-between gap-3">
@@ -124,14 +125,14 @@ export function TreeNode({ data, level }: TreeNodeProps) {
             </div>
           )}
 
-          {data.type === 'segment' && data.status === 'idle' && (
+          {data.type === 'segment' && data.status === 'idle' && data.onAnalyze && (
             <Button
               size="sm"
               variant="ghost"
               className="w-full mt-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/30"
               onClick={(e) => {
                 e.stopPropagation();
-                data.onClick?.();
+                data.onAnalyze?.();
               }}
             >
               <Play className="w-3 h-3 mr-2" />
