@@ -53,6 +53,40 @@ export default function MarketInsightsPage() {
   )
 }
 
+// Helper to safely extract segments from various API response structures
+const extractSegments = (data: any): any[] => {
+  if (!data || !data.market_segments) return [];
+  
+  // Case 1: Direct array
+  if (Array.isArray(data.market_segments)) {
+    return data.market_segments;
+  }
+  
+  // Case 2: Nested object
+  if (typeof data.market_segments === 'object') {
+    // Check for 'market_segments' key
+    if (Array.isArray(data.market_segments.market_segments)) {
+      return data.market_segments.market_segments;
+    }
+    // Check for 'segments' key (common alternative)
+    if (Array.isArray(data.market_segments.segments)) {
+      return data.market_segments.segments;
+    }
+    // Check if values are the segments (if it's a map)
+    const values = Object.values(data.market_segments);
+    if (values.length > 0) {
+      // Filter for objects that look like segments (have a 'name' property or are just non-null objects)
+      // Relaxed check: just needs to be an object with at least one key
+      const potentialSegments = values.filter(v => typeof v === 'object' && v !== null);
+      if (potentialSegments.length > 0) {
+         return potentialSegments;
+      }
+    }
+  }
+  
+  return [];
+};
+
 function MarketInsightsContent() {
   const { user } = useAuthStore()
   const { toast } = useToast()
@@ -88,7 +122,8 @@ function MarketInsightsContent() {
           session_id: marketIntelligence.data.session_id,
           product_id: selectedProductId,
           created_at: marketIntelligence.data.metadata?.completed_at || new Date().toISOString(),
-          segment_count: marketIntelligence.data.market_segments.market_segments.length,
+          // Helper to safely get segments count
+          segment_count: extractSegments(marketIntelligence.data).length,
           data: marketIntelligence.data,
         });
       }
@@ -102,7 +137,7 @@ function MarketInsightsContent() {
             session_id: item.session_id,
             product_id: selectedProductId,
             created_at: item.created_at,
-            segment_count: item.output?.market_segments?.market_segments?.length || 0,
+            segment_count: extractSegments(item.output).length,
             data: item.output,
           }));
         historyItems.push(...historicalItems);
@@ -138,7 +173,7 @@ function MarketInsightsContent() {
           session_id: marketIntelligence.data.session_id,
           product_id: selectedProductId,
           created_at: marketIntelligence.data.metadata?.completed_at || new Date().toISOString(),
-          segment_count: marketIntelligence.data.market_segments.market_segments.length,
+          segment_count: extractSegments(marketIntelligence.data).length,
           data: marketIntelligence.data,
         };
         setMarketIntelligenceHistory([fallbackItem]);
@@ -165,13 +200,17 @@ function MarketInsightsContent() {
         
         if (response.ok) {
           const data = await response.json()
-          setProducts(data.products || [])
+          // Check if data.products exists, otherwise fallback to data if it's an array
+          const productsList = data.products || (Array.isArray(data) ? data : [])
+          setProducts(productsList)
           
           // Auto-load last selected product
           const lastProductId = localStorage.getItem(`mi_last_product_${user.uid}`)
-          if (lastProductId && !selectedProductId && data.products.find((p: Product) => p.id === lastProductId)) {
+          if (lastProductId && !selectedProductId && productsList.find((p: Product) => p.id === lastProductId)) {
             handleProductSelect(lastProductId)
           }
+        } else {
+          throw new Error(`Failed to fetch products: ${response.status}`)
         }
       } catch (error) {
         console.error('Error fetching products:', error)
@@ -288,7 +327,8 @@ function MarketInsightsContent() {
       if (selectedProduct) {
         // If we have market intelligence data, show full tree
         if (marketIntelligence.data) {
-          const segments = marketIntelligence.data.market_segments.market_segments || []
+          
+          const segments = extractSegments(marketIntelligence.data);
           
           const treeNode: TreeNodeData = {
             id: selectedProduct.id,
@@ -533,9 +573,13 @@ function MarketInsightsContent() {
     }
 
     // Otherwise, it's a segment node - just select it (don't auto-start)
-    const segment = marketIntelligence.data.market_segments.market_segments.find(
-      s => s.name === nodeId
-    )
+    // Helper to safely find a segment
+    const findSegment = (data: any, name: string) => {
+      const segments = extractSegments(data);
+      return segments.find(s => s.name === name);
+    };
+
+    const segment = findSegment(marketIntelligence.data, nodeId);
     
     if (!segment) return
 
@@ -556,9 +600,13 @@ function MarketInsightsContent() {
       return
     }
 
-    const segment = marketIntelligence.data.market_segments.market_segments.find(
-      s => s.name === segmentName
-    )
+    // Helper to safely find a segment
+    const findSegmentForStart = (data: any, name: string) => {
+      const segments = extractSegments(data);
+      return segments.find(s => s.name === name);
+    };
+
+    const segment = findSegmentForStart(marketIntelligence.data, segmentName);
     
     if (!segment) return
 
@@ -672,7 +720,9 @@ function MarketInsightsContent() {
   // Derive selected segment data for the panel
   const selectedSegmentData = useMemo(() => {
     if (!marketIntelligence.data || !selectedSegment) return undefined
-    return marketIntelligence.data.market_segments.market_segments.find(s => s.name === selectedSegment)
+    
+    const segments = extractSegments(marketIntelligence.data);
+    return segments.find(s => s.name === selectedSegment)
   }, [marketIntelligence.data, selectedSegment])
 
   // Derive product data for the panel

@@ -5,6 +5,7 @@ import GoogleAnalytics from "@/components/GoogleAnalytics"
 import Chatbot from "@/components/Chatbot"
 
 export const metadata = {
+  metadataBase: new URL('https://truenorthmaterials.com'),
   title: "TrueNorth Materials - AI-Driven Materials Intelligence Platform",
   description: "Bridge the Valley of Death in materials innovation with our AI Cores. Accelerate R&D from TRL 4-7 to commercial success using big data and sensor intelligence in Canada.",
   generator: 'v0.dev',
@@ -137,7 +138,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="font-['Neue_Machina',system-ui,sans-serif] relative">
+      <body className="font-['Neue_Machina',system-ui,sans-serif] relative" suppressHydrationWarning>
         <GoogleAnalytics />
         <ThemeProvider 
           attribute="class" 

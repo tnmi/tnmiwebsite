@@ -250,15 +250,22 @@ export const marketIntelligenceAPI = {
   /**
    * Get Market Intelligence history for a product
    */
-  async getMarketIntelligenceHistory(userId: string, productId: string): Promise<MarketIntelligenceHistoryResponse> {
+  async getMarketIntelligenceHistory(userId: string, productId: string, limit: number = 10): Promise<MarketIntelligenceHistoryResponse> {
     const token = await this.getAuthToken();
     
     const response = await fetch(
-      `${API_BASE}/market-intelligence/history?product_id=${encodeURIComponent(productId)}`,
+      `${API_BASE}/market-intelligence/history/query`,
       {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          product_id: productId,
+          limit: limit,
+          production: false,
+        }),
       }
     );
 
