@@ -249,6 +249,7 @@ export const marketIntelligenceAPI = {
 
   /**
    * Get Market Intelligence history for a product
+   * MIGRATED: Now uses POST to prevent IDs in URLs
    */
   async getMarketIntelligenceHistory(userId: string, productId: string, limit: number = 10): Promise<MarketIntelligenceHistoryResponse> {
     const token = await this.getAuthToken();
@@ -262,6 +263,7 @@ export const marketIntelligenceAPI = {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          user_id: userId,
           product_id: productId,
           limit: limit,
           production: false,

@@ -1,6 +1,7 @@
 // Proxy for Market Intelligence API - Forwards to secure backend wrapper
 
-const BACKEND_API_URL = process.env.BACKEND_API_URL || 'https://northstar-backend-26pkzuizfq-uc.a.run.app';
+// Market Intelligence uses a different backend than Market Research
+const MARKET_INTELLIGENCE_API_URL = process.env.MARKET_INTELLIGENCE_API_URL || 'https://market-intelligence-agent-194429268019.us-central1.run.app';
 
 // Helper function to validate request body
 function validateAnalyzeRequest(body) {
@@ -86,7 +87,7 @@ export async function POST(request) {
     
     // 4. Forward to secure backend wrapper (it will validate token and product ownership)
     const response = await fetch(
-      `${BACKEND_API_URL}/market-intelligence/analyze`,
+      `${MARKET_INTELLIGENCE_API_URL}/api/v1/analyze`,
       {
         method: 'POST',
         headers: {

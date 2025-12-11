@@ -2,9 +2,9 @@
 
 import { getAuthInstance } from "@/lib/firebase"
 
-// Using secure backend API wrapper
-// All authentication and validation handled by backend
-const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || "https://northstar-backend-26pkzuizfq-uc.a.run.app"
+// Use Next.js API routes as proxy (with /api prefix)
+// This ensures proper CORS handling and security
+const API_BASE = '/api'
 
 // Data types based on the market research API
 export interface MarketResearchJob {
@@ -71,7 +71,7 @@ class MarketResearchAPI {
   private baseURL: string
   
   constructor() {
-    this.baseURL = BACKEND_API_URL
+    this.baseURL = API_BASE
   }
 
   private async getAuthHeaders(): Promise<Record<string, string>> {

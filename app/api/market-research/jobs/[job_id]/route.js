@@ -34,7 +34,7 @@ export async function GET(request, { params }) {
 
     // Forward to secure backend wrapper
     const response = await fetch(
-      `${BACKEND_API_URL}/market-research/jobs/${encodeURIComponent(job_id)}`,
+      `${BACKEND_API_URL}/api/market-research/jobs/${encodeURIComponent(job_id)}`,
       {
         method: 'GET',
         headers: {

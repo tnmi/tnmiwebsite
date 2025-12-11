@@ -34,7 +34,7 @@ export async function POST(request) {
 
     // Forward to secure backend wrapper
     const response = await fetch(
-      `${BACKEND_API_URL}/market-research/start`,
+      `${BACKEND_API_URL}/api/market-research/start`,
       {
         method: 'POST',
         headers: {

@@ -11,7 +11,7 @@ import { MarketTree } from "@/components/market-insights/market-tree"
 import { SegmentDetailsPanel } from "@/components/market-insights/segment-details-panel"
 import { TreeNodeData } from "@/components/market-insights/tree-node"
 import { Button } from "@/components/ui/button"
-import { Play, Menu, LayoutList } from "lucide-react"
+import { Play, LayoutList } from "lucide-react"
 import { useSidebar } from "@/hooks/use-sidebar"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
@@ -714,8 +714,7 @@ function MarketInsightsContent() {
     }
   }
 
-  const isMobile = useSidebar().isMobile
-  const { setIsCollapsed } = useSidebar()
+  const { isMobile } = useSidebar()
 
   // Derive selected segment data for the panel
   const selectedSegmentData = useMemo(() => {
@@ -774,50 +773,41 @@ function MarketInsightsContent() {
     <div className="h-full flex flex-col">
       {/* Main Layout */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Mobile Navigation & Sources Triggers */}
+        {/* Mobile Sources Panel Trigger - positioned to the left of the global menu button */}
         {isMobile && (
-          <div className="absolute top-4 left-4 z-50 flex gap-2">
-            {/* Main Navigation Trigger */}
-            <Button 
-              variant="outline" 
-              size="icon" 
-              className="bg-black/50 backdrop-blur-md border-white/20 text-white hover:bg-white/20"
-              onClick={() => setIsCollapsed(false)}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-
-            {/* Sources Panel Trigger */}
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="bg-black/50 backdrop-blur-md border-white/20 text-white hover:bg-white/20">
-                  <LayoutList className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-80 bg-transparent border-none">
-                <VisuallyHidden>
-                  <SheetTitle>Sources Panel</SheetTitle>
-                  <SheetDescription>List of products and market intelligence history</SheetDescription>
-                </VisuallyHidden>
-                <SourcesPanel
-                  products={products}
-                  selectedProductId={selectedProductId}
-                  onProductSelect={handleProductSelect}
-                  isLoading={productsLoading}
-                  marketIntelligenceStatus={getIntelligenceStatus()}
-                  marketPullEnabled={!!marketIntelligence.data}
-                  activeJobsCount={marketPull.activeJobsCount}
-                  marketIntelligenceHistory={marketIntelligenceHistory}
-                  selectedHistorySessionId={selectedHistorySessionId}
-                  onHistorySelect={handleHistorySelect}
-                  onReset={handleReset}
-                  onRunAnalysis={handleRunIntelligence}
-                  hasData={!!marketIntelligence.data}
-                  className="w-full border-r-0"
-                />
-              </SheetContent>
-            </Sheet>
-          </div>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="absolute top-4 right-16 z-50 bg-black/50 backdrop-blur-md border-white/20 text-white hover:bg-white/20"
+              >
+                <LayoutList className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-80 bg-transparent border-none">
+              <VisuallyHidden>
+                <SheetTitle>Sources Panel</SheetTitle>
+                <SheetDescription>List of products and market intelligence history</SheetDescription>
+              </VisuallyHidden>
+              <SourcesPanel
+                products={products}
+                selectedProductId={selectedProductId}
+                onProductSelect={handleProductSelect}
+                isLoading={productsLoading}
+                marketIntelligenceStatus={getIntelligenceStatus()}
+                marketPullEnabled={!!marketIntelligence.data}
+                activeJobsCount={marketPull.activeJobsCount}
+                marketIntelligenceHistory={marketIntelligenceHistory}
+                selectedHistorySessionId={selectedHistorySessionId}
+                onHistorySelect={handleHistorySelect}
+                onReset={handleReset}
+                onRunAnalysis={handleRunIntelligence}
+                hasData={!!marketIntelligence.data}
+                className="w-full border-r-0"
+              />
+            </SheetContent>
+          </Sheet>
         )}
 
         {/* Desktop Sources Panel */}
