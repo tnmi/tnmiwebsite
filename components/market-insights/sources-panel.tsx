@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 
 interface Product {
   id: string;
-  product_name: string;
+  product_name?: string;
 }
 
 interface MarketIntelligenceHistory {
@@ -31,6 +31,10 @@ interface SourcesPanelProps {
   onReset?: () => void;
   onRunAnalysis?: () => void;
   hasData?: boolean;
+  // Pagination props
+  hasMoreProducts?: boolean;
+  onLoadMoreProducts?: () => void;
+  loadingMoreProducts?: boolean;
 }
 
 export function SourcesPanel({
@@ -47,17 +51,22 @@ export function SourcesPanel({
   onReset,
   onRunAnalysis,
   hasData = false,
+  hasMoreProducts = false,
+  onLoadMoreProducts,
+  loadingMoreProducts = false,
   className
 }: SourcesPanelProps & { className?: string }) {
   return (
     <div className={`h-full bg-white/5 backdrop-blur-3xl border-r border-white/10 p-4 shadow-2xl flex flex-col font-satoshi ${className || 'w-64'}`}>
-      <div className="mb-6">
+      <div className="mb-4 flex-shrink-0">
         <h2 className="text-xs font-semibold text-white/90 uppercase tracking-wider mb-2 font-satoshi">
           SOURCES
         </h2>
       </div>
 
-      <Card className="bg-white/10 backdrop-blur-2xl border border-white/20 shadow-xl hover:shadow-2xl hover:bg-white/15 transition-all duration-300 mb-4 font-satoshi">
+      {/* Scrollable content area */}
+      <div className="flex-1 overflow-y-auto min-h-0 space-y-4 pr-1">
+        <Card className="bg-white/10 backdrop-blur-2xl border border-white/20 shadow-xl hover:shadow-2xl hover:bg-white/15 transition-all duration-300 font-satoshi">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm text-white/95 flex items-center gap-2 font-satoshi">
             <Package className="w-4 h-4 text-white/80" />
@@ -84,30 +93,51 @@ export function SourcesPanel({
                   No products available
                 </div>
               ) : (
-                products.map((product) => (
-                  <SelectItem
-                    key={product.id}
-                    value={product.id}
-                    className="text-white hover:bg-white/20 focus:bg-white/20"
-                  >
-                    {product.product_name || 'Unnamed Product'}
-                  </SelectItem>
-                ))
+                <>
+                  {products.map((product) => (
+                    <SelectItem
+                      key={product.id}
+                      value={product.id}
+                      className="text-white hover:bg-white/20 focus:bg-white/20"
+                    >
+                      {product.product_name || 'Unnamed Product'}
+                    </SelectItem>
+                  ))}
+                  {hasMoreProducts && onLoadMoreProducts && (
+                    <div 
+                      className="py-2 px-3 text-center cursor-pointer hover:bg-white/10 text-white/70 text-sm border-t border-white/10"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        onLoadMoreProducts()
+                      }}
+                    >
+                      {loadingMoreProducts ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <span>Loading more...</span>
+                        </div>
+                      ) : (
+                        'Load more products...'
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </SelectContent>
           </Select>
         </CardContent>
-      </Card>
+        </Card>
 
-      {/* AI Agents Section */}
-      <div className="mb-4">
-        <h2 className="text-xs font-semibold text-white/70 uppercase tracking-wider mb-3 px-2 font-satoshi">
-          AI AGENTS
-        </h2>
-      </div>
+        {/* AI Agents Section */}
+        <div>
+          <h2 className="text-xs font-semibold text-white/70 uppercase tracking-wider mb-3 px-2 font-satoshi">
+            AI AGENTS
+          </h2>
+        </div>
 
-      {/* Market Intelligence Agent */}
-      <Card className="bg-white/10 backdrop-blur-2xl border border-white/20 shadow-xl hover:shadow-2xl hover:bg-white/15 transition-all duration-300 mb-3">
+        {/* Market Intelligence Agent */}
+        <Card className="bg-white/10 backdrop-blur-2xl border border-white/20 shadow-xl hover:shadow-2xl hover:bg-white/15 transition-all duration-300">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm text-white">
             Market Intelligence
@@ -196,39 +226,44 @@ export function SourcesPanel({
             </Button>
           )}
         </CardContent>
-      </Card>
+        </Card>
 
-      {/* Market Pull Agent */}
-      <Card className={`bg-white/10 backdrop-blur-2xl border border-white/20 shadow-xl transition-all duration-300 ${
-        marketPullEnabled ? 'hover:shadow-2xl hover:bg-white/15' : 'opacity-50'
-      }`}>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm text-white">
-            Market Pull
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {marketPullEnabled ? (
-            <>
-              {activeJobsCount > 0 && (
-                <p className="text-xs text-white/70">
-                  {activeJobsCount} active job{activeJobsCount !== 1 ? 's' : ''}
+        {/* Market Pull Agent */}
+        <Card className={`bg-white/10 backdrop-blur-2xl border border-white/20 shadow-xl transition-all duration-300 ${
+          marketPullEnabled ? 'hover:shadow-2xl hover:bg-white/15' : 'opacity-50'
+        }`}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm text-white">
+              Market Pull
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {marketPullEnabled ? (
+              <>
+                {activeJobsCount > 0 && (
+                  <p className="text-xs text-white/70">
+                    {activeJobsCount} active job{activeJobsCount !== 1 ? 's' : ''}
+                  </p>
+                )}
+                <p className="text-xs text-white/70 mt-2">
+                  Deep-dives into segments
                 </p>
-              )}
-              <p className="text-xs text-white/70 mt-2">
-                Deep-dives into segments
+              </>
+            ) : (
+              <p className="text-xs text-white/70">
+                Run Market Intelligence first to unlock segment analysis
               </p>
-            </>
-          ) : (
-            <p className="text-xs text-white/70">
-              Run Market Intelligence first to unlock segment analysis
-            </p>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
-      <div className="mt-auto pt-4 text-xs text-white/70 font-medium border-t border-white/10">
-        <p className="mb-3">{products.length} product{products.length !== 1 ? 's' : ''} available</p>
+      {/* Footer - fixed at bottom */}
+      <div className="flex-shrink-0 pt-4 text-xs text-white/70 font-medium border-t border-white/10">
+        <p className="mb-3">
+          {products.length} product{products.length !== 1 ? 's' : ''} loaded
+          {hasMoreProducts && ' (more available)'}
+        </p>
       </div>
     </div>
   );

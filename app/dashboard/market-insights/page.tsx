@@ -5,6 +5,7 @@ import { useAuthStore } from "@/lib/store"
 import { useToast } from "@/components/ui/use-toast"
 import { useMarketIntelligence } from "@/hooks/use-market-intelligence"
 import { useMarketPull } from "@/hooks/use-market-pull"
+import { useProducts } from "@/hooks/use-products"
 import { marketIntelligenceAPI } from "@/lib/market-intelligence-api"
 import { SourcesPanel } from "@/components/market-insights/sources-panel"
 import { MarketTree } from "@/components/market-insights/market-tree"
@@ -23,14 +24,12 @@ const LightRays = dynamic(
   { ssr: false }
 )
 
-interface Product {
-  id: string;
-  product_name: string;
-}
+// Re-export Product type from the hook (with product_name optional)
+import type { Product } from "@/hooks/use-products"
 
 export default function MarketInsightsPage() {
   return (
-    <div className="relative w-full h-full overflow-hidden bg-black font-satoshi">
+    <div className="relative w-full h-full overflow-hidden bg-gray-900 font-satoshi">
       {/* Background Light Rays */}
       <div className="absolute inset-0 z-0">
         <LightRays
@@ -91,14 +90,20 @@ function MarketInsightsContent() {
   const { user } = useAuthStore()
   const { toast } = useToast()
   
+  // Products Hook (with pagination) - replaces manual fetch
+  const { 
+    products, 
+    loading: productsLoading, 
+    hasMore: hasMoreProducts,
+    loadMore: loadMoreProducts 
+  } = useProducts({ pageSize: 20, autoLoad: true })
+  
   // State
-  const [products, setProducts] = useState<Product[]>([])
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [treeData, setTreeData] = useState<TreeNodeData | null>(null)
   const [selectedSegment, setSelectedSegment] = useState<string | null>(null)
   const [panelViewMode, setPanelViewMode] = useState<'details' | 'analysis'>('details')
-  const [productsLoading, setProductsLoading] = useState(true)
   const [jobHistory, setJobHistory] = useState<any[]>([])
   const [marketIntelligenceHistory, setMarketIntelligenceHistory] = useState<any[]>([])
   const [selectedHistorySessionId, setSelectedHistorySessionId] = useState<string | null>(null)
@@ -184,43 +189,16 @@ function MarketInsightsContent() {
     }
   };
 
-  // Fetch products
+  // Auto-load last selected product when products are loaded
   useEffect(() => {
-    const fetchProducts = async () => {
-      if (!user?.uid) return
-      
-      try {
-        const token = await user.getIdToken()
-        const response = await fetch('/api/products', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        })
-        
-        if (response.ok) {
-          const data = await response.json()
-          // Check if data.products exists, otherwise fallback to data if it's an array
-          const productsList = data.products || (Array.isArray(data) ? data : [])
-          setProducts(productsList)
-          
-          // Auto-load last selected product
-          const lastProductId = localStorage.getItem(`mi_last_product_${user.uid}`)
-          if (lastProductId && !selectedProductId && productsList.find((p: Product) => p.id === lastProductId)) {
-            handleProductSelect(lastProductId)
-          }
-        } else {
-          throw new Error(`Failed to fetch products: ${response.status}`)
-        }
-      } catch (error) {
-        console.error('Error fetching products:', error)
-      } finally {
-        setProductsLoading(false)
-      }
+    if (!user?.uid || products.length === 0 || selectedProductId) return
+    
+    const lastProductId = localStorage.getItem(`mi_last_product_${user.uid}`)
+    if (lastProductId && products.find((p: Product) => p.id === lastProductId)) {
+      handleProductSelect(lastProductId)
     }
-
-      fetchProducts()
-  }, [user])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid, products.length])
 
   // Check for cached Market Intelligence results when product is selected
   useEffect(() => {
@@ -333,7 +311,7 @@ function MarketInsightsContent() {
           const treeNode: TreeNodeData = {
             id: selectedProduct.id,
             type: 'product',
-            label: selectedProduct.product_name,
+            label: selectedProduct.product_name || 'Unnamed Product',
             description: `${segments.length} market segments identified`,
             hasData: true, // We have data
             children: segments.map((segment) => {
@@ -456,7 +434,7 @@ function MarketInsightsContent() {
         const treeNode: TreeNodeData = {
           id: selectedProduct.id,
           type: 'product',
-          label: selectedProduct.product_name,
+          label: selectedProduct.product_name || 'Unnamed Product',
           description: 'Run Market Intelligence to identify market segments',
           hasData: false, // No data yet
           status: marketIntelligence.loading ? 'running' : 'idle', // Show analyzing state if loading
@@ -626,7 +604,7 @@ function MarketInsightsContent() {
 
       await marketPull.startPull(
         segmentName,
-        selectedProduct.product_name,
+        selectedProduct.product_name || 'Unnamed Product',
         selectedProduct.id,
         segmentName // Using segment name as industry for now
       )
@@ -804,6 +782,8 @@ function MarketInsightsContent() {
                 onReset={handleReset}
                 onRunAnalysis={handleRunIntelligence}
                 hasData={!!marketIntelligence.data}
+                hasMoreProducts={hasMoreProducts}
+                onLoadMoreProducts={loadMoreProducts}
                 className="w-full border-r-0"
               />
             </SheetContent>
@@ -826,6 +806,8 @@ function MarketInsightsContent() {
           onReset={handleReset}
           onRunAnalysis={handleRunIntelligence}
           hasData={!!marketIntelligence.data}
+          hasMoreProducts={hasMoreProducts}
+          onLoadMoreProducts={loadMoreProducts}
         />
         )}
 

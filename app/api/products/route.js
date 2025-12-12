@@ -9,8 +9,18 @@ export async function GET(request) {
       })
     }
     
+    // Extract pagination parameters from the request URL
+    const { searchParams } = new URL(request.url)
+    const limit = searchParams.get('limit')
+    const offset = searchParams.get('offset')
+    
+    // Build the backend URL with pagination params
+    const backendUrl = new URL('https://northstar-backend-194429268019.us-central1.run.app/products')
+    if (limit) backendUrl.searchParams.append('limit', limit)
+    if (offset) backendUrl.searchParams.append('offset', offset)
+    
     // Forward the request to the external endpoint
-    const response = await fetch('https://northstar-backend-194429268019.us-central1.run.app/products', {
+    const response = await fetch(backendUrl.toString(), {
       method: 'GET',
       headers: {
         'Authorization': authHeader
@@ -29,9 +39,18 @@ export async function GET(request) {
     
     const products = await response.json()
 
+    // Forward cache headers from backend if present
+    const cacheControl = response.headers.get('cache-control')
+    const responseHeaders = {
+      'Content-Type': 'application/json',
+    }
+    if (cacheControl) {
+      responseHeaders['Cache-Control'] = cacheControl
+    }
+
     return new Response(JSON.stringify(products), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: responseHeaders,
     })
     
   } catch (error) {

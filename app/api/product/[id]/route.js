@@ -12,7 +12,17 @@ export async function GET(request, { params }) {
     
     const token = authHeader.split(' ')[1]
     
-    const response = await fetch(`https://northstar-backend-194429268019.us-central1.run.app/product/${id}`, {
+    // Check for include_files query parameter
+    const { searchParams } = new URL(request.url)
+    const includeFiles = searchParams.get('include_files') === 'true'
+    
+    // Build backend URL with optional include_files param
+    const backendUrl = new URL(`https://northstar-backend-194429268019.us-central1.run.app/product/${id}`)
+    if (includeFiles) {
+      backendUrl.searchParams.append('include_files', 'true')
+    }
+    
+    const response = await fetch(backendUrl.toString(), {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -22,9 +32,18 @@ export async function GET(request, { params }) {
     
     const data = await response.json()
     
+    // Forward cache headers from backend if present
+    const cacheControl = response.headers.get('cache-control')
+    const responseHeaders = {
+      'Content-Type': 'application/json',
+    }
+    if (cacheControl) {
+      responseHeaders['Cache-Control'] = cacheControl
+    }
+    
     return new Response(JSON.stringify(data), {
       status: response.status,
-      headers: { 'Content-Type': 'application/json' },
+      headers: responseHeaders,
     })
   } catch (error) {
     console.error('Error fetching product:', error)

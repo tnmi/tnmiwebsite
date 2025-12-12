@@ -6,13 +6,14 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, FileText, Pencil, X, Trash2, Download, Loader2 } from "lucide-react"
+import { Plus, FileText, Pencil, X, Trash2, Download, Loader2, ChevronDown } from "lucide-react"
 import { getDbInstance, getStorageInstance } from "@/lib/firebase"
 import { collection, addDoc, getDocs, DocumentData, serverTimestamp, query, where, updateDoc, deleteDoc, doc } from "firebase/firestore"
 import { useAuthStore } from "@/lib/store"
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage"
 import { useLanguage } from "@/lib/i18n"
 import { useToast } from "@/components/ui/use-toast"
+import { useProducts, useProductFiles, type Product, type ProductFile } from "@/hooks/use-products"
 import dynamic from 'next/dynamic'
 
 // Lazy load LightRays to prevent SSR issues
@@ -21,32 +22,24 @@ const LightRays = dynamic(
   { ssr: false }
 )
 
-interface ProductFile {
-  id: string;
-  original_filename: string;
-  category: string;
-  download_url: string | null;
-  content_type?: string;
-  uploaded_at: string;
-}
-
-interface Product {
-  id: string;
-  product_name?: string;
-  description?: string;
-  trl_level?: string;
-  files_by_category: Record<"general"|"sds"|"coa"|"lab_reports"|"analyzer_logs"|"calibration_docs", string[]>;
-  files: Record<string, ProductFile[]>;
-  created_at?: string;
-  user_id?: string;
-}
+// Product and ProductFile types are imported from use-products hook
 
 export default function MyProductsPage() {
   const { t } = useLanguage()
   const { toast } = useToast()
-  const [products, setProducts] = useState<Product[]>([])
+  const user = useAuthStore((state) => state.user)
+  
+  // Products hook with pagination (replaces manual fetch)
+  const {
+    products,
+    loading: productsLoading,
+    loadingMore,
+    hasMore,
+    loadMore,
+    refresh: refreshProducts
+  } = useProducts({ pageSize: 20, autoLoad: true })
+  
   const [showModal, setShowModal] = useState(false)
-
   const [modalProduct, setModalProduct] = useState<Product | null>(null)
   const [name, setName] = useState("")
   const [trlLevel, setTrlLevel] = useState("")
@@ -70,8 +63,6 @@ export default function MyProductsPage() {
   const [editing, setEditing] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deletingFileId, setDeletingFileId] = useState<string | null>(null)
-  const [productsLoading, setProductsLoading] = useState(true)
-  const user = useAuthStore((state) => state.user)
 
   // Function to remove a file from a specific category
   const removeFileFromCategory = (category: keyof typeof files, fileIndex: number) => {
@@ -81,38 +72,7 @@ export default function MyProductsPage() {
     }))
   }
 
-  const fetchProducts = async () => {
-    if (!user) return;
-    
-    setProductsLoading(true)
-    try {
-      const token = await user.getIdToken()
-      const response = await fetch('/api/products', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch products: ${response.status}`)
-      }
-      
-      const data = await response.json()
-      // Ensure products is always an array
-      const productsArray = Array.isArray(data) ? data : (data.products || data.data || [])
-      setProducts(productsArray)
-    } catch (err) {
-      console.error('Error fetching products:', err)
-      setProducts([]) // Set empty array on error
-    } finally {
-      setProductsLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    if (user) fetchProducts();
-  }, [user]);
+  // Products are now fetched automatically by useProducts hook
 
   // Add backdrop to body when modal is open
   useEffect(() => {
@@ -265,7 +225,7 @@ export default function MyProductsPage() {
       })
       
       // Refresh product list
-      await fetchProducts()
+      await refreshProducts()
       
       // Close modal
       setShowModal(false)
@@ -396,7 +356,7 @@ export default function MyProductsPage() {
         }
       })
       
-      await fetchProducts()
+      await refreshProducts()
       setShowModal(false)
       setModalProduct(null)
       setEditMode(false)
@@ -434,7 +394,7 @@ export default function MyProductsPage() {
         throw new Error(`Failed to delete product: ${response.statusText}`)
       }
       
-      await fetchProducts()
+      await refreshProducts()
       setShowModal(false)
       setModalProduct(null)
     } catch (err: any) {
@@ -520,7 +480,7 @@ export default function MyProductsPage() {
       }
       
       // Refresh product list
-      await fetchProducts()
+      await refreshProducts()
       
     } catch (err) {
       console.error('Error deleting file:', err)
@@ -588,7 +548,7 @@ export default function MyProductsPage() {
   }
 
   return (
-    <div className="relative flex flex-col h-full w-full overflow-hidden bg-black">
+    <div className="relative flex flex-col h-full w-full overflow-hidden bg-gray-900">
       {/* Light Rays Background */}
       <div className="absolute inset-0 z-0">
         <LightRays
@@ -625,43 +585,71 @@ export default function MyProductsPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 px-4 sm:px-6 pb-6">
-            {/* + Card */}
-            <Card className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-500 cursor-pointer group shadow-xl hover:shadow-2xl">
-              <CardContent className="flex flex-col items-center justify-center h-40 sm:h-48 p-4 sm:p-6" onClick={openAddModal}>
-                <Plus className="w-10 sm:w-12 h-10 sm:h-12 text-white/90 mb-2 sm:mb-3 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
-                <span className="text-white font-light tracking-wide text-center drop-shadow-sm text-sm sm:text-base">{t('uploadProduct')}</span>
-              </CardContent>
-            </Card>
-            
-            {/* Product Cards */}
-            {Array.isArray(products) && products.map((prod, idx) => {
-              const totalFiles = Object.values(prod.files || {}).reduce((sum, fileArray) => sum + fileArray.length, 0)
-              return (
-                <Card key={idx} className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-500 cursor-pointer group shadow-xl hover:shadow-2xl" onClick={() => openProductModal(prod)}>
-                  <CardContent className="p-4 sm:p-6 h-40 sm:h-48 flex flex-col">
-                    <div className="flex-1">
-                      <h3 className="font-medium text-base sm:text-lg mb-2 sm:mb-3 text-white truncate tracking-wide drop-shadow-sm" title={prod.product_name}>
-                        {prod.product_name || 'Unnamed Product'}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-white/80 mb-1 sm:mb-2 font-light tracking-wide drop-shadow-sm">
-                        {prod.trl_level && `TRL Level: ${prod.trl_level}`}
-                      </p>
-                      <p className="text-xs text-white/70 line-clamp-2 sm:line-clamp-3 font-light tracking-wide leading-relaxed drop-shadow-sm">
-                        {prod.description || t('noDescription')}
-                      </p>
-                    </div>
-                    {totalFiles > 0 && (
-                      <div className="flex items-center mt-2 sm:mt-3 text-xs text-white/80">
-                        <FileText className="w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2" />
-                        <span className="font-light tracking-wide drop-shadow-sm">{totalFiles} file{totalFiles > 1 ? 's' : ''} attached</span>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 px-4 sm:px-6 pb-6">
+              {/* + Card */}
+              <Card className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-500 cursor-pointer group shadow-xl hover:shadow-2xl">
+                <CardContent className="flex flex-col items-center justify-center h-40 sm:h-48 p-4 sm:p-6" onClick={openAddModal}>
+                  <Plus className="w-10 sm:w-12 h-10 sm:h-12 text-white/90 mb-2 sm:mb-3 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
+                  <span className="text-white font-light tracking-wide text-center drop-shadow-sm text-sm sm:text-base">{t('uploadProduct')}</span>
+                </CardContent>
+              </Card>
+              
+              {/* Product Cards */}
+              {Array.isArray(products) && products.map((prod, idx) => {
+                // Use file_counts if available (new API), fallback to counting files (old API)
+                const totalFiles = prod.total_files ?? 
+                  (prod.file_counts ? Object.values(prod.file_counts).reduce((sum, count) => sum + count, 0) : 0) ??
+                  (prod.files ? Object.values(prod.files).reduce((sum, fileArray) => sum + fileArray.length, 0) : 0)
+                return (
+                  <Card key={prod.id || idx} className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-500 cursor-pointer group shadow-xl hover:shadow-2xl" onClick={() => openProductModal(prod)}>
+                    <CardContent className="p-4 sm:p-6 h-40 sm:h-48 flex flex-col">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-base sm:text-lg mb-2 sm:mb-3 text-white truncate tracking-wide drop-shadow-sm" title={prod.product_name}>
+                          {prod.product_name || 'Unnamed Product'}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-white/80 mb-1 sm:mb-2 font-light tracking-wide drop-shadow-sm">
+                          {prod.trl_level && `TRL Level: ${prod.trl_level}`}
+                        </p>
+                        <p className="text-xs text-white/70 line-clamp-2 sm:line-clamp-3 font-light tracking-wide leading-relaxed drop-shadow-sm">
+                          {prod.description || t('noDescription')}
+                        </p>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
+                      {totalFiles > 0 && (
+                        <div className="flex items-center mt-2 sm:mt-3 text-xs text-white/80">
+                          <FileText className="w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2" />
+                          <span className="font-light tracking-wide drop-shadow-sm">{totalFiles} file{totalFiles > 1 ? 's' : ''} attached</span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+            
+            {/* Load More Button */}
+            {hasMore && (
+              <div className="flex justify-center px-4 sm:px-6 pb-6">
+                <Button
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 text-white font-light tracking-wide transition-all duration-200"
+                >
+                  {loadingMore ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Loading more...
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-4 h-4 mr-2" />
+                      Load More Products
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
