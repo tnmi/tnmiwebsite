@@ -1,7 +1,7 @@
 // Proxy for Market Intelligence History API - Forwards to secure backend wrapper
 
-// Market Intelligence uses a different backend than Market Research
-const MARKET_INTELLIGENCE_API_URL = process.env.MARKET_INTELLIGENCE_API_URL || 'https://market-intelligence-agent-194429268019.us-central1.run.app';
+// Market Intelligence backend URL
+const MARKET_INTELLIGENCE_API_URL = process.env.MARKET_INTELLIGENCE_API_URL || 'https://northstar-backend-194429268019.us-central1.run.app';
 
 // Handle OPTIONS request for CORS preflight
 export async function OPTIONS(request) {
@@ -52,15 +52,14 @@ export async function GET(request) {
       );
     }
 
-    // 3. Forward to secure backend wrapper
-    // Note: This endpoint uses query params but market-intelligence-agent may not support it
-    const backendUrl = `${MARKET_INTELLIGENCE_API_URL}/api/v1/history?product_id=${encodeURIComponent(product_id)}&limit=${encodeURIComponent(limit)}`;
-    
-    const response = await fetch(backendUrl, {
-      method: 'GET',
+    // 3. Forward to backend (history is exposed via POST /api/market-intelligence/history/query)
+    const response = await fetch(`${MARKET_INTELLIGENCE_API_URL}/api/market-intelligence/history/query`, {
+      method: 'POST',
       headers: {
         'Authorization': authHeader, // Forward the auth token
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ product_id, limit: Number(limit) }),
     });
 
     if (!response.ok) {

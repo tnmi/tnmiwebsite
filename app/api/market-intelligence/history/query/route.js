@@ -1,8 +1,8 @@
 // Secure POST endpoint for Market Intelligence History API
 // Replaces GET endpoint to prevent IDs from appearing in URLs/logs
 
-// Market Intelligence uses a different backend than Market Research
-const MARKET_INTELLIGENCE_API_URL = process.env.MARKET_INTELLIGENCE_API_URL || 'https://market-intelligence-agent-194429268019.us-central1.run.app';
+// Market Intelligence backend URL
+const MARKET_INTELLIGENCE_API_URL = process.env.MARKET_INTELLIGENCE_API_URL || 'https://northstar-backend-194429268019.us-central1.run.app';
 
 // Handle OPTIONS request for CORS preflight
 export async function OPTIONS(request) {
@@ -67,23 +67,14 @@ export async function POST(request) {
       );
     }
 
-    // 3. Forward to secure backend wrapper
-    // Market Intelligence Agent uses path parameters: /api/v1/history/{user_id}/{product_id}
-    // If user_id is provided, use path-based endpoint; otherwise try query-based
-    let backendUrl;
-    if (user_id) {
-      backendUrl = `${MARKET_INTELLIGENCE_API_URL}/api/v1/history/${encodeURIComponent(user_id)}/${encodeURIComponent(product_id)}`;
-    } else {
-      // Fallback: try query-based endpoint (backend should extract user_id from token)
-      backendUrl = `${MARKET_INTELLIGENCE_API_URL}/api/v1/history?product_id=${encodeURIComponent(product_id)}&limit=${encodeURIComponent(limit)}`;
-    }
-    
-    const response = await fetch(backendUrl, {
-      method: 'GET',
+    // 3. Forward to backend (this backend exposes history via POST /api/market-intelligence/history/query)
+    const response = await fetch(`${MARKET_INTELLIGENCE_API_URL}/api/market-intelligence/history/query`, {
+      method: 'POST',
       headers: {
         'Authorization': authHeader, // Forward the auth token
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ product_id, user_id, limit, production }),
     });
 
     if (!response.ok) {
