@@ -3,6 +3,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import GoogleAnalytics from "@/components/GoogleAnalytics"
 import Chatbot from "@/components/Chatbot"
+import { Analytics } from "@vercel/analytics/next"
 
 export const metadata = {
   metadataBase: new URL('https://truenorthmaterials.com'),
@@ -150,6 +151,7 @@ export default function RootLayout({
           <div className="fixed bottom-4 right-4 z-[9999]">
           <Chatbot />  {/* Added the chatbot here */}
           </div>
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>
