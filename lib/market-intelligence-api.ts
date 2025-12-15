@@ -54,28 +54,42 @@ export interface MarketPullResponse {
   job_id: string;
   status: string;
   message: string;
-  user_id: string;
-  product_id: string;
+  estimated_duration_minutes?: number;
+  // These may or may not be present depending on backend version
+  user_id?: string;
+  product_id?: string;
 }
+
+export interface AgentReport {
+  analysis: string; // Markdown content
+  sources: string[]; // Source URLs
+}
+
+export type MarketPullSection =
+  | 'industry_report'
+  | 'supply_chain'
+  | 'consumer_demand'
+  | 'regulatory'
+  | 'financial';
+
+export type MarketPullReports = Partial<Record<MarketPullSection, AgentReport>>;
 
 export interface JobStatusResponse {
   job_id: string;
   status: 'running' | 'completed' | 'failed';
   started_at: string;
-  completed_at?: string;
+  completed_at?: string | null;
   user_id: string;
   product_id: string;
-  environment: string;
+  environment: 'production' | 'development' | string;
   input_data?: any;
+  // NEW: clean progressive results while running
+  partial_output?: MarketPullReports;
+  // NEW: final results when completed
+  final_output?: MarketPullReports | null;
+  // Debug only (when ?debug=1)
   steps?: any[];
-  final_output?: {
-    industry_report: string;
-    supply_chain: string;
-    consumer_demand: string;
-    regulatory: string;
-    financial: string;
-  };
-  error?: string;
+  error?: string | null;
 }
 
 export interface UserJob {

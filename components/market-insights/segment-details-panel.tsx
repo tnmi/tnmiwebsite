@@ -16,6 +16,7 @@ import {
 import { X, Download, ExternalLink, ChevronDown, Clock, Loader2, RefreshCw, PieChart, AlignLeft, TrendingUp, BarChart3 } from "lucide-react"
 import { JobStatusResponse } from "@/lib/market-intelligence-api"
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { useState, useMemo } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, TooltipProps } from 'recharts';
 
@@ -64,24 +65,49 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>)
 };
 
 // Helper function to clean and format analysis text
-function cleanAnalysisText(text: string): string {
-  if (!text) return '';
+function cleanAnalysisText(text: unknown): string {
+  if (text === null || text === undefined) return '';
+  if (typeof text !== 'string') {
+    try {
+      return JSON.stringify(text, null, 2);
+    } catch {
+      return String(text);
+    }
+  }
   
+  const original = text;
   let cleaned = text;
   
-  // Check if the text starts with JSON structure like { "analysis": "..."
-  // This happens when the API returns improperly formatted data
-  const jsonMatch = cleaned.match(/^\s*\{\s*"analysis"\s*:\s*"([\s\S]*)$/);
-  if (jsonMatch) {
-    // Extract just the content after "analysis": "
-    cleaned = jsonMatch[1];
-    
-    // Remove trailing quotes and brackets if present
-    cleaned = cleaned.replace(/["}]+\s*$/g, '');
+  // Many agent steps return a JSON string that wraps the markdown in an "analysis" field.
+  // Example: {"analysis":"# ...markdown...","sources":[...],...}
+  // Try strict parse first; fallback to extraction if output is truncated.
+  const trimmed = cleaned.trim();
+  if (trimmed.startsWith('{') && trimmed.includes('"analysis"')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed && typeof parsed.analysis === 'string') {
+        cleaned = parsed.analysis;
+      }
+    } catch {
+      // Fallback: extract the "analysis" value up to the next key
+      const m = trimmed.match(
+        /"analysis"\s*:\s*"([\s\S]*?)"\s*,\s*"(sources|source_quality|scope_validation|supply_tightness|buyer_impact_score)"/
+      );
+      if (m?.[1]) cleaned = m[1];
+    }
+  }
+  
+  // Fallback of last resort: if we still have the wrapper and can find markdown,
+  // start from the first markdown heading.
+  if (cleaned.includes('"analysis"') && !cleaned.trim().startsWith('#')) {
+    const idx = cleaned.indexOf('#');
+    if (idx >= 0) cleaned = cleaned.slice(idx);
   }
   
   // Replace escaped newlines with actual newlines
-  cleaned = cleaned.replace(/\\n/g, '\n');
+  cleaned = cleaned.replace(/\\\\n/g, '\n'); // literal \n
+  cleaned = cleaned.replace(/\\n/g, '\n');   // escaped newlines
+  cleaned = cleaned.replace(/\\\r?\n/g, '\n'); // line-continuation backslashes
   
   // Replace escaped quotes
   cleaned = cleaned.replace(/\\"/g, '"');
@@ -112,8 +138,28 @@ function cleanAnalysisText(text: string): string {
   // Clean up excessive whitespace
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
   cleaned = cleaned.trim();
-  
-  return cleaned;
+  return cleaned || original.trim();
+}
+
+function normalizeSources(sources: any): string[] {
+  if (!Array.isArray(sources)) return [];
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const s0 of sources) {
+    if (typeof s0 !== 'string') continue;
+    let s = s0.trim();
+    // Remove escaped newlines / whitespace inside URLs
+    s = s.replace(/\\n/g, '').replace(/\s+/g, '');
+    // Drop obviously broken placeholders
+    if (s.includes('...')) continue;
+    // Trim trailing junk
+    s = s.replace(/[\\_]+$/g, '');
+    if (!/^https?:\/\//i.test(s)) continue;
+    if (seen.has(s)) continue;
+    seen.add(s);
+    out.push(s);
+  }
+  return out;
 }
 
 // Helper function to get agent data from steps
@@ -125,7 +171,7 @@ function getAgentData(jobResult: JobStatusResponse, agentName: string) {
   
   return {
     analysis: cleanAnalysisText(step.output.analysis || ''),
-    sources: step.output.sources || [],
+    sources: normalizeSources(step.output.sources || []),
     timestamp: step.timestamp
   };
 }
@@ -143,6 +189,15 @@ export function SegmentDetailsPanel({
 }: SegmentDetailsPanelProps) {
   const [selectedVersion, setSelectedVersion] = useState<'current' | string>('current');
   const [refreshing, setRefreshing] = useState(false);
+
+  const markdownComponents = {
+    a: ({ node, ...props }: any) => (
+      <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:text-blue-200 underline" />
+    ),
+    p: ({ node, ...props }: any) => <p {...props} className="mb-4" />,
+    ul: ({ node, ...props }: any) => <ul {...props} className="list-disc pl-6 mb-4 space-y-2" />,
+    ol: ({ node, ...props }: any) => <ol {...props} className="list-decimal pl-6 mb-4 space-y-2" />,
+  };
 
   // Process time series data for chart
   const chartData = useMemo(() => {
@@ -366,7 +421,9 @@ export function SegmentDetailsPanel({
 
   // PRIORITIZE final_output as it contains the complete consolidated reports
   // The steps array contains intermediate/truncated analysis
-  const hasFinalOutput = jobResult.final_output;
+  const hasFinalOutput =
+    !!jobResult.final_output &&
+    typeof (jobResult.final_output as any).industry_report !== 'undefined';
   
   // Check if steps have additional fields we can use
   if (jobResult.steps && jobResult.steps.length > 0) {
@@ -411,11 +468,11 @@ export function SegmentDetailsPanel({
     } else if (hasFinalOutput) {
       // Fallback to final_output
       const final_output = jobResult.final_output!;
-      content += `================================================================================\nINDUSTRY REPORT\n================================================================================\n${final_output.industry_report}\n\n`;
-      content += `================================================================================\nSUPPLY CHAIN ANALYSIS\n================================================================================\n${final_output.supply_chain}\n\n`;
-      content += `================================================================================\nCONSUMER DEMAND\n================================================================================\n${final_output.consumer_demand}\n\n`;
-      content += `================================================================================\nREGULATORY LANDSCAPE\n================================================================================\n${final_output.regulatory}\n\n`;
-      content += `================================================================================\nFINANCIAL ANALYSIS\n================================================================================\n${final_output.financial}`;
+      content += `================================================================================\nINDUSTRY REPORT\n================================================================================\n${final_output.industry_report?.analysis || 'N/A'}\n\nSources:\n${final_output.industry_report?.sources?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n\n`;
+      content += `================================================================================\nSUPPLY CHAIN ANALYSIS\n================================================================================\n${final_output.supply_chain?.analysis || 'N/A'}\n\nSources:\n${final_output.supply_chain?.sources?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n\n`;
+      content += `================================================================================\nCONSUMER DEMAND\n================================================================================\n${final_output.consumer_demand?.analysis || 'N/A'}\n\nSources:\n${final_output.consumer_demand?.sources?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n\n`;
+      content += `================================================================================\nREGULATORY LANDSCAPE\n================================================================================\n${final_output.regulatory?.analysis || 'N/A'}\n\nSources:\n${final_output.regulatory?.sources?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n\n`;
+      content += `================================================================================\nFINANCIAL ANALYSIS\n================================================================================\n${final_output.financial?.analysis || 'N/A'}\n\nSources:\n${final_output.financial?.sources?.map((s: string) => `- ${s}`).join('\n') || 'None'}`;
     }
 
     // Create blob and download
@@ -523,7 +580,7 @@ export function SegmentDetailsPanel({
             <TabsList className="grid w-full grid-cols-5 bg-transparent border-b border-white/10 h-12">
               <TabsTrigger value="industry" className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-white text-white/70 rounded-none border-b-2 border-transparent">Industry</TabsTrigger>
               <TabsTrigger value="supply-chain" className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-white text-white/70 rounded-none border-b-2 border-transparent">Supply Chain</TabsTrigger>
-              <TabsTrigger value="news" className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-white text-white/70 rounded-none border-b-2 border-transparent">News</TabsTrigger>
+              <TabsTrigger value="news" className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-white text-white/70 rounded-none border-b-2 border-transparent">Consumer</TabsTrigger>
               <TabsTrigger value="regulatory" className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-white text-white/70 rounded-none border-b-2 border-transparent">Regulatory</TabsTrigger>
               <TabsTrigger value="financial" className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-white text-white/70 rounded-none border-b-2 border-transparent">Financial</TabsTrigger>
             </TabsList>
@@ -537,47 +594,38 @@ export function SegmentDetailsPanel({
                   <div className="bg-white/15 backdrop-blur-xl border border-white/30 rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-white mb-4">Market Demand Analysis</h3>
                     {hasFinalOutput ? (
-                      <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
-                        <ReactMarkdown
-                          components={{
-                            a: ({node, ...props}) => (
-                              <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:text-blue-200 underline" />
-                            ),
-                            p: ({node, ...props}) => (
-                              <p {...props} className="mb-4" />
-                            ),
-                            ul: ({node, ...props}) => (
-                              <ul {...props} className="list-disc pl-6 mb-4 space-y-2" />
-                            ),
-                            ol: ({node, ...props}) => (
-                              <ol {...props} className="list-decimal pl-6 mb-4 space-y-2" />
-                            ),
-                          }}
-                        >
-                          {cleanAnalysisText(jobResult.final_output!.industry_report)}
-                        </ReactMarkdown>
-                      </div>
+                      <>
+                        <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                            {cleanAnalysisText(jobResult.final_output!.industry_report?.analysis || '')}
+                          </ReactMarkdown>
+                        </div>
+                        {(jobResult.final_output!.industry_report?.sources?.length || 0) > 0 && (
+                          <div className="mt-6 pt-4 border-t border-white/20">
+                            <h4 className="text-sm font-semibold text-white/80 mb-2">Sources</h4>
+                            <div className="space-y-1">
+                              {jobResult.final_output!.industry_report!.sources.map((source: string, idx: number) => (
+                                <a
+                                  key={idx}
+                                  href={source}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-300 hover:text-blue-200 flex items-center gap-1"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                  {source}
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     ) : industryData ? (
                       <>
                         <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
                           <ReactMarkdown
-                            components={{
-                              // Custom link rendering
-                              a: ({node, ...props}) => (
-                                <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:text-blue-200 underline" />
-                              ),
-                              // Better paragraph spacing
-                              p: ({node, ...props}) => (
-                                <p {...props} className="mb-4" />
-                              ),
-                              // Better list styling
-                              ul: ({node, ...props}) => (
-                                <ul {...props} className="list-disc pl-6 mb-4 space-y-2" />
-                              ),
-                              ol: ({node, ...props}) => (
-                                <ol {...props} className="list-decimal pl-6 mb-4 space-y-2" />
-                              ),
-                            }}
+                            remarkPlugins={[remarkGfm]}
+                            components={markdownComponents}
                           >
                             {industryData.analysis}
                           </ReactMarkdown>
@@ -618,44 +666,38 @@ export function SegmentDetailsPanel({
                   <div className="bg-white/15 backdrop-blur-xl border border-white/30 rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-white mb-4">Supply Chain Insights</h3>
                     {hasFinalOutput ? (
-                      <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
-                        <ReactMarkdown
-                          components={{
-                            a: ({node, ...props}) => (
-                              <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:text-blue-200 underline" />
-                            ),
-                            p: ({node, ...props}) => (
-                              <p {...props} className="mb-4" />
-                            ),
-                            ul: ({node, ...props}) => (
-                              <ul {...props} className="list-disc pl-6 mb-4 space-y-2" />
-                            ),
-                            ol: ({node, ...props}) => (
-                              <ol {...props} className="list-decimal pl-6 mb-4 space-y-2" />
-                            ),
-                          }}
-                        >
-                          {cleanAnalysisText(jobResult.final_output!.supply_chain)}
-                        </ReactMarkdown>
-                      </div>
+                      <>
+                        <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                            {cleanAnalysisText(jobResult.final_output!.supply_chain?.analysis || '')}
+                          </ReactMarkdown>
+                        </div>
+                        {(jobResult.final_output!.supply_chain?.sources?.length || 0) > 0 && (
+                          <div className="mt-6 pt-4 border-t border-white/20">
+                            <h4 className="text-sm font-semibold text-white/80 mb-2">Sources</h4>
+                            <div className="space-y-1">
+                              {jobResult.final_output!.supply_chain!.sources.map((source: string, idx: number) => (
+                                <a
+                                  key={idx}
+                                  href={source}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-300 hover:text-blue-200 flex items-center gap-1"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                  {source}
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     ) : supplyChainData ? (
                       <>
                         <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
                           <ReactMarkdown
-                            components={{
-                              a: ({node, ...props}) => (
-                                <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:text-blue-200 underline" />
-                              ),
-                              p: ({node, ...props}) => (
-                                <p {...props} className="mb-4" />
-                              ),
-                              ul: ({node, ...props}) => (
-                                <ul {...props} className="list-disc pl-6 mb-4 space-y-2" />
-                              ),
-                              ol: ({node, ...props}) => (
-                                <ol {...props} className="list-decimal pl-6 mb-4 space-y-2" />
-                              ),
-                            }}
+                            remarkPlugins={[remarkGfm]}
+                            components={markdownComponents}
                           >
                             {cleanAnalysisText(supplyChainData.analysis)}
                           </ReactMarkdown>
@@ -694,46 +736,40 @@ export function SegmentDetailsPanel({
                 {/* News Tab */}
                 <TabsContent value="news" className="mt-6">
                   <div className="bg-white/15 backdrop-blur-xl border border-white/30 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-white mb-4">Recent Developments</h3>
+                    <h3 className="text-lg font-semibold text-white mb-4">Consumer Demand & Market Signals</h3>
                     {hasFinalOutput ? (
-                      <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
-                        <ReactMarkdown
-                          components={{
-                            a: ({node, ...props}) => (
-                              <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:text-blue-200 underline" />
-                            ),
-                            p: ({node, ...props}) => (
-                              <p {...props} className="mb-4" />
-                            ),
-                            ul: ({node, ...props}) => (
-                              <ul {...props} className="list-disc pl-6 mb-4 space-y-2" />
-                            ),
-                            ol: ({node, ...props}) => (
-                              <ol {...props} className="list-decimal pl-6 mb-4 space-y-2" />
-                            ),
-                          }}
-                        >
-                          {cleanAnalysisText(jobResult.final_output!.consumer_demand)}
-                        </ReactMarkdown>
-                      </div>
+                      <>
+                        <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                            {cleanAnalysisText(jobResult.final_output!.consumer_demand?.analysis || '')}
+                          </ReactMarkdown>
+                        </div>
+                        {(jobResult.final_output!.consumer_demand?.sources?.length || 0) > 0 && (
+                          <div className="mt-6 pt-4 border-t border-white/20">
+                            <h4 className="text-sm font-semibold text-white/80 mb-2">Sources</h4>
+                            <div className="space-y-1">
+                              {jobResult.final_output!.consumer_demand!.sources.map((source: string, idx: number) => (
+                                <a
+                                  key={idx}
+                                  href={source}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-300 hover:text-blue-200 flex items-center gap-1"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                  {source}
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     ) : newsData ? (
                       <>
                         <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
                           <ReactMarkdown
-                            components={{
-                              a: ({node, ...props}) => (
-                                <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:text-blue-200 underline" />
-                              ),
-                              p: ({node, ...props}) => (
-                                <p {...props} className="mb-4" />
-                              ),
-                              ul: ({node, ...props}) => (
-                                <ul {...props} className="list-disc pl-6 mb-4 space-y-2" />
-                              ),
-                              ol: ({node, ...props}) => (
-                                <ol {...props} className="list-decimal pl-6 mb-4 space-y-2" />
-                              ),
-                            }}
+                            remarkPlugins={[remarkGfm]}
+                            components={markdownComponents}
                           >
                             {newsData.analysis}
                           </ReactMarkdown>
@@ -774,44 +810,38 @@ export function SegmentDetailsPanel({
                   <div className="bg-white/15 backdrop-blur-xl border border-white/30 rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-white mb-4">Regulatory Landscape</h3>
                     {hasFinalOutput ? (
-                      <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
-                        <ReactMarkdown
-                          components={{
-                            a: ({node, ...props}) => (
-                              <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:text-blue-200 underline" />
-                            ),
-                            p: ({node, ...props}) => (
-                              <p {...props} className="mb-4" />
-                            ),
-                            ul: ({node, ...props}) => (
-                              <ul {...props} className="list-disc pl-6 mb-4 space-y-2" />
-                            ),
-                            ol: ({node, ...props}) => (
-                              <ol {...props} className="list-decimal pl-6 mb-4 space-y-2" />
-                            ),
-                          }}
-                        >
-                          {cleanAnalysisText(jobResult.final_output!.regulatory)}
-                        </ReactMarkdown>
-                      </div>
+                      <>
+                        <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                            {cleanAnalysisText(jobResult.final_output!.regulatory?.analysis || '')}
+                          </ReactMarkdown>
+                        </div>
+                        {(jobResult.final_output!.regulatory?.sources?.length || 0) > 0 && (
+                          <div className="mt-6 pt-4 border-t border-white/20">
+                            <h4 className="text-sm font-semibold text-white/80 mb-2">Sources</h4>
+                            <div className="space-y-1">
+                              {jobResult.final_output!.regulatory!.sources.map((source: string, idx: number) => (
+                                <a
+                                  key={idx}
+                                  href={source}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-300 hover:text-blue-200 flex items-center gap-1"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                  {source}
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     ) : regulatoryData ? (
                       <>
                         <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
                           <ReactMarkdown
-                            components={{
-                              a: ({node, ...props}) => (
-                                <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:text-blue-200 underline" />
-                              ),
-                              p: ({node, ...props}) => (
-                                <p {...props} className="mb-4" />
-                              ),
-                              ul: ({node, ...props}) => (
-                                <ul {...props} className="list-disc pl-6 mb-4 space-y-2" />
-                              ),
-                              ol: ({node, ...props}) => (
-                                <ol {...props} className="list-decimal pl-6 mb-4 space-y-2" />
-                              ),
-                            }}
+                            remarkPlugins={[remarkGfm]}
+                            components={markdownComponents}
                           >
                             {regulatoryData.analysis}
                           </ReactMarkdown>
@@ -852,44 +882,38 @@ export function SegmentDetailsPanel({
                   <div className="bg-white/15 backdrop-blur-xl border border-white/30 rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-white mb-4">Economic Conditions</h3>
                     {hasFinalOutput ? (
-                      <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
-                        <ReactMarkdown
-                          components={{
-                            a: ({node, ...props}) => (
-                              <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:text-blue-200 underline" />
-                            ),
-                            p: ({node, ...props}) => (
-                              <p {...props} className="mb-4" />
-                            ),
-                            ul: ({node, ...props}) => (
-                              <ul {...props} className="list-disc pl-6 mb-4 space-y-2" />
-                            ),
-                            ol: ({node, ...props}) => (
-                              <ol {...props} className="list-decimal pl-6 mb-4 space-y-2" />
-                            ),
-                          }}
-                        >
-                          {cleanAnalysisText(jobResult.final_output!.financial)}
-                        </ReactMarkdown>
-                      </div>
+                      <>
+                        <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                            {cleanAnalysisText(jobResult.final_output!.financial?.analysis || '')}
+                          </ReactMarkdown>
+                        </div>
+                        {(jobResult.final_output!.financial?.sources?.length || 0) > 0 && (
+                          <div className="mt-6 pt-4 border-t border-white/20">
+                            <h4 className="text-sm font-semibold text-white/80 mb-2">Sources</h4>
+                            <div className="space-y-1">
+                              {jobResult.final_output!.financial!.sources.map((source: string, idx: number) => (
+                                <a
+                                  key={idx}
+                                  href={source}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-300 hover:text-blue-200 flex items-center gap-1"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                  {source}
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     ) : financialData ? (
                       <>
                         <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
                           <ReactMarkdown
-                            components={{
-                              a: ({node, ...props}) => (
-                                <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:text-blue-200 underline" />
-                              ),
-                              p: ({node, ...props}) => (
-                                <p {...props} className="mb-4" />
-                              ),
-                              ul: ({node, ...props}) => (
-                                <ul {...props} className="list-disc pl-6 mb-4 space-y-2" />
-                              ),
-                              ol: ({node, ...props}) => (
-                                <ol {...props} className="list-decimal pl-6 mb-4 space-y-2" />
-                              ),
-                            }}
+                            remarkPlugins={[remarkGfm]}
+                            components={markdownComponents}
                           >
                             {financialData.analysis}
                           </ReactMarkdown>

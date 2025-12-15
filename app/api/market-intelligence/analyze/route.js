@@ -8,19 +8,6 @@ const MARKET_INTELLIGENCE_API_URL = process.env.MARKET_INTELLIGENCE_API_URL || '
 export const maxDuration = 120; // 2 minutes timeout
 export const runtime = 'nodejs';
 
-// Helper function to decode JWT and extract user_id (without verification - backend verifies)
-function decodeToken(token) {
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-    
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
-    return payload.sub || payload.user_id || null;
-  } catch {
-    return null;
-  }
-}
-
 // Helper function to validate request body
 function validateAnalyzeRequest(body) {
   const { product_id, session_id } = body;
@@ -103,34 +90,10 @@ export async function POST(request) {
       );
     }
     
-    // 4. Extract user_id from token (backend requires it in the request body)
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-    const userId = decodeToken(token);
-    
-    if (!userId) {
-      console.warn('[Security] Could not extract user_id from token');
-      return new Response(
-        JSON.stringify({ error: 'Invalid authorization token', error_id: 'INVALID_TOKEN' }),
-        {
-          status: 401,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_APP_URL || '*',
-          },
-        }
-      );
-    }
-    
-    // 5. Forward to secure backend wrapper (it will validate token and product ownership)
+    // 4. Forward to backend. Do NOT validate/decode tokens here; backend handles auth.
     // Use AbortController with 90 second timeout (market intelligence takes ~60 seconds)
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout
-    
-    // Add user_id to the request body
-    const requestBody = {
-      ...body,
-      user_id: userId,
-    };
     
     let response;
     try {
@@ -142,7 +105,7 @@ export async function POST(request) {
             'Content-Type': 'application/json',
             'Authorization': authHeader, // Forward the auth token
           },
-          body: JSON.stringify(requestBody),
+          body: JSON.stringify(body),
           signal: controller.signal,
         }
       );

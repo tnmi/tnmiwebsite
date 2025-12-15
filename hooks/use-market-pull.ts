@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { marketIntelligenceAPI, JobStatusResponse } from '@/lib/market-intelligence-api';
+import { marketIntelligenceAPI, JobStatusResponse, MarketPullResponse } from '@/lib/market-intelligence-api';
 import { useAuthStore } from '@/lib/store';
 
 interface ActiveJob {
@@ -23,7 +23,7 @@ interface UseMarketPullReturn {
     productName: string,
     productId: string,
     industry: string
-  ) => Promise<{ job_id: string; status: string; message: string }>;
+  ) => Promise<MarketPullResponse>;
   cancelPull: (segmentName: string) => Promise<void>;
   getJobStatus: (segmentName: string) => ActiveJob | undefined;
   getJobResult: (segmentName: string) => JobStatusResponse | undefined;
@@ -300,8 +300,11 @@ export function useMarketPull(): UseMarketPullReturn {
           // Store result if completed or failed
           if (status.status === 'completed' || status.status === 'failed') {
             setJobResults(prev => new Map(prev).set(segmentName, status));
-          } else if (status.status === 'running' && status.steps && status.steps.length > 0) {
-            // Store partial results for running jobs
+          } else if (
+            status.status === 'running' &&
+            ((status as any).partial_output || (status as any).final_output || (status.steps && status.steps.length > 0))
+          ) {
+            // Store partial results for running jobs (new: partial_output)
             setJobResults(prev => new Map(prev).set(segmentName, status));
           }
         } catch (err) {
