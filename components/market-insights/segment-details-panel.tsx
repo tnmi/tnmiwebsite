@@ -162,20 +162,6 @@ function normalizeSources(sources: any): string[] {
   return out;
 }
 
-// Helper function to get agent data from steps
-function getAgentData(jobResult: JobStatusResponse, agentName: string) {
-  if (!jobResult.steps) return null;
-  
-  const step = jobResult.steps.find(s => s.agent_name === agentName);
-  if (!step || !step.output) return null;
-  
-  return {
-    analysis: cleanAnalysisText(step.output.analysis || ''),
-    sources: normalizeSources(step.output.sources || []),
-    timestamp: step.timestamp
-  };
-}
-
 export function SegmentDetailsPanel({
   segmentName,
   segmentData,
@@ -419,61 +405,37 @@ export function SegmentDetailsPanel({
     // More versions would be added here from API
   ];
 
-  // PRIORITIZE final_output as it contains the complete consolidated reports
-  // The steps array contains intermediate/truncated analysis
-  const hasFinalOutput =
-    !!jobResult.final_output &&
-    typeof (jobResult.final_output as any).industry_report !== 'undefined';
-  
-  // Check if steps have additional fields we can use
-  if (jobResult.steps && jobResult.steps.length > 0) {
-    // Check if there's a results file or full output somewhere
-    const industryStep = jobResult.steps.find(s => s.agent_name === 'browser_industry_analyst');
-    if (industryStep?.output?.debug) {
-      if (industryStep.output.debug.full_browser_history) {
-        const historyPreview = industryStep.output.debug.full_browser_history.substring(0, 1000);
-      }
-    }
-  }
-  
-  // Only extract from steps if final_output is not available (fallback)
-  const industryData = !hasFinalOutput ? getAgentData(jobResult, 'browser_industry_analyst') : null;
-  const supplyChainData = !hasFinalOutput ? getAgentData(jobResult, 'browser_supply_chain_analyst') : null;
-  const newsData = !hasFinalOutput ? getAgentData(jobResult, 'browser_news_analyst') : null;
-  const regulatoryData = !hasFinalOutput ? getAgentData(jobResult, 'browser_regulatory_analyst') : null;
-  const financialData = !hasFinalOutput ? getAgentData(jobResult, 'browser_financial_analyst') : null;
+  // Backend shape (non-debug):
+  // - running: partial_output progressively fills, final_output is null
+  // - completed: final_output contains all 5 sections
+  const reports =
+    jobResult.status === 'completed'
+      ? (jobResult.final_output ?? undefined)
+      : (jobResult.partial_output ?? undefined);
 
-  const hasStepsData = industryData || supplyChainData || newsData || regulatoryData || financialData;
+  const industryReport = reports?.industry_report;
+  const supplyChainReport = reports?.supply_chain;
+  const consumerDemandReport = reports?.consumer_demand;
+  const regulatoryReport = reports?.regulatory;
+  const financialReport = reports?.financial;
 
-  // Allow display for running jobs with partial data OR completed jobs
-  if (!hasFinalOutput && !hasStepsData && !isRunning) {
+  const hasAnyReport =
+    !!industryReport || !!supplyChainReport || !!consumerDemandReport || !!regulatoryReport || !!financialReport;
+
+  // If nothing to show and not running, don't render the panel.
+  if (!hasAnyReport && !isRunning) {
     return null;
   }
 
   const handleDownload = () => {
-    // Create downloadable content from steps
+    // Create downloadable content from rendered reports
     let content = `Market Pull Analysis: ${segmentName}\nGenerated: ${new Date().toLocaleString()}\n\n`;
     
-    if (jobResult.steps && jobResult.steps.length > 0) {
-      // Use steps data
-      content += `================================================================================\nINDUSTRY REPORT\n================================================================================\n${industryData?.analysis || 'N/A'}\n\nSources:\n${industryData?.sources.map((s: string) => `- ${s}`).join('\n') || 'None'}\n\n`;
-      
-      content += `================================================================================\nSUPPLY CHAIN ANALYSIS\n================================================================================\n${supplyChainData?.analysis || 'N/A'}\n\nSources:\n${supplyChainData?.sources.map((s: string) => `- ${s}`).join('\n') || 'None'}\n\n`;
-      
-      content += `================================================================================\nRECENT DEVELOPMENTS\n================================================================================\n${newsData?.analysis || 'N/A'}\n\nSources:\n${newsData?.sources.map((s: string) => `- ${s}`).join('\n') || 'None'}\n\n`;
-      
-      content += `================================================================================\nREGULATORY LANDSCAPE\n================================================================================\n${regulatoryData?.analysis || 'N/A'}\n\nSources:\n${regulatoryData?.sources.map((s: string) => `- ${s}`).join('\n') || 'None'}\n\n`;
-      
-      content += `================================================================================\nFINANCIAL ANALYSIS\n================================================================================\n${financialData?.analysis || 'N/A'}\n\nSources:\n${financialData?.sources.map((s: string) => `- ${s}`).join('\n') || 'None'}`;
-    } else if (hasFinalOutput) {
-      // Fallback to final_output
-      const final_output = jobResult.final_output!;
-      content += `================================================================================\nINDUSTRY REPORT\n================================================================================\n${final_output.industry_report?.analysis || 'N/A'}\n\nSources:\n${final_output.industry_report?.sources?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n\n`;
-      content += `================================================================================\nSUPPLY CHAIN ANALYSIS\n================================================================================\n${final_output.supply_chain?.analysis || 'N/A'}\n\nSources:\n${final_output.supply_chain?.sources?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n\n`;
-      content += `================================================================================\nCONSUMER DEMAND\n================================================================================\n${final_output.consumer_demand?.analysis || 'N/A'}\n\nSources:\n${final_output.consumer_demand?.sources?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n\n`;
-      content += `================================================================================\nREGULATORY LANDSCAPE\n================================================================================\n${final_output.regulatory?.analysis || 'N/A'}\n\nSources:\n${final_output.regulatory?.sources?.map((s: string) => `- ${s}`).join('\n') || 'None'}\n\n`;
-      content += `================================================================================\nFINANCIAL ANALYSIS\n================================================================================\n${final_output.financial?.analysis || 'N/A'}\n\nSources:\n${final_output.financial?.sources?.map((s: string) => `- ${s}`).join('\n') || 'None'}`;
-    }
+    content += `================================================================================\nINDUSTRY REPORT\n================================================================================\n${industryReport?.analysis || 'N/A'}\n\nSources:\n${normalizeSources(industryReport?.sources || []).map((s: string) => `- ${s}`).join('\n') || 'None'}\n\n`;
+    content += `================================================================================\nSUPPLY CHAIN ANALYSIS\n================================================================================\n${supplyChainReport?.analysis || 'N/A'}\n\nSources:\n${normalizeSources(supplyChainReport?.sources || []).map((s: string) => `- ${s}`).join('\n') || 'None'}\n\n`;
+    content += `================================================================================\nCONSUMER DEMAND\n================================================================================\n${consumerDemandReport?.analysis || 'N/A'}\n\nSources:\n${normalizeSources(consumerDemandReport?.sources || []).map((s: string) => `- ${s}`).join('\n') || 'None'}\n\n`;
+    content += `================================================================================\nREGULATORY LANDSCAPE\n================================================================================\n${regulatoryReport?.analysis || 'N/A'}\n\nSources:\n${normalizeSources(regulatoryReport?.sources || []).map((s: string) => `- ${s}`).join('\n') || 'None'}\n\n`;
+    content += `================================================================================\nFINANCIAL ANALYSIS\n================================================================================\n${financialReport?.analysis || 'N/A'}\n\nSources:\n${normalizeSources(financialReport?.sources || []).map((s: string) => `- ${s}`).join('\n') || 'None'}`;
 
     // Create blob and download
     const blob = new Blob([content], { type: 'text/plain' });
@@ -593,48 +555,18 @@ export function SegmentDetailsPanel({
                   <TabsContent value="industry" className="mt-0">
                   <div className="bg-white/15 backdrop-blur-xl border border-white/30 rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-white mb-4">Market Demand Analysis</h3>
-                    {hasFinalOutput ? (
+                    {industryReport ? (
                       <>
                         <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
                           <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                            {cleanAnalysisText(jobResult.final_output!.industry_report?.analysis || '')}
+                            {cleanAnalysisText(industryReport.analysis)}
                           </ReactMarkdown>
                         </div>
-                        {(jobResult.final_output!.industry_report?.sources?.length || 0) > 0 && (
+                        {normalizeSources(industryReport.sources).length > 0 && (
                           <div className="mt-6 pt-4 border-t border-white/20">
                             <h4 className="text-sm font-semibold text-white/80 mb-2">Sources</h4>
                             <div className="space-y-1">
-                              {jobResult.final_output!.industry_report!.sources.map((source: string, idx: number) => (
-                                <a
-                                  key={idx}
-                                  href={source}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-blue-300 hover:text-blue-200 flex items-center gap-1"
-                                >
-                                  <ExternalLink className="w-3 h-3" />
-                                  {source}
-                                </a>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    ) : industryData ? (
-                      <>
-                        <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            components={markdownComponents}
-                          >
-                            {industryData.analysis}
-                          </ReactMarkdown>
-                        </div>
-                        {industryData.sources.length > 0 && (
-                          <div className="mt-6 pt-4 border-t border-white/20">
-                            <h4 className="text-sm font-semibold text-white/80 mb-2">Sources</h4>
-                            <div className="space-y-1">
-                              {industryData.sources.map((source: string, idx: number) => (
+                              {normalizeSources(industryReport.sources).map((source: string, idx: number) => (
                                 <a
                                   key={idx}
                                   href={source}
@@ -653,7 +585,7 @@ export function SegmentDetailsPanel({
                     ) : isRunning ? (
                       <div className="flex items-center gap-3 text-white/70 py-8">
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        <p className="italic">Analysis in progress... Check back soon for results</p>
+                        <p className="italic">This section isn’t ready yet — still running…</p>
                       </div>
                     ) : (
                       <p className="text-white/60 italic">No data available</p>
@@ -665,48 +597,18 @@ export function SegmentDetailsPanel({
                 <TabsContent value="supply-chain" className="mt-6">
                   <div className="bg-white/15 backdrop-blur-xl border border-white/30 rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-white mb-4">Supply Chain Insights</h3>
-                    {hasFinalOutput ? (
+                    {supplyChainReport ? (
                       <>
                         <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
                           <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                            {cleanAnalysisText(jobResult.final_output!.supply_chain?.analysis || '')}
+                            {cleanAnalysisText(supplyChainReport.analysis)}
                           </ReactMarkdown>
                         </div>
-                        {(jobResult.final_output!.supply_chain?.sources?.length || 0) > 0 && (
+                        {normalizeSources(supplyChainReport.sources).length > 0 && (
                           <div className="mt-6 pt-4 border-t border-white/20">
                             <h4 className="text-sm font-semibold text-white/80 mb-2">Sources</h4>
                             <div className="space-y-1">
-                              {jobResult.final_output!.supply_chain!.sources.map((source: string, idx: number) => (
-                                <a
-                                  key={idx}
-                                  href={source}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-blue-300 hover:text-blue-200 flex items-center gap-1"
-                                >
-                                  <ExternalLink className="w-3 h-3" />
-                                  {source}
-                                </a>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    ) : supplyChainData ? (
-                      <>
-                        <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            components={markdownComponents}
-                          >
-                            {cleanAnalysisText(supplyChainData.analysis)}
-                          </ReactMarkdown>
-                        </div>
-                        {supplyChainData.sources.length > 0 && (
-                          <div className="mt-6 pt-4 border-t border-white/20">
-                            <h4 className="text-sm font-semibold text-white/80 mb-2">Sources</h4>
-                            <div className="space-y-1">
-                              {supplyChainData.sources.map((source: string, idx: number) => (
+                              {normalizeSources(supplyChainReport.sources).map((source: string, idx: number) => (
                                 <a
                                   key={idx}
                                   href={source}
@@ -725,7 +627,7 @@ export function SegmentDetailsPanel({
                     ) : isRunning ? (
                       <div className="flex items-center gap-3 text-white/70 py-8">
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        <p className="italic">Analysis in progress... Check back soon for results</p>
+                        <p className="italic">This section isn’t ready yet — still running…</p>
                       </div>
                     ) : (
                       <p className="text-white/60 italic">No data available</p>
@@ -737,48 +639,18 @@ export function SegmentDetailsPanel({
                 <TabsContent value="news" className="mt-6">
                   <div className="bg-white/15 backdrop-blur-xl border border-white/30 rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-white mb-4">Consumer Demand & Market Signals</h3>
-                    {hasFinalOutput ? (
+                    {consumerDemandReport ? (
                       <>
                         <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
                           <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                            {cleanAnalysisText(jobResult.final_output!.consumer_demand?.analysis || '')}
+                            {cleanAnalysisText(consumerDemandReport.analysis)}
                           </ReactMarkdown>
                         </div>
-                        {(jobResult.final_output!.consumer_demand?.sources?.length || 0) > 0 && (
+                        {normalizeSources(consumerDemandReport.sources).length > 0 && (
                           <div className="mt-6 pt-4 border-t border-white/20">
                             <h4 className="text-sm font-semibold text-white/80 mb-2">Sources</h4>
                             <div className="space-y-1">
-                              {jobResult.final_output!.consumer_demand!.sources.map((source: string, idx: number) => (
-                                <a
-                                  key={idx}
-                                  href={source}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-blue-300 hover:text-blue-200 flex items-center gap-1"
-                                >
-                                  <ExternalLink className="w-3 h-3" />
-                                  {source}
-                                </a>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    ) : newsData ? (
-                      <>
-                        <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            components={markdownComponents}
-                          >
-                            {newsData.analysis}
-                          </ReactMarkdown>
-                        </div>
-                        {newsData.sources.length > 0 && (
-                          <div className="mt-6 pt-4 border-t border-white/20">
-                            <h4 className="text-sm font-semibold text-white/80 mb-2">Sources</h4>
-                            <div className="space-y-1">
-                              {newsData.sources.map((source: string, idx: number) => (
+                              {normalizeSources(consumerDemandReport.sources).map((source: string, idx: number) => (
                                 <a
                                   key={idx}
                                   href={source}
@@ -797,7 +669,7 @@ export function SegmentDetailsPanel({
                     ) : isRunning ? (
                       <div className="flex items-center gap-3 text-white/70 py-8">
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        <p className="italic">Analysis in progress... Check back soon for results</p>
+                        <p className="italic">This section isn’t ready yet — still running…</p>
                       </div>
                     ) : (
                       <p className="text-white/60 italic">No data available</p>
@@ -809,48 +681,18 @@ export function SegmentDetailsPanel({
                 <TabsContent value="regulatory" className="mt-6">
                   <div className="bg-white/15 backdrop-blur-xl border border-white/30 rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-white mb-4">Regulatory Landscape</h3>
-                    {hasFinalOutput ? (
+                    {regulatoryReport ? (
                       <>
                         <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
                           <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                            {cleanAnalysisText(jobResult.final_output!.regulatory?.analysis || '')}
+                            {cleanAnalysisText(regulatoryReport.analysis)}
                           </ReactMarkdown>
                         </div>
-                        {(jobResult.final_output!.regulatory?.sources?.length || 0) > 0 && (
+                        {normalizeSources(regulatoryReport.sources).length > 0 && (
                           <div className="mt-6 pt-4 border-t border-white/20">
                             <h4 className="text-sm font-semibold text-white/80 mb-2">Sources</h4>
                             <div className="space-y-1">
-                              {jobResult.final_output!.regulatory!.sources.map((source: string, idx: number) => (
-                                <a
-                                  key={idx}
-                                  href={source}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-blue-300 hover:text-blue-200 flex items-center gap-1"
-                                >
-                                  <ExternalLink className="w-3 h-3" />
-                                  {source}
-                                </a>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    ) : regulatoryData ? (
-                      <>
-                        <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            components={markdownComponents}
-                          >
-                            {regulatoryData.analysis}
-                          </ReactMarkdown>
-                        </div>
-                        {regulatoryData.sources.length > 0 && (
-                          <div className="mt-6 pt-4 border-t border-white/20">
-                            <h4 className="text-sm font-semibold text-white/80 mb-2">Sources</h4>
-                            <div className="space-y-1">
-                              {regulatoryData.sources.map((source: string, idx: number) => (
+                              {normalizeSources(regulatoryReport.sources).map((source: string, idx: number) => (
                                 <a
                                   key={idx}
                                   href={source}
@@ -869,7 +711,7 @@ export function SegmentDetailsPanel({
                     ) : isRunning ? (
                       <div className="flex items-center gap-3 text-white/70 py-8">
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        <p className="italic">Analysis in progress... Check back soon for results</p>
+                        <p className="italic">This section isn’t ready yet — still running…</p>
                       </div>
                     ) : (
                       <p className="text-white/60 italic">No data available</p>
@@ -881,48 +723,18 @@ export function SegmentDetailsPanel({
                 <TabsContent value="financial" className="mt-6">
                   <div className="bg-white/15 backdrop-blur-xl border border-white/30 rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-white mb-4">Economic Conditions</h3>
-                    {hasFinalOutput ? (
+                    {financialReport ? (
                       <>
                         <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
                           <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                            {cleanAnalysisText(jobResult.final_output!.financial?.analysis || '')}
+                            {cleanAnalysisText(financialReport.analysis)}
                           </ReactMarkdown>
                         </div>
-                        {(jobResult.final_output!.financial?.sources?.length || 0) > 0 && (
+                        {normalizeSources(financialReport.sources).length > 0 && (
                           <div className="mt-6 pt-4 border-t border-white/20">
                             <h4 className="text-sm font-semibold text-white/80 mb-2">Sources</h4>
                             <div className="space-y-1">
-                              {jobResult.final_output!.financial!.sources.map((source: string, idx: number) => (
-                                <a
-                                  key={idx}
-                                  href={source}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-blue-300 hover:text-blue-200 flex items-center gap-1"
-                                >
-                                  <ExternalLink className="w-3 h-3" />
-                                  {source}
-                                </a>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    ) : financialData ? (
-                      <>
-                        <div className="text-white/90 leading-relaxed prose prose-invert max-w-none">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            components={markdownComponents}
-                          >
-                            {financialData.analysis}
-                          </ReactMarkdown>
-                        </div>
-                        {financialData.sources.length > 0 && (
-                          <div className="mt-6 pt-4 border-t border-white/20">
-                            <h4 className="text-sm font-semibold text-white/80 mb-2">Sources</h4>
-                            <div className="space-y-1">
-                              {financialData.sources.map((source: string, idx: number) => (
+                              {normalizeSources(financialReport.sources).map((source: string, idx: number) => (
                                 <a
                                   key={idx}
                                   href={source}
@@ -941,7 +753,7 @@ export function SegmentDetailsPanel({
                     ) : isRunning ? (
                       <div className="flex items-center gap-3 text-white/70 py-8">
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        <p className="italic">Analysis in progress... Check back soon for results</p>
+                        <p className="italic">This section isn’t ready yet — still running…</p>
                       </div>
                     ) : (
                       <p className="text-white/60 italic">No data available</p>

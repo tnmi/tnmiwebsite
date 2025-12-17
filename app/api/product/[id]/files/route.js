@@ -12,14 +12,29 @@ export async function GET(request, { params }) {
     
     const token = authHeader.split(' ')[1]
     
-    // Call the new backend endpoint for files only
-    const response = await fetch(`https://northstar-backend-194429268019.us-central1.run.app/product/${id}/files`, {
+    // Backend paths have historically varied between /product/:id and /products/:id.
+    // We try /product first, and fall back to /products only if we get a 404.
+    const backendBase = 'https://northstar-backend-194429268019.us-central1.run.app'
+    const primaryUrl = `${backendBase}/product/${id}/files`
+    const fallbackUrl = `${backendBase}/products/${id}/files`
+
+    let response = await fetch(primaryUrl, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     })
+
+    if (response.status === 404) {
+      response = await fetch(fallbackUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+    }
     
     if (!response.ok) {
       console.error('Backend files fetch error:', response.status)
@@ -31,13 +46,11 @@ export async function GET(request, { params }) {
     
     const data = await response.json()
     
-    // Forward cache headers from backend if present
-    const cacheControl = response.headers.get('cache-control')
+    // Auth-scoped data: never allow intermediates/browsers to reuse across sessions/users.
     const responseHeaders = {
       'Content-Type': 'application/json',
-    }
-    if (cacheControl) {
-      responseHeaders['Cache-Control'] = cacheControl
+      'Cache-Control': 'no-store',
+      'Vary': 'Authorization',
     }
     
     return new Response(JSON.stringify(data), {

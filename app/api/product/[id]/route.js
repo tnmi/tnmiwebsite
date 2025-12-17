@@ -16,29 +16,42 @@ export async function GET(request, { params }) {
     const { searchParams } = new URL(request.url)
     const includeFiles = searchParams.get('include_files') === 'true'
     
-    // Build backend URL with optional include_files param
-    const backendUrl = new URL(`https://northstar-backend-194429268019.us-central1.run.app/product/${id}`)
-    if (includeFiles) {
-      backendUrl.searchParams.append('include_files', 'true')
+    // Backend paths have historically varied between /product/:id and /products/:id.
+    // We try /product first, and fall back to /products only if we get a 404.
+    const backendBase = 'https://northstar-backend-194429268019.us-central1.run.app'
+    const backendUrls = [
+      new URL(`${backendBase}/product/${id}`),
+      new URL(`${backendBase}/products/${id}`),
+    ]
+    for (const u of backendUrls) {
+      if (includeFiles) u.searchParams.append('include_files', 'true')
     }
-    
-    const response = await fetch(backendUrl.toString(), {
+
+    let response = await fetch(backendUrls[0].toString(), {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     })
+
+    if (response.status === 404) {
+      response = await fetch(backendUrls[1].toString(), {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+    }
     
     const data = await response.json()
     
-    // Forward cache headers from backend if present
-    const cacheControl = response.headers.get('cache-control')
+    // Auth-scoped data: never allow intermediates/browsers to reuse across sessions/users.
     const responseHeaders = {
       'Content-Type': 'application/json',
-    }
-    if (cacheControl) {
-      responseHeaders['Cache-Control'] = cacheControl
+      'Cache-Control': 'no-store',
+      'Vary': 'Authorization',
     }
     
     return new Response(JSON.stringify(data), {

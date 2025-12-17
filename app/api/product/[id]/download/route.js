@@ -15,12 +15,25 @@ export async function GET(request, { params }) {
     const token = authHeader.split(' ')[1]
 
     // Forward the download request to the external API
-    const response = await fetch(`https://northstar-backend-194429268019.us-central1.run.app/product/${id}/download`, {
+    const backendBase = 'https://northstar-backend-194429268019.us-central1.run.app'
+    const primaryUrl = `${backendBase}/product/${id}/download`
+    const fallbackUrl = `${backendBase}/products/${id}/download`
+
+    let response = await fetch(primaryUrl, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
       },
     })
+
+    if (response.status === 404) {
+      response = await fetch(fallbackUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+    }
     
     if (!response.ok) {
       const errorText = await response.text()

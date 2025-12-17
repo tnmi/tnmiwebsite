@@ -39,13 +39,11 @@ export async function GET(request) {
     
     const products = await response.json()
 
-    // Forward cache headers from backend if present
-    const cacheControl = response.headers.get('cache-control')
+    // Auth-scoped data: never allow intermediates/browsers to reuse across sessions/users.
     const responseHeaders = {
       'Content-Type': 'application/json',
-    }
-    if (cacheControl) {
-      responseHeaders['Cache-Control'] = cacheControl
+      'Cache-Control': 'no-store',
+      'Vary': 'Authorization',
     }
 
     return new Response(JSON.stringify(products), {

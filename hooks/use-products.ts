@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuthStore } from '@/lib/store'
 
 // ========== INTERFACES ==========
@@ -74,6 +74,7 @@ export function useProducts(options: UseProductsOptions = {}): UseProductsReturn
   const [nextOffset, setNextOffset] = useState<string | null>(null)
   
   const { user } = useAuthStore()
+  const lastUserIdRef = useRef<string | null>(null)
 
   const fetchProducts = useCallback(async (offset?: string, isLoadMore = false) => {
     if (!user?.uid) return
@@ -98,7 +99,8 @@ export function useProducts(options: UseProductsOptions = {}): UseProductsReturn
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        cache: 'default' // Respect cache headers from backend
+        // Auth-scoped data must never be reused across users.
+        cache: 'no-store'
       })
       
       if (!response.ok) {
@@ -172,6 +174,18 @@ export function useProducts(options: UseProductsOptions = {}): UseProductsReturn
     setNextOffset(null)
   }, [])
 
+  // Reset + refetch when the authenticated user changes (prevents cross-account stale UI).
+  useEffect(() => {
+    const currentUid = user?.uid ?? null
+    if (lastUserIdRef.current !== currentUid) {
+      lastUserIdRef.current = currentUid
+      reset()
+      if (autoLoad && user) {
+        fetchProducts()
+      }
+    }
+  }, [user?.uid, autoLoad, user, fetchProducts, reset])
+
   // Auto-load on mount
   useEffect(() => {
     if (autoLoad && user) {
@@ -208,6 +222,7 @@ export function useProductFiles(productId: string | null): UseProductFilesReturn
   const [error, setError] = useState<string | null>(null)
   
   const { user } = useAuthStore()
+  const lastUserIdRef = useRef<string | null>(null)
 
   const fetchFiles = useCallback(async () => {
     if (!user?.uid || !productId) return
@@ -222,7 +237,7 @@ export function useProductFiles(productId: string | null): UseProductFilesReturn
         headers: {
           'Authorization': `Bearer ${token}`,
         },
-        cache: 'default'
+        cache: 'no-store'
       })
       
       if (!response.ok) {
@@ -251,6 +266,15 @@ export function useProductFiles(productId: string | null): UseProductFilesReturn
   useEffect(() => {
     reset()
   }, [productId, reset])
+
+  // Reset when user changes
+  useEffect(() => {
+    const currentUid = user?.uid ?? null
+    if (lastUserIdRef.current !== currentUid) {
+      lastUserIdRef.current = currentUid
+      reset()
+    }
+  }, [user?.uid, reset])
 
   return {
     files,
@@ -306,7 +330,7 @@ export function useProduct(productId: string | null, options: UseProductOptions 
         headers: {
           'Authorization': `Bearer ${token}`,
         },
-        cache: 'default'
+        cache: 'no-store'
       })
       
       if (!response.ok) {
@@ -334,12 +358,18 @@ export function useProduct(productId: string | null, options: UseProductOptions 
 
   // Reset when product ID changes
   useEffect(() => {
+    // If user logs out or changes, clear local state immediately.
+    if (!user?.uid) {
+      reset()
+      return
+    }
+
     if (productId) {
       fetchProduct()
     } else {
       reset()
     }
-  }, [productId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [productId, user?.uid, includeFiles, fetchProduct, reset])
 
   return {
     product,

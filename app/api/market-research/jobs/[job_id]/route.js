@@ -31,10 +31,15 @@ export async function GET(request, { params }) {
     }
 
     const { job_id } = await params;
+    const { searchParams } = new URL(request.url);
+    const debug = searchParams.get('debug');
 
     // Forward to secure backend wrapper
+    const backendUrl = debug
+      ? `${BACKEND_API_URL}/api/market-research/jobs/${encodeURIComponent(job_id)}?debug=${encodeURIComponent(debug)}`
+      : `${BACKEND_API_URL}/api/market-research/jobs/${encodeURIComponent(job_id)}`;
     const response = await fetch(
-      `${BACKEND_API_URL}/api/market-research/jobs/${encodeURIComponent(job_id)}`,
+      backendUrl,
       {
         method: 'GET',
         headers: {
