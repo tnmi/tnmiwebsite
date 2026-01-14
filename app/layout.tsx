@@ -123,7 +123,7 @@ export default function RootLayout({
               "contactPoint": {
                 "@type": "ContactPoint",
                 "contactType": "Customer Service",
-                "email": "jason.deacon@truenorthmaterials.com"
+                "email": "tobias@truenorthmaterials.com"
               },
               "address": {
                 "@type": "PostalAddress",

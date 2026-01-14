@@ -25,7 +25,7 @@ const Chatbot: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     { 
       id: 1, 
-      text: "Hello! I'm here to help you learn about TrueNorth Materials. What would you like to know?", 
+      text: "Hello! Welcome to TrueNorth Materials. Humanity advances with materials, and we are here to help you accelerate that future.\n\nAsk me about our Marketplace, or meet our AI Employees, Max and Colette.", 
       sender: 'bot',
       timestamp: new Date()
     }
@@ -42,47 +42,35 @@ const Chatbot: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Enhanced Q&A database with more comprehensive responses
+  // Enhanced Q&A database for Marketplace & AI Agents
   const qaDatabase: QADatabase = {
-    'services': {
-      keywords: ['services', 'offer', 'provide', 'what do you do', 'solutions', 'help', 'capabilities'],
-      response: "TrueNorth Materials provides AI-driven materials intelligence solutions. We transform sensor data and big data into actionable insights for sustainable innovation.\n\n**Our Focus:**\n• Materials data analytics\n• Sensor integration and monitoring\n• AI-powered analysis\n• Sustainable materials innovation\n\n2025 is the year of AI agents putting vast materials data to work. We're here to help you harness this potential.\n\nWould you like to learn more about any specific aspect of our services?"
+    'marketplace': {
+      keywords: ['marketplace', 'buy', 'shop', 'store', 'platform', 'what is truenorth', 'what do you do'],
+      response: "**The Advanced Materials Marketplace:**\n\nTrueNorth Materials is the premier marketplace for advanced materials. We bridge the gap between material science innovations and industrial adoption.\n\nOur platform supports the adoption of advanced materials because we believe **humanity advances with materials**.\n\nWe connect suppliers of cutting-edge materials with the industries that need them to build the future."
     },
-    'ai': {
-      keywords: ['ai', 'artificial intelligence', 'machine learning', 'agents', 'algorithm', 'model'],
-      response: "**Our AI Technology:**\n\nTrueNorth Materials leverages advanced AI and machine learning to transform materials data into actionable intelligence.\n\n• **AI Agents** - Putting vast materials data to work\n• **Big Data Processing** - Turning sensor data into insights\n• **Predictive Analytics** - Forecasting material behavior\n• **Intelligent Analysis** - Extracting meaningful patterns\n\n2025 is the year of AI agents revolutionizing materials innovation. Our platform is at the forefront of this transformation.\n\nFor more details about our specific AI capabilities, contact us at jason.deacon@truenorthmaterials.com"
+    'max': {
+      keywords: ['max', 'market analysis', 'analysis agent'],
+      response: "**Meet Max - Market Analysis Agent:**\n\nMax is one of our AI employees. He specializes in:\n• Analyzing advanced materials against market demand\n• Mapping materials to industries and applications\n• Identifying revenue opportunities\n\nMax ensures you understand exactly where your product fits in the global value chain."
     },
-    'sustainability': {
-      keywords: ['sustainable', 'sustainability', 'environment', 'green', 'eco', 'carbon', 'emissions'],
-      response: "**Sustainability Focus:**\n\nTrueNorth Materials is committed to driving sustainable innovation in the materials industry.\n\nOur AI-driven platform helps organizations:\n• Make data-driven decisions for sustainable materials\n• Transform sensor and big data into environmental insights\n• Support sustainable innovation initiatives\n• Optimize material selection for environmental impact\n\nWe believe that intelligent use of materials data is key to building a more sustainable future.\n\nTo learn more about how we can support your sustainability goals, contact us at jason.deacon@truenorthmaterials.com"
+    'colette': {
+      keywords: ['colette', 'collaboration', 'partner', 'research agent'],
+      response: "**Meet Colette - Collaboration Agent:**\n\nColette is our AI employee focused on connections. She:\n• Connects materials with research institutions\n• Unlocks R&D collaboration paths\n• Discovers partnership potentials\n\nColette helps you build the network necessary to scale your innovation."
+    },
+    'selling': {
+      keywords: ['sell', 'supplier', 'vendor', 'list', 'distribution'],
+      response: "**Sell on TrueNorth:**\n\nAre you a producer of advanced materials? We help you reach the right buyers.\n\nBy listing on our marketplace, you get access to our AI Employees (Max and Colette) to help position your product and find the right partners.\n\nContact us at tobias@truenorthmaterials.com to start listing."
+    },
+    'ai_employees': {
+      keywords: ['ai employees', 'agents', 'team', 'staff', 'intelligence', 'ai'],
+      response: "**Our AI Team:**\n\nUnlike traditional platforms, TrueNorth employs autonomous AI agents to work for you:\n\n1. **Max** (Market Analysis)\n2. **Colette** (Collaboration)\n\nThey continuously scan the landscape to build a Knowledge Graph that accelerates the adoption of your materials."
+    },
+    'mission': {
+      keywords: ['mission', 'vision', 'why', 'humanity', 'goal'],
+      response: "**Our Mission:**\n\nHumanity advances with materials. From the Stone Age to the Silicon Age, materials define our progress.\n\nTrueNorth Materials exists to accelerate this progress by removing the friction in discovering, buying, and adopting advanced materials."
     },
     'contact': {
-      keywords: ['contact', 'reach', 'email', 'phone', 'talk', 'speak', 'get in touch', 'support'],
-      response: "**Get in Touch:**\n\nYou can reach us at:\n\njason.deacon@truenorthmaterials.com\n\nWe'd love to hear from you about how our AI-driven materials intelligence platform can help transform your business.\n\nFeel free to email us with any questions about our services, technology, or to schedule a discussion about your specific needs."
-    },
-    'demo': {
-      keywords: ['demo', 'trial', 'try', 'test', 'free', 'poc', 'pilot', 'proof of concept'],
-      response: "**See TrueNorth in Action:**\n\nInterested in seeing how our AI-driven materials intelligence platform can transform your business?\n\nWe'd be happy to arrange a demonstration tailored to your specific needs and use cases.\n\nContact us at: jason.deacon@truenorthmaterials.com\n\nLet us know about your materials challenges and we'll show you how our platform can help!"
-    },
-    'industries': {
-      keywords: ['industries', 'sectors', 'who uses', 'clients', 'applications', 'use cases', 'customers'],
-      response: "**Industries & Applications:**\n\nTrueNorth Materials' AI-driven platform can benefit organizations across various sectors working with materials data and innovation.\n\nOur platform is designed to help any industry that:\n• Works with materials and sensors\n• Needs data-driven insights\n• Focuses on sustainable innovation\n• Requires intelligent materials analysis\n\nWhether you're in manufacturing, construction, electronics, energy, or any other materials-intensive industry, our platform can transform your data into actionable intelligence.\n\nTo discuss your specific industry needs, reach out to jason.deacon@truenorthmaterials.com"
-    },
-    'pricing': {
-      keywords: ['price', 'pricing', 'cost', 'how much', 'plans', 'packages', 'subscription', 'payment'],
-      response: "**Pricing Information:**\n\nFor pricing information tailored to your specific needs and use case, please reach out to us at:\n\njason.deacon@truenorthmaterials.com\n\nWe'll be happy to discuss how our AI-driven materials intelligence platform can meet your requirements and provide you with relevant pricing details."
-    },
-    'data': {
-      keywords: ['data', 'security', 'privacy', 'safe', 'protect', 'encryption', 'compliance'],
-      response: "**Data Security:**\n\nAt TrueNorth Materials, we take data security seriously. Our platform is designed with security in mind to protect your valuable materials data and insights.\n\nWe implement industry-standard security practices to ensure your data remains safe and confidential.\n\nFor specific questions about our security measures and data handling practices, please contact us at jason.deacon@truenorthmaterials.com"
-    },
-    'integration': {
-      keywords: ['integration', 'api', 'connect', 'integrate', 'erp', 'systems', 'software'],
-      response: "**Platform Integration:**\n\nOur AI-driven materials intelligence platform is designed to work with your existing systems and data sources.\n\nWe can help you:\n• Connect sensor networks\n• Integrate materials databases\n• Work with your existing data infrastructure\n\nFor details about specific integration capabilities and how we can work with your systems, contact us at jason.deacon@truenorthmaterials.com"
-    },
-    'features': {
-      keywords: ['features', 'benefits', 'advantages', 'why choose', 'unique'],
-      response: "**Why TrueNorth Materials:**\n\n• **AI-Driven Intelligence** - Transform sensors and big data into actionable insights\n• **Sustainable Innovation** - Focus on materials solutions for a better future\n• **2025 Vision** - Leading the year of AI agents in materials innovation\n• **Data-Driven Decisions** - Make informed choices based on real intelligence\n\nWe're transforming how organizations work with materials data.\n\nTo learn more about how TrueNorth can benefit your organization, reach out to jason.deacon@truenorthmaterials.com"
+      keywords: ['contact', 'email', 'phone', 'support', 'reach', 'talk'],
+      response: "**Get in Touch:**\n\nReady to advance with us?\n\nEmail: tobias@truenorthmaterials.com\n\nWe are happy to discuss how our marketplace and AI agents can serve your specific needs."
     }
   };
 
@@ -98,30 +86,13 @@ const Chatbot: React.FC = () => {
       }
     }
     
-    // Enhanced greeting responses
-    if (lowerInput.match(/^(hi|hello|hey|greetings|good morning|good afternoon|good evening)/)) {
-      const greetings = [
-        "Hello! Welcome to TrueNorth Materials. How can I assist you today?",
-        "Hi there! I'm here to help you discover how our AI-driven materials intelligence can transform your business. What would you like to know?",
-        "Greetings! Ready to explore the future of materials innovation? Ask me anything!"
-      ];
-      return greetings[Math.floor(Math.random() * greetings.length)];
-    }
-    
-    if (lowerInput.match(/thank|thanks/)) {
-      return "You're very welcome! Is there anything else about TrueNorth Materials I can help you with?";
-    }
-    
-    if (lowerInput.match(/bye|goodbye|see you|exit|quit/)) {
-      return "Thank you for your interest in TrueNorth Materials! Feel free to return anytime you have questions. Have a wonderful day!";
+    // General conversational fallbacks
+    if (lowerInput.match(/^(hi|hello|hey|greetings)/)) {
+      return "Hello! I'm ready to help you explore our Advanced Materials Marketplace. Would you like to meet Max and Colette, or learn how to sell on our platform?";
     }
 
-    if (lowerInput.match(/who are you|what are you/)) {
-      return "I'm the TrueNorth Materials virtual assistant! I'm here to help you learn about our AI-driven materials intelligence platform that transforms sensors and big data into actionable intelligence for sustainable innovation. Feel free to ask me about our services, technology, or how to get in touch!";
-    }
-    
-    // Default response with suggestions
-    return "I'm not quite sure about that specific question. Here are some topics I can help you with:\n\n• **Services** - Our AI solutions and capabilities\n• **Technology** - How our AI works\n• **Sustainability** - Environmental impact solutions\n• **Industries** - Sectors we serve\n• **Pricing** - Plans and packages\n• **Security** - Data protection measures\n• **Demo** - Try our platform\n• **Contact** - Get in touch\n\nWhat would you like to explore?";
+    // Default response
+    return "I'm not sure about that specific detail, but I can tell you about:\n\n• **Our Marketplace** - The hub for advanced materials\n• **Max** - Our Market Analysis AI\n• **Colette** - Our Collaboration AI\n• **Selling** - How to list your materials\n\nHumanity advances with materials—how can we help you advance today?";
   };
 
   const handleSendMessage = (): void => {
@@ -148,7 +119,7 @@ const Chatbot: React.FC = () => {
       };
       setMessages(prev => [...prev, botResponse]);
       setIsTyping(false);
-    }, 1000 + Math.random() * 1000); // Random delay between 1-2 seconds
+    }, 1000 + Math.random() * 1000);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>): void => {
@@ -168,10 +139,10 @@ const Chatbot: React.FC = () => {
 
   return (
     <>
-      {/* Chat Button with Logo */}
+      {/* Chat Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 ${
+        className={`fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-br from-slate-800 to-slate-900 border border-emerald-500/30 hover:border-emerald-400 text-white rounded-full shadow-[0_0_20px_rgba(16,185,129,0.3)] flex items-center justify-center transition-all duration-300 hover:scale-110 z-50 ${
           isOpen ? 'scale-0' : 'scale-100'
         }`}
         aria-label="Open chat"
@@ -181,42 +152,45 @@ const Chatbot: React.FC = () => {
           alt="TrueNorth Logo" 
           className="w-8 h-8"
         />
-        <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+        <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
       </button>
 
       {/* Chat Window */}
       <div
-        className={`fixed bottom-6 right-6 w-[400px] bg-transparent rounded-xl shadow-2xl flex flex-col transition-all duration-300 ${
+        className={`fixed bottom-6 right-6 w-[400px] bg-white rounded-2xl shadow-2xl flex flex-col transition-all duration-300 z-50 overflow-hidden border border-slate-200 ${
           isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
-        } ${isMinimized ? 'h-16' : 'h-[650px]'}`}
+        } ${isMinimized ? 'h-16' : 'h-[600px]'}`}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-t-xl flex justify-between items-center">
-          <div className="flex items-center gap-3">
+        <div className="bg-slate-900 text-white p-4 flex justify-between items-center relative overflow-hidden">
+            {/* Background decorative gradient */}
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-emerald-900/20 to-slate-900 z-0"></div>
+            
+          <div className="flex items-center gap-3 relative z-10">
             <img 
               src="/favicon-32x32.png" 
               alt="TrueNorth Logo" 
               className="w-8 h-8"
             />
             <div>
-              <h3 className="font-semibold text-lg">TrueNorth Assistant</h3>
-              <p className="text-xs opacity-90 flex items-center gap-1">
-                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                AI Materials Intelligence Assistant
+              <h3 className="font-bold text-lg text-white">TrueNorth AI</h3>
+              <p className="text-[10px] text-emerald-400 font-semibold uppercase tracking-wider flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
+                Materials Intelligence
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 relative z-10">
             <button
               onClick={() => setIsMinimized(!isMinimized)}
-              className="hover:bg-transparent/20 rounded p-1 transition-colors"
+              className="hover:bg-white/10 rounded-lg p-1.5 transition-colors text-slate-300 hover:text-white"
               aria-label="Minimize chat"
             >
               {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
             </button>
             <button
               onClick={() => setIsOpen(false)}
-              className="hover:bg-transparent/20 rounded p-1 transition-colors"
+              className="hover:bg-white/10 rounded-lg p-1.5 transition-colors text-slate-300 hover:text-white"
               aria-label="Close chat"
             >
               <X className="w-4 h-4" />
@@ -227,7 +201,7 @@ const Chatbot: React.FC = () => {
         {!isMinimized && (
           <>
             {/* Messages Container */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
               {messages.map((message) => (
                 <div
                   key={message.id}
@@ -235,7 +209,7 @@ const Chatbot: React.FC = () => {
                 >
                   <div className={`flex gap-2 max-w-[85%] ${message.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                     {message.sender === 'bot' && (
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <div className="w-8 h-8 bg-slate-200 border border-slate-300 rounded-full flex items-center justify-center flex-shrink-0">
                         <img 
                           src="/favicon-32x32.png" 
                           alt="Bot" 
@@ -245,15 +219,15 @@ const Chatbot: React.FC = () => {
                     )}
                     <div>
                       <div
-                        className={`p-3 rounded-lg ${
+                        className={`p-3 rounded-2xl ${
                           message.sender === 'user'
-                            ? 'bg-blue-600 text-white rounded-br-none'
-                            : 'bg-white text-gray-800 rounded-bl-none shadow-sm'
+                            ? 'bg-emerald-600 text-white rounded-br-sm'
+                            : 'bg-white text-slate-700 rounded-bl-sm border border-slate-200 shadow-sm'
                         }`}
                       >
                         <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.text}</p>
                       </div>
-                      <p className={`text-xs text-gray-400 mt-1 ${message.sender === 'user' ? 'text-right' : 'text-left'}`}>
+                      <p className={`text-[10px] text-slate-400 mt-1 ${message.sender === 'user' ? 'text-right' : 'text-left'}`}>
                         {formatTimestamp(message.timestamp)}
                       </p>
                     </div>
@@ -263,18 +237,18 @@ const Chatbot: React.FC = () => {
               {isTyping && (
                 <div className="flex justify-start">
                   <div className="flex gap-2">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <img 
-                        src="/favicon-32x32.png" 
-                        alt="Bot" 
-                        className="w-5 h-5"
-                      />
+                    <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center">
+                        <img 
+                          src="/favicon-32x32.png" 
+                          alt="Bot" 
+                          className="w-5 h-5"
+                        />
                     </div>
-                    <div className="bg-white p-3 rounded-lg rounded-bl-none shadow-sm">
+                    <div className="bg-white p-3 rounded-2xl rounded-bl-sm border border-slate-200 shadow-sm">
                       <div className="flex gap-1">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                       </div>
                     </div>
                   </div>
@@ -284,17 +258,17 @@ const Chatbot: React.FC = () => {
             </div>
 
             {/* Quick Actions */}
-            <div className="px-4 py-3 bg-gray-50 border-t">
-              <p className="text-xs text-gray-500 mb-2">Quick questions:</p>
+            <div className="px-4 py-3 bg-white border-t border-slate-100">
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Suggested Topics:</p>
               <div className="flex flex-wrap gap-2">
-                {['Our Services', 'Request Demo', 'Contact Us'].map((action) => (
+                {['Meet Max & Colette', 'About Marketplace', 'Sell Materials'].map((action) => (
                   <button
                     key={action}
                     onClick={() => {
                       setInputValue(action);
                       handleSendMessage();
                     }}
-                    className="text-xs bg-white hover:bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-full transition-colors"
+                    className="text-xs bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-200 text-slate-600 hover:text-emerald-700 px-3 py-1.5 rounded-full transition-all duration-200"
                   >
                     {action}
                   </button>
@@ -303,28 +277,25 @@ const Chatbot: React.FC = () => {
             </div>
 
             {/* Input Area */}
-            <div className="border-t bg-white p-4 rounded-b-xl">
+            <div className="p-4 bg-white border-t border-slate-100">
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Type your message..."
-                  className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  placeholder="Ask about materials, Max, or Colette..."
+                  className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-sm"
                 />
                 <button
                   onClick={handleSendMessage}
                   disabled={!inputValue.trim()}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white p-2.5 rounded-lg transition-colors"
+                  className="bg-slate-900 hover:bg-emerald-600 disabled:bg-slate-200 text-white p-2.5 rounded-xl transition-colors duration-200"
                   aria-label="Send message"
                 >
                   <Send className="w-5 h-5" />
                 </button>
               </div>
-              <p className="text-xs text-gray-400 mt-2 text-center">
-                Powered by TrueNorth Materials
-              </p>
             </div>
           </>
         )}

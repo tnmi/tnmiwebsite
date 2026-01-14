@@ -8,12 +8,12 @@ import Link from "next/link"
 
 const initialState: FormState | null = null
 
-export default function RequestDemoForm() {
+export default function RequestToSellForm() {
   const [state, formAction, isPending] = useActionState(submitForm, initialState)
 
   return (
     <form action={formAction} className="space-y-6 p-10  rounded-3xl ">
-      <input type="hidden" name="formType" value="Request a Demo" />
+      <input type="hidden" name="formType" value="Request to sell" />
       <FormField
         id="companyName"
         name="companyName"
@@ -34,8 +34,8 @@ export default function RequestDemoForm() {
       <FormField
         id="materialsFocus"
         name="materialsFocus"
-        label="Materials Focus"
-        placeholder="e.g., Carbon Nanotubes, Lithium-ion Batteries"
+        label="Product"
+        placeholder="graphene, tube furnace, collaboration"
         required
         state={state}
       />
@@ -52,7 +52,7 @@ export default function RequestDemoForm() {
           <Link href="/">Return to Homepage</Link>
         </Button>
       ) : (
-        <SubmitButton isPending={isPending} text="Request Demo" />
+        <SubmitButton isPending={isPending} text="Request" />
       )}
     </form>
   )

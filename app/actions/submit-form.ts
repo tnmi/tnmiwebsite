@@ -11,11 +11,11 @@ import { Resend } from "resend";
    1.  SCHEMA DEFINITIONS – ONLY REQUIRED FIELDS BLOCK VALIDATION
    ────────────────────────────────────────────────────────── */
 
-const requestDemoSchema = z.object({
+const requestToSellSchema = z.object({
   companyName:     z.string().min(1, "Company Name is required"),
   email:           z.string().email("Invalid email address"),
   materialsFocus:  z.string().min(1, "Materials Focus is required"),
-  formType:        z.literal("Request a Demo"),
+  formType:        z.literal("Request to sell"),
 });
 
 /*— Startup form:  only e-mail is mandatory —*/
@@ -74,7 +74,7 @@ const contactUsSchema = z.object({
 });
 
 const allFormsSchema = z.union([
-  requestDemoSchema,
+  requestToSellSchema,
   startupPartnershipSchema,
   industryPartnershipSchema,
   canadianPartnershipsSchema,
@@ -102,15 +102,15 @@ export async function submitForm(
   
   // 1) Validate by form type
   let parsed:
-    | ReturnType<typeof requestDemoSchema.safeParse>
+    | ReturnType<typeof requestToSellSchema.safeParse>
     | ReturnType<typeof startupPartnershipSchema.safeParse>
     | ReturnType<typeof industryPartnershipSchema.safeParse>
     | ReturnType<typeof canadianPartnershipsSchema.safeParse>
     | ReturnType<typeof contactUsSchema.safeParse>;
 
   switch (formType) {
-    case "Request a Demo":
-      parsed = requestDemoSchema.safeParse(rawData);
+    case "Request to sell":
+      parsed = requestToSellSchema.safeParse(rawData);
       break;
     case "Startup Partnership":
       parsed = startupPartnershipSchema.safeParse(rawData);

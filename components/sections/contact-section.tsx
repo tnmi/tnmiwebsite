@@ -66,10 +66,10 @@ export default function ContactSection() {
                     {t('generalInquiries')}
                   </h4>
                   <a
-                    href="mailto:jason.deacon@truenorthmaterials.com"
+                    href="mailto:tobias@truenorthmaterials.com"
                     className="text-slate-300 hover:text-emerald-400 transition-colors text-sm sm:text-base break-all"
                   >
-                    jason.deacon@truenorthmaterials.com
+                    tobias@truenorthmaterials.com
                   </a>
                 </div>
               </div>
@@ -91,7 +91,7 @@ export default function ContactSection() {
                   <Linkedin className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </a>
                 <a
-                  href="mailto:jason.deacon@truenorthmaterials.com"
+                  href="mailto:tobias@truenorthmaterials.com"
                   className="bg-white/10 hover:bg-emerald-500/20 backdrop-blur-xl border border-white/10 p-2 sm:p-3 rounded-full shadow-md transition-all"
                   aria-label="Email TrueNorth"
                 >

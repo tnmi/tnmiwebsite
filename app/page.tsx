@@ -17,17 +17,11 @@ const SectionLoading = () => (
   </div>
 )
 
-const PlatformSection = dynamic(() => import("@/components/sections/platform-section"), { loading: () => <SectionLoading />, ssr: false })
-const ProblemSection = dynamic(() => import("@/components/sections/problem-section"), { loading: () => <SectionLoading />, ssr: false })
-const TechnologySection = dynamic(() => import("@/components/sections/technology-section"), { loading: () => <SectionLoading />, ssr: false })
-const HowWeHelpSection = dynamic(() => import("@/components/sections/how-we-help-section"), { loading: () => <SectionLoading />, ssr: false })
-const CanadaFocusSection = dynamic(() => import("@/components/sections/canada-focus-section"), { loading: () => <SectionLoading />, ssr: false })
-const DecisionMakingSection = dynamic(() => import("@/components/sections/decision-making-section"), { loading: () => <SectionLoading />, ssr: false })
-const PartnershipsSection = dynamic(() => import("@/components/sections/partnerships-section"), { loading: () => <SectionLoading />, ssr: false })
 const TeamSection = dynamic(() => import("@/components/sections/team-section"), { loading: () => <SectionLoading />, ssr: false })
-const IcebergVisualization = dynamic(() => import("@/components/sections/iceberg-section"), { loading: () => <SectionLoading />, ssr: false })
 const Diagram = dynamic(() => import("@/components/diagram"), { loading: () => <SectionLoading />, ssr: false })
-const ServicesSection = dynamic(() => import("@/components/services"), { loading: () => <SectionLoading />, ssr: false })
+const MarketplaceSection = dynamic(() => import("@/components/sections/marketplace-section"), { loading: () => <SectionLoading />, ssr: false })
+const AIEmployeesSection = dynamic(() => import("@/components/sections/ai-employees-section"), { loading: () => <SectionLoading />, ssr: false })
+const PartnersSection = dynamic(() => import("@/components/sections/partners-section"), { loading: () => <SectionLoading />, ssr: false })
 
 export default function TrueNorthWebsite() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -39,11 +33,17 @@ export default function TrueNorthWebsite() {
   const router = useRouter()
 
   const navigationItems = [
-    "services",
-    "Industry or Startup Partnerships",
-      "Research Partnerships",
-    "team",
-    "contact",
+    // "services",
+    // "Industry or Startup Partnerships",
+    //   "Research Partnerships",
+    // "team",
+    // "contact",
+  ]
+
+  const externalLinks = [
+    { label: "Investors", href: "/investors" },
+    { label: "Webinars", href: "/webinars" },
+    { label: "Careers", href: "/careers" }
   ]
 
   const handleMobileMenuClick = (href: string) => {
@@ -113,6 +113,16 @@ export default function TrueNorthWebsite() {
                 {section.replace(/-/g, " ").replace(/^./, str => str.toUpperCase())}
               </motion.a>
             ))}
+            {externalLinks.map((link, idx) => (
+              <motion.a
+                key={idx}
+                whileHover={{ y: -2, color: "#10b981" }}
+                href={link.href}
+                className="transition-colors hover:text-emerald-400"
+              >
+                {link.label}
+              </motion.a>
+            ))}
             <Button 
               size="sm" 
               className="ml-4 bg-emerald-400 text-black hover:bg-emerald-500"
@@ -149,6 +159,20 @@ export default function TrueNorthWebsite() {
               className="md:hidden bg-black/95 backdrop-blur-xl border-t border-white/10"
             >
               <div className="px-4 py-6 space-y-4">
+                {externalLinks.map((link, idx) => (
+                  <Link
+                    key={idx}
+                    href={link.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <motion.button
+                      whileHover={{ x: 10, color: "#10b981" }}
+                      className="block w-full text-left text-slate-300 hover:text-emerald-400 transition-colors py-2 text-lg font-medium"
+                    >
+                      {link.label}
+                    </motion.button>
+                  </Link>
+                ))}
                 {navigationItems.map((section, idx) => (
                   <motion.button
                     key={idx}
@@ -203,8 +227,8 @@ export default function TrueNorthWebsite() {
             transition={{ duration: 1, delay: 1.5 }}
             className="text-5xl md:text-7xl font-semibold bg-gradient-to-br from-white via-slate-300 to-slate-500 bg-clip-text text-transparent tracking-tight mb-6"
           >
-            The World’s First
-            <span className="text-emerald-400 block">Materials Lifecycle Intelligence Platform</span>
+            The <span className="text-emerald-400">Advanced</span>
+            <span className="block">Materials <span className="text-emerald-400">Marketplace</span></span>
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -212,7 +236,7 @@ export default function TrueNorthWebsite() {
             transition={{ duration: 1, delay: 2 }}
             className="text-lg md:text-xl text-slate-300 font-light leading-relaxed max-w-2xl mx-auto mb-8"
           >
-            Connecting Canada's Advanced Manufacturing and Materials Value Chain for Data-Driven Decision Intelligence.
+            Advanced Materials, Advancing Humanity.
           </motion.p>
           <motion.div
   initial={{ opacity: 0, y: 20 }}
@@ -221,18 +245,18 @@ export default function TrueNorthWebsite() {
   className="flex flex-col sm:flex-row gap-4 justify-center"
 >
   {/* Primary Glass Button */}
-  <Link href="/request-demo" passHref>
+  <Link href="/request-to-sell" passHref>
 <Button
   size="lg"
   className="px-8 py-4 bg-white/10 text-white backdrop-blur-md border border-white/20 shadow-md transition-all duration-300 ease-out hover:bg-white/10 hover:shadow-emerald-500/30"
 >
-  Request Demo
+  Request to Sell
 </Button>
   </Link>
 
   {/* Secondary Outline Glass Button */}
   <Link
-    href="https://calendly.com/tobiastnmi/20min"
+    href="https://www.truenorthmaterials.com/login"
     target="_blank"
     rel="noopener noreferrer"
     passHref
@@ -242,7 +266,7 @@ export default function TrueNorthWebsite() {
       variant="outline"
       className="px-8 py-4 text-emerald-400 border border-emerald-400 backdrop-blur-md bg-white/5 hover:bg-emerald-400 hover:text-black transition-all duration-300"
     >
-      Learn More
+      Buyer Portal
     </Button>
   </Link>
 </motion.div>
@@ -262,13 +286,10 @@ export default function TrueNorthWebsite() {
 
       {/* Sections */}
       {/* <ProblemSection /> */}
-      <ServicesSection />
-      <IcebergVisualization />
-      <PartnershipsSection />
-      <CanadaFocusSection />
+      <MarketplaceSection />
+      <AIEmployeesSection />
+      <PartnersSection />
       <TeamSection />
-      <ProblemSection />
-      <HowWeHelpSection />
 
       {/* Footer */}
       <motion.footer
